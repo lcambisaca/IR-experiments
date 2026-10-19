@@ -140,19 +140,3 @@ Planned next steps:
 1. Complete and inspect the small-pool baseline and supplied-query comparison.
 2. Integrate the original live PlugIR generation loop through OpenRouter, starting with one target and one or two interaction rounds.
 3. Explore the proposed multi-agent extension: internal agents investigate hypothetical question–answer branches and select one informative question for the user.
-
-The goal of the extension is better retrieval with fewer user questions. Internal calls, cost, and latency must be measured separately. Hypothetical answers must remain distinct from user-confirmed information.
-
-## Credentials and publishing
-
-Never commit API keys or paste them into notebook Markdown, code, or outputs. Use Colab Secrets or hidden input prompts for optional API experiments. The exposed key from the original learning notebook must be revoked; removing it from cleaned copies does not invalidate it.
-
-Before saving to GitHub, omit notebook outputs. Keep image archives, model weights, caches, and credentials out of Git commits. Colab's **Save a copy in GitHub** saves the notebook, not arbitrary files in its runtime.
-
-## References and attribution
-
-- [PlugIR paper](https://arxiv.org/abs/2406.03411)
-- [Official PlugIR implementation](https://github.com/Saehyung-Lee/PlugIR)
-- [Google Colab FAQ](https://research.google.com/colaboratory/faq.html)
-
-This repository contains team experiment notebooks and adaptations. The original PlugIR code remains subject to its upstream MIT license and attribution requirements.
