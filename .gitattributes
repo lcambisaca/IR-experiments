@@ -1,0 +1,4 @@
+# Share consistent text files across Mac and Windows.
+* text=auto eol=lf
+# This file's exact bytes are checked against the saved image-cache metadata.
+assets/protocol/manifest_50k.json -text

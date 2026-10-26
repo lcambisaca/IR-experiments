@@ -1,0 +1,9 @@
+{
+  "cache": "data/cache/corpus_blip_eval_d85c7c39be4ea84c.pth",
+  "manifest": "assets/protocol/manifest_50k.json",
+  "baseline_queries": "assets/protocol/baseline_matched.json",
+  "supplied_queries": "assets/protocol/supplied_matched.json",
+  "colab_run": "assets/colab_reference/run_config.json",
+  "colab_per_round": "assets/colab_reference/per_round.csv",
+  "colab_summary": "assets/colab_reference/summary.csv"
+}

@@ -1,0 +1,8 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv",
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestArgs": ["tests"],
+  "files.exclude": {"**/__pycache__": true, "**/*.egg-info": true},
+  "search.exclude": {".venv": true, "data": true, "runs": true}
+}
