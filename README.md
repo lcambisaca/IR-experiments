@@ -1,3 +1,7 @@
+ChatLink:
+
+https://chatgpt.com/s/cx_6ade9f42fe7c8191bc386453c19d06e4
+
 # AgentIR: retrieval experiments with our saved 50k image vectors
 
 This project loads the image embeddings we already computed in Colab, encodes
