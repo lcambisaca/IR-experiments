@@ -20,15 +20,15 @@ from agentir.retrieval import BlipRetriever
 
 
 # SETTINGS: start small; every search still includes all 50,000 candidate images.
-N_TARGETS = 4            # Set to 32 for our reference sample, or None for all 2,064.
-N_STATES = 3           # 1 = caption only; 11 = caption plus ten dialogue turns.
-K_VALUES = [1, 10, 50]
+N_TARGETS = None         # Set to 32 for our reference sample, or None for all 2,064.
+N_STATES = 11          # 1 = caption only; 11 = caption plus ten dialogue turns.
+K_VALUES = [1, 10, 100]
 DEVICE = "cpu"        # Use "cuda" only with a working NVIDIA PyTorch setup.
 TEXT_BATCH_SIZE = 8   # Maximum texts per encoding call; methods below run one case at a time.
 CPU_THREADS = 4
 OFFLINE = False       # True requires BLIP model files already on this machine.
 SEED = 42
-RUN_LABEL = "first_comparison"
+RUN_LABEL = "baseline_full_50k"
 
 
 def my_first_experiment(context, retriever):
