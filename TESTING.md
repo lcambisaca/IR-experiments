@@ -1,62 +1,49 @@
-# Verified local baseline — 2026-10-25
+# Verification
 
-This project was executed in its own Windows Python 3.11 environment using
-**CPU-only PyTorch 2.11.0**, torchvision 0.26.0, Transformers 4.51.3 and the exact
-BLIP checkpoint recorded by the completed Colab image cache. No GPU, image
-archive, image encoding, OpenRouter request or Qwen download was used.
+## Run checks
 
-## Checks completed
+In VS Code's **Testing** panel, configure **pytest → tests** and run the suite.
+Alternatively, use `python -m pytest -q` in the project environment. Tests use
+synthetic inputs or tiny random models; no pretrained downloads/API calls are
+needed. CUDA checks skip without NVIDIA CUDA; the real-KMeans test skips if the
+optional live dependency is absent. Run `python -m pip check` after installation.
 
-- `pip check`: no broken requirements.
-- `pytest -q`: **10 passed**.
-- Actual Drive cache downloaded and validated: **50,000 x 256**, float32,
-  sequential IDs, finite values, unit lengths and exact manifest/cache hashes.
-- Real BLIP search using the bedroom description: target
-  `unlabeled2017/000000185565.jpg` ranked **1/50,000**, cosine **0.4834548831**.
-- Full supplied-query reference: **32 matched targets x 11 states x 2 methods**.
-- All 11 Recall@10/Hits@10 rows and BRI matched the original full-pool Colab
-  reference (`matches_colab: true`, no differences). Saved Colab percentages were
-  rounded to two decimals; comparison tolerances are 0.011 percentage points and
-  0.0001 BRI. The two reported BRI values were identical in this execution.
+Then run the small saved-query example in [README.md](README.md#3-run-a-small-saved-query-check)
+to exercise your actual downloaded cache and BLIP weights.
+
+## Latest verified checks — November 3, 2026
+
+| Check | Result |
+|---|---|
+| Windows CPU suite, with optional clustering dependencies available | **45 passed; 6 CUDA checks skipped** |
+| Original ten-round loop versus wrapper | Matching chat requests, selected questions, answers, captions and ranks under controlled responses; original fallbacks/switches and real CPU KMeans covered |
+| Original versus shared pretrained BLIP text features | Maximum absolute difference **1.49e-8** across three descriptions; tolerance 1e-6 |
+| Saved-baseline regression | **72/72 ranks matched**: 8 targets starting at index 64, 3 states, 3 methods, full 50k pool; 38 ranks were below first place |
+| Original generator/evaluator bytes | SHA-256 checks passed |
+
+These checks used the existing CPU environment and cached BLIP weights. Extra
+clustering packages were isolated for testing, not installed into that environment.
+The teammate also reported matching Windows/Mac saved-baseline results on the
+shared cache; their full environment was not independently verified here.
+
+**Pending:** full pretrained Qwen + BLIP-2 GPU inference, CUDA test execution,
+peak host/GPU memory, and retrieval quality of live Q&A or future agents.
+Source parity and small regression checks do not establish benchmark improvement.
+
+## Historical Colab reproduction — October 25, 2026
+
+The Windows CPU setup validated the real `(50000, 256)` float32 cache and
+reproduced the saved **32-target, 11-state** Colab reference, including query
+hashes, target order, Recall/Hits and BRI. Tolerances: 0.011 percentage points
+and 0.0001 BRI. The bedroom target ranked 1/50,000, cosine 0.4834548831.
 
 | Method | Final Recall@10 | Final Hits@10 | BRI |
 |---|---:|---:|---:|
-| VisDial raw dialogue | 59.375% | 75.0% | 1.2532765865325928 |
-| Supplied PlugIR queries | 71.875% | 90.625% | 1.0645685195922852 |
+| Raw VisDial | 59.375% | 75.0% | 1.253277 |
+| Supplied PlugIR | 71.875% | 90.625% | 1.064569 |
 
-## Evidence in the local project
-
-- `runs/cache_verification.json`
-- `runs/smoke_search.json`
-- `runs/colab_reproduction/report.json`
-- `runs/colab_reproduction/per_round.csv`
-- `runs/colab_reproduction/per_example.csv`
-
-The reference query hashes and the original run's target order were checked
-before running the comparison. `assets/colab_reference` holds the source CSVs
-and run configuration fetched from the existing shared Drive folder. `runs` is
-ignored by Git; export/copy results deliberately when sharing experiment evidence.
-
-## What these checks do not show
-
-They establish that ordinary Python can load your real 50k cache and reproduce
-the existing supplied-query evaluation locally. They do not demonstrate a new
-agent method, new dialogue generation, Qwen integration or retrieval improvement.
-Only 32 of the available 2,064 matched targets were evaluated in this check.
-The larger candidate pool is the full 50k, not the former 5k development pool.
-
-Do not re-encode images when increasing the query count. Add new strategies
-against the same loader/retriever/metrics, record runtime and model settings,
-and compare methods on the same target examples and confirmed information.
-
-## Later experiment-runner and interface checks
-
-The reusable experiment evaluator added eight synthetic cases, bringing the
-suite to 18 passing tests. It checks parity with the existing metrics, an
-identity control, past-only callback inputs, separate per-method/example state,
-custom vector normalization, non-cosine fusion labels, and aligned CSV exports.
-
-The terminal interface has now been removed. Open `run_evaluation.py` and use
-Run Python File, or its Run and Debug preset. The earlier real search/Colab
-evidence above is preserved as historical verification; it was not rerun merely
-to remove the interface. Existing result files and research functions remain.
+Reference files are in [assets/colab_reference](assets/colab_reference). Original
+local evidence paths were `runs/cache_verification.json`, `runs/smoke_search.json`
+and `runs/colab_reproduction/`; ignored `runs/` files are not supplied by cloning.
+Full 2,064-target historical results are documented separately in
+[results/README.md](results/README.md).

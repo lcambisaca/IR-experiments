@@ -8,6 +8,7 @@ from pathlib import Path
 import torch
 
 from .retrieval import ranks_for_targets
+from .plugir_upstream import provenance
 
 METHOD_LABELS = {"raw": "VisDial raw dialogue", "supplied": "Supplied PlugIR queries"}
 
@@ -42,6 +43,19 @@ class SearchOutput:
     query: str | None = None
     notes: dict = field(default_factory=dict)
     state: object = None
+
+
+@dataclass
+class PreparedExperiment:
+    """Methods created by a setup/generation stage before common metric evaluation.
+    methods maps result names to ordinary evaluator callbacks; metadata records
+    the experiment's source/settings, and artifacts maps JSON filenames to full
+    generated outputs. This lets live agents and later experiments share one runner.
+    """
+
+    methods: dict
+    metadata: dict = field(default_factory=dict)
+    artifacts: dict = field(default_factory=dict)
 
 
 def text_output(retriever, text, *, notes=None, state=None):
@@ -117,26 +131,16 @@ def metrics_from_ranks(ranks, ks):
     """Turn target ranks into Recall@K, cumulative Hits@K, and BRI.
     Input axes are [round, example], with rank 1 meaning first place.
     Recall measures this round; Hits remembers earlier successes; lower BRI
-    rewards reaching good best-so-far ranks earlier. Return metric rows and BRI."""
+    rewards reaching good best-so-far ranks earlier. Delegate to the authors'
+    actual metric functions/block after validating and converting rank indexing.
+    Return metric rows and BRI (None for a single state)."""
     ranks = torch.as_tensor(ranks, dtype=torch.long)
     if ranks.ndim != 2 or min(ranks.shape) < 1 or (ranks < 1).any():
         raise ValueError("Ranks must be a nonempty [round, example] matrix of positive ranks.")
-    best = torch.cummin(ranks, dim=0).values
-    rows = []
-    for r in range(len(ranks)):
-        for k in ks:
-            if k < 1:
-                raise ValueError("K must be positive.")
-            rows.append({"round": r, "k": k,
-                         "recall_percent": float((ranks[r] <= k).float().mean() * 100),
-                         "hits_percent": float((best[r] <= k).float().mean() * 100)})
-    bri = None
-    if len(ranks) > 1:
-        # Natural log of best-so-far ONE-based rank, trapezoids over rounds;
-        # equals upstream log(zero_based_rank + 1), average over examples/intervals.
-        log_best = best.float().log()
-        bri = float(((log_best[:-1] + log_best[1:]) / 2).mean(dim=1).mean())
-    return rows, bri
+    if any(type(k) is not int or k < 1 for k in ks):
+        raise ValueError("K must be a positive integer.")
+    from .plugir_upstream import upstream_metrics
+    return upstream_metrics(ranks, ks)
 
 
 def benchmark(retriever, pairs, methods, rounds, ks):
@@ -213,7 +217,8 @@ def evaluate_experiments(retriever, pairs, experiments=None, *, rounds=3, ks=(1,
     Only this evaluator uses target labels to measure ranks after scoring; those
     ranks never feed back into callbacks. Return per-example rank changes,
     per-round Recall/Hits, and overall BRI on exactly the same targets and pool.
-    This is saved-dialogue evaluation, not a live question/answer generation loop.
+    This function measures searches; optional preparation stages may generate
+    their own conversations first and register callbacks for those query states.
     """
     experiments = dict(experiments or {})
     references = ("caption_only", "raw_dialogue", "supplied_plugir")
@@ -329,10 +334,11 @@ def evaluate_experiments(retriever, pairs, experiments=None, *, rounds=3, ks=(1,
             "pool": len(retriever.cache.paths), "targets": [raw["img"] for raw, _ in pairs],
             "rounds": rounds, "k": ks, "methods": methods,
             "tie_break": "Descending score, then original manifest index",
-            "scope": "Saved raw dialogue is shared with custom methods. Supplied PlugIR queries are a saved reference with potentially different dialogue, not live generation or a controlled rewrite-only comparison.",
+            "metric_implementation": provenance(),
+            "scope": "References use saved captions/dialogue. Ordinary callbacks receive past raw context; prepared live methods may return their own generated query states instead. Supplied PlugIR is a saved reference with potentially different dialogue.",
             "labels": "Targets are used only after a method returns scores. Callbacks receive no target labels or measured ranks. The retriever exposes the whole candidate pool, so experiment authors must also avoid external label lookups.",
-            "round_zero": "Initial-caption state; later states add one saved raw dialogue turn each. Callbacks must not ask for future turns.",
-            "costs": "Agent calls are internal computation, not extra user rounds. This runner does not call APIs or answer new questions.",
+            "round_zero": "State 0 is the initial caption. Later states use the registered method's saved or generated history. Callbacks must not ask for future turns.",
+            "costs": "Metric calculation does not generate Q&A. Preparation-stage provenance records live generation where enabled; compare interaction and internal model/search budgets explicitly.",
         },
     }
 

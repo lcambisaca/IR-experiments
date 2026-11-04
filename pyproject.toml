@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "agentir-local"
 version = "0.1.0"
-description = "Cache-only PlugIR retrieval experiments on the team's saved VisDial 50k pool"
+description = "PlugIR retrieval and live Q&A experiments on the team's saved VisDial 50k pool"
 requires-python = ">=3.11,<3.13"
 dependencies = [
   "torch==2.11.0", "torchvision==0.26.0", "transformers==4.51.3",
@@ -15,6 +15,7 @@ dependencies = [
 
 [project.optional-dependencies]
 test = ["pytest==8.3.5"]
+live = ["accelerate==1.6.0", "sentencepiece==0.2.1", "fast-pytorch-kmeans==0.2.2", "psutil==7.1.0"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

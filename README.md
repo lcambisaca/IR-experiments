@@ -1,387 +1,188 @@
-ChatLink:
+# AgentIR
 
-https://chatgpt.com/s/cx_6ade9f42fe7c8191bc386453c19d06e4
+Image-retrieval experiments using our saved **50,000-image BLIP cache**. Our main
+comparison is **original PlugIR + Qwen** versus **our independent multi-agent
+system**. Each generates its own conversation and query history; both use the
+same retrieval/answering models, image pool and evaluator. Agent methods need
+not use PlugIR's clustering or question-selection logic. The live Qwen baseline
+is implemented; its full GPU pilot is pending.
 
-# AgentIR: retrieval experiments with our saved 50k image vectors
-
-This project loads the image embeddings we already computed in Colab, encodes
-new text with the matching BLIP model, and ranks **50,000 candidate images**.
-Use `run_evaluation.py` to compare the original caption, raw VisDial dialogue,
-the authors' supplied PlugIR queries, and your own experiments.
-
-**Mac teammates: follow the steps below in order.** You create your own Python
-environment and download our existing vectors once. You do not need to encode
-images again, download the image archive, rent a GPU, or supply an API key.
-Installation uses a few terminal commands; after setup you can edit a Python
-file and click **Run** in VS Code.
-
-## 1. Check your Mac and install the prerequisites
-
-Open **Apple menu > About This Mac** and check the chip:
-
-| Your Mac | Setup route |
+| Guide | Purpose |
 |---|---|
-| Apple Silicon, such as M1/M2/M3/M4 | Use native ARM Python and the steps below, subject to the package compatibility check |
-| Intel processor | Use an existing compatible remote Linux environment through VS Code Remote SSH, or the team's Colab workflow |
+| [EXPERIMENTS.md](EXPERIMENTS.md) | Methods, metrics, outputs and adding experiments |
+| [PLUGIR_COMPARISON.md](PLUGIR_COMPARISON.md) | What matches original PlugIR and what the wrapper changes |
+| [TESTING.md](TESTING.md) | Running checks and verified results |
+| [results/README.md](results/README.md) | Historical baseline and paraphrase experiments |
 
-Our pinned PyTorch version does not have official native Intel Mac wheels.
-Do not use the Windows lock file or downgrade PyTorch to get around that.
-[PyTorch's Intel macOS support announcement](https://pytorch.org/blog/pytorch2-2/)
-explains the support boundary. See [Mac diagnostics and coding-agent brief](#mac-diagnostics-and-coding-agent-brief) for additional checks.
+## 1. Install the project
 
-Install these prerequisites on a compatible Apple Silicon Mac:
+Install Git, VS Code with Microsoft's Python extension, and Python **3.11**
+(3.12 is also supported). Clone
+[IR-experiments](https://github.com/lcambisaca/IR-experiments) using VS Code's
+**Git: Clone**, then open the folder containing `pyproject.toml`.
 
-- [VS Code](https://code.visualstudio.com/) and Microsoft's **Python** extension.
-  Install **Python Debugger** if using Run and Debug.
-- **Git**, for cloning/updating the repository. VS Code will tell you if Git
-  is unavailable; see its [source control setup guide](https://code.visualstudio.com/docs/sourcecontrol/quickstart).
-- A native **Python 3.11** interpreter. Python 3.12 is also allowed by the project,
-  but the examples below use 3.11. Do not use Python 3.13+ for this environment.
+### Apple Silicon Mac
 
-If you already use Homebrew, install Python with:
+Use native ARM Python; `python3.11 -c "import platform; print(platform.machine())"`
+should print `arm64`. Homebrew users can install it with `brew install python@3.11`.
 
-```bash
-brew install python@3.11
-```
-
-If you don't have Homebrew, follow its [official installation instructions](https://brew.sh/)
-and terminal configuration steps first, or use another native Python installation
-method. The [Python 3.11 formula](https://formulae.brew.sh/formula/python@3.11)
-documents its supported macOS versions and interpreter location. A machine whose
-macOS cannot install the pinned packages should use the remote/Colab route.
-
-In VS Code, open **Terminal > New Terminal**, then check:
-
-```bash
-python3.11 --version
-python3.11 -c "import platform; print(platform.machine())"
-```
-
-Expect Python **3.11.x** and **`arm64`**. If an Apple Silicon Mac reports `x86_64`,
-the terminal or Python may be running under Rosetta; switch to native ARM before
-creating the environment. Don't replace macOS's system Python.
-
-Windows CPU has been tested. **The Mac instructions have not yet been executed
-on a teammate's Mac**; the checks below establish whether their setup works.
-The CPU route is intentional: this project has not implemented/tested Apple MPS
-acceleration. Local setup needs space for Python packages and BLIP's roughly
-1.9 GB model download in addition to the approximately 52 MB image-vector cache.
-
-## 2. Clone the repository and open the project folder
-
-1. Use [lcambisaca/IR-experiments](https://github.com/lcambisaca/IR-experiments).
-   Clone URL: `https://github.com/lcambisaca/IR-experiments.git`.
-2. In VS Code press **Cmd+Shift+P**, choose **Git: Clone**, and paste that URL.
-3. Choose a local development location, then open the cloned folder.
-4. Confirm the opened folder contains **`pyproject.toml`, `experiment.json`, and
-   `run_evaluation.py`** directly. If they are inside `agentir-vscode`, open that
-   subfolder instead. The GitHub repository name doesn't have to be this name.
-
-The original Colab notebook is separate from this Python runner. It is not
-executed or needed by the local evaluation code.
-
-## 3. Create your own environment and install the project (once)
-
-Open a new VS Code terminal in the folder containing `pyproject.toml`.
-Run these commands **one line at a time**, checking for errors before continuing:
+In VS Code's terminal, run one line at a time:
 
 ```bash
 python3.11 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-python -c "import sys,platform; print(sys.executable); print(platform.machine())"
-```
-
-The printed executable should be inside this project's `.venv/bin/`, and its
-architecture should be `arm64`. Your environment is local to your Mac; never
-copy the Windows `.venv` or commit an environment to GitHub.
-
-Before installing the large packages, check that matching prebuilt wheels exist:
-
-```bash
 python -m pip install --dry-run --only-binary=:all: torch==2.11.0 torchvision==0.26.0
-```
-
-This checks compatibility without installing those packages. If it fails, use
-the troubleshooting table below rather than letting a PyTorch source build run.
-If it succeeds, install the project and run the dependency check:
-
-```bash
 python -m pip install -e ".[test]"
 python -m pip check
 ```
 
-What these steps do:
+Continue past the dry run only if compatible wheels are available. For Intel
+Macs or unsupported macOS versions, use a compatible remote environment or the
+team's Colab workflow; our Torch pin has no official native Intel Mac build.
+See [PyTorch's support announcement](https://pytorch.org/blog/pytorch2-2/).
+Local retrieval uses CPU; Apple MPS is not implemented/tested here.
 
-| Step/file | Purpose |
-|---|---|
-| `python3.11 -m venv .venv` | Creates an isolated environment on this computer |
-| `source .venv/bin/activate` | Makes this terminal use that environment's Python |
-| `pip install -e ".[test]"` | Reads `pyproject.toml`, installs the required libraries and tests, and links our editable source code |
-| `pip check` | Checks installed package dependency requirements; expect no broken requirements |
-| `requirements-lock-windows-cpu.txt` | Records the tested Windows installation; **do not install this on Mac** |
-| `setup_windows.ps1` | Windows-only installation helper; **do not run it on Mac** |
+### Windows
 
-The direct project requirements include PyTorch 2.11.0, torchvision 0.26.0,
-Transformers 4.51.3 and the tokenizer/model-download libraries. Keep those pins;
-they match our saved-cache setup. Mac installs resolve their own compatible
-platform builds and indirect dependencies. This is not a tested Mac lock file.
+In the project folder's PowerShell terminal, run:
 
-## 4. Select the environment in VS Code
-
-Press **Cmd+Shift+P > Python: Select Interpreter** and choose:
-
-```text
-<your project folder>/.venv/bin/python
+```powershell
+.\setup_windows.ps1
 ```
 
-If it isn't listed, choose **Enter interpreter path** and browse to that file.
-This selection controls Python's Run/Debug features. Activating a terminal alone
-isn't a substitute for checking the editor's interpreter.
+This creates `.venv` and installs the tested Windows CPU dependencies. Each
+teammate creates their own environment; Mac/Linux users use `pyproject.toml`
+instead of the Windows lock file or `.venv`.
 
-After selecting it, use **Run Python File** from Microsoft's Python extension,
-not an unrelated extension's generic **Run Code** command.
-VS Code may display output in its integrated terminal; you still launch your
-experiments by clicking Run. The [VS Code environment guide](https://code.visualstudio.com/docs/python/environments)
-explains interpreter selection.
+### Select the VS Code interpreter
 
-## Teammates: get the cache once from Drive
+Use **Python: Select Interpreter** in the Command Palette and choose:
 
-GitHub contains the code and small protocol/reference files. **The shared image
-vectors are on Google Drive**, and each teammate needs permission to download
-them. GitHub repository access does not automatically grant Drive access.
+- Mac/Linux: `.venv/bin/python`
+- Windows: `.venv/Scripts/python.exe`
 
-Download **both** existing files without changing their names:
+Use **Run Python File** from Microsoft's Python extension. Terminal activation
+controls that terminal; the editor's interpreter selection controls Run/Debug.
 
-- [50k BLIP vectors: corpus_blip_eval_d85c7c39be4ea84c.pth](https://drive.google.com/file/d/1V8ajL6VqbR2SV-zvz_BbRmo4xPufrRtw/view)
-- [Matching metadata: corpus_blip_eval_d85c7c39be4ea84c.json](https://drive.google.com/file/d/1uRFdwNYAOGYbPBzGO2pMB1yt7CfknR3O/view)
+## 2. Download the cache once
 
-In VS Code's Explorer create `data`, then `cache` inside it, and place both files
-there. Your folder should look like this:
+Download both files from Drive into `data/cache/`, keeping their names:
 
-```text
-<project>/
-├── pyproject.toml
-├── experiment.json
-├── run_evaluation.py
-├── .venv/                         # Created on your own computer
-├── assets/protocol/manifest_50k.json
-└── data/cache/
-    ├── corpus_blip_eval_d85c7c39be4ea84c.pth
-    └── corpus_blip_eval_d85c7c39be4ea84c.json
-```
+- [corpus_blip_eval_d85c7c39be4ea84c.pth](https://drive.google.com/file/d/1V8ajL6VqbR2SV-zvz_BbRmo4xPufrRtw/view)
+- [corpus_blip_eval_d85c7c39be4ea84c.json](https://drive.google.com/file/d/1uRFdwNYAOGYbPBzGO2pMB1yt7CfknR3O/view)
 
-The `.pth` holds the saved image IDs and `(50000, 256)` embedding tensor. It is
-51,602,197 bytes. The `.json` records the model revision, encoding versions and
-checksums. The ordered image manifest is already supplied with the repository.
+The approximately 52 MB `.pth` contains image IDs and a `(50000, 256)` vector
+tensor; the `.json` records encoding identity and checksums. The ordered manifest
+is already in Git. `experiment.json` points to these **local copies**; Drive
+access is separate from GitHub access. The loader validates the pair and manifest.
 
-The loader reads **local files**, not live Drive URLs. It verifies checksums,
-image order, count, IDs, vector shape and normalization. Leo's existing local
-copy isn't included when you clone. Do not rename a 5k cache to this filename.
-You don't need the 8.22 GB image archive for these text retrieval experiments.
+Saved-query retrieval needs no JPEG archive, image re-encoding or API key.
+The first BLIP load downloads its model weights; later runs reuse them.
 
-## 5. Test the installation, then run a small evaluation
+## 3. Run a small saved-query check
 
-First open VS Code's **Testing** panel. If asked to configure tests, choose
-**pytest** and the **tests** directory. Run all tests. The latest Windows suite
-has **18 passing tests**; no BLIP download, GPU or API is needed for these tests.
-The tests check code and synthetic examples; the next step also loads the real
-downloaded cache and runs the real retriever.
-
-Open `run_evaluation.py` and set:
+Open [run_evaluation.py](run_evaluation.py), set these explicitly, save and click Run:
 
 ```python
 N_TARGETS = 4
 N_STATES = 3
-K_VALUES = [1, 10, 50]
+K_VALUES = [1, 10, 100]
 DEVICE = "cpu"
+RUN_LIVE_PLUGIR = False
 OFFLINE = False
 ```
 
-**Set these explicitly before the first run**: the current file may reflect a
-larger local experiment. Four targets still search all **50,000 candidate images**.
-Three states mean the initial caption followed by two saved dialogue turns.
+This compares `caption_only`, `raw_dialogue` and `supplied_plugir` against all
+50,000 images. It generates no new Q&A. Results go to a fresh
+`runs/experiments/<timestamp>/`; [EXPERIMENTS.md](EXPERIMENTS.md#outputs-and-metrics)
+explains the tables.
 
-Save the file, then click **Run Python File**. Alternatively, use the
-**Run experiment evaluation** preset in Run and Debug.
+- `N_TARGETS=None`: all 2,064 matched targets; changing target count reuses the cache.
+- `N_STATES=11`: caption plus ten interactions. Three states mean caption plus two.
+- `START_TARGET`: first matched example; `TEXT_BATCH_SIZE`: text-encoding batch size.
+- `OFFLINE=True`: require model files already downloaded on this machine.
 
-The runner:
+The file currently defaults to 32 targets, two states, CPU and live generation off.
+For later sessions, reopen the project and reuse its environment/cache.
 
-1. Loads and validates the existing image-vector cache into CPU memory.
-2. Loads the matching `Salesforce/blip-itm-large-coco` model and processor.
-   First use may download approximately 1.9 GB; later runs reuse the model cache.
-3. Encodes query text, computes cosine similarity to every saved image vector,
-   ranks candidates and measures each known target's position.
-4. Prints Recall/Hits tables and BRI, then saves the detailed comparisons.
+## 4. Run the live Qwen baseline on an NVIDIA GPU
 
-No image encoding or LLM calls happen. This setup uses supplied dialogue rather
-than generating new questions. Once the model files are downloaded, you can set
-`OFFLINE = True` to require their local reuse.
-
-## 6. Read the results and add experiments
-
-Every run includes these references:
-
-| Method | Input |
-|---|---|
-| `caption_only` | Original description, unchanged at every state |
-| `raw_dialogue` | Original description plus VisDial dialogue available so far |
-| `supplied_plugir` | Authors' previously generated PlugIR query for that state |
-
-New methods are registered in the runner's `EXPERIMENTS` dictionary. The provided
-template is disabled; enabling its unchanged body should match `raw_dialogue`.
-See [EXPERIMENTS.md](EXPERIMENTS.md) before adding a method that returns text,
-a custom query vector, or fused agent scores. Known targets are for measurement
-after scoring; don't use them to select which agent wins during retrieval.
-
-Each run creates a fresh `runs/experiments/<timestamp>/` folder:
-
-| File | What to inspect |
-|---|---|
-| `rank_comparison.csv` | Target ranks side by side for every method/state |
-| `per_example.csv` | Queries, previous queries, ranks, scores and rank changes |
-| `per_round.csv` | Recall/Hits at each state and K |
-| `final_metrics.csv` | Final Recall/Hits and overall BRI by method |
-| `report.json` | Full results, selected targets, cache identity and software versions |
-| `runner_snapshot.py` | The runner used to produce this run |
-
-Higher Recall/Hits and lower BRI are better. Positive rank improvement means
-moving closer to first place. BRI summarizes the sequence and is undefined for
-one state. Target cosine alone is not the main outcome: the target must rank
-well against competing images.
-
-After the small check succeeds:
-
-- `N_TARGETS = 32`, `N_STATES = 11` selects the earlier Colab reference sample.
-- `N_TARGETS = None` selects all **2,064 matched targets**.
-- `N_STATES = 11` evaluates the caption plus all ten saved dialogue turns.
-
-Increasing target count or states reuses the same image vectors. It increases
-text encoding/ranking work, so keep experiments small while developing ideas.
-
-## When you return for another session
-
-Reopen the project, confirm `.venv/bin/python` is selected, edit the runner,
-and click Run. You don't recreate the environment or redownload vectors each
-session. The first-time installation commands are not an everyday requirement.
-If using a new terminal for package commands, activate the environment again
-with `source .venv/bin/activate`. Update dependencies only when project changes
-require it; source edits are picked up through the editable installation.
-
-## Troubleshooting
-
-| Symptom | What to check |
-|---|---|
-| `python3.11: command not found` | Install Python 3.11 and follow the installer's PATH/shell steps; reopen the terminal |
-| Apple Silicon Python reports `x86_64` | Check for a Rosetta terminal/interpreter; use a native ARM installation |
-| No matching Torch/torchvision distribution | Record macOS, Python and architecture; Intel/unsupported macOS needs the remote/Colab route |
-| `ModuleNotFoundError: agentir` | Open the folder with `pyproject.toml`, select its `.venv`, and install with `python -m pip install -e ".[test]"` in the activated terminal |
-| Missing cache or metadata | Put both exact filenames under `data/cache/`; check for extra download suffixes |
-| Cache or manifest checksum error | Download the original matching files again; don't edit metadata to bypass the check |
-| CUDA unavailable | Set `DEVICE = "cpu"`; this Mac setup doesn't use NVIDIA CUDA |
-| Model files unavailable with offline mode | Set `OFFLINE = False` for the first download, then switch back if desired |
-| Unexpectedly long evaluation | Check `N_TARGETS`; use 4 instead of None for a quick check |
-
-Record the Mac chip, macOS/Python versions, failed command and complete error
-when asking for help. Don't change pinned libraries or experiment logic just to
-make installation succeed. The section below includes additional diagnostics
-and instructions you can give your coding agent.
-
-## Mac diagnostics and coding-agent brief
-
-<details>
-<summary>Extra checks and instructions to give your coding agent</summary>
-
-If setup fails, record the operating system, interpreter and architecture from
-the activated environment:
+Connect VS Code to the GPU machine using **Remote SSH**, then select that
+machine's Python environment. Create a Linux environment using the venv steps
+above. Verify `nvidia-smi` and install CUDA-enabled **Torch 2.11.0 / torchvision
+0.26.0** compatible with its driver using the
+[official instructions](https://pytorch.org/get-started/previous-versions/).
+Then install the project there:
 
 ```bash
-uname -m
-sw_vers
-python -c "import sys,platform; print(sys.executable); print(platform.machine()); print(platform.python_version())"
+python -m pip install -e ".[live,test]"
+python -m pip check
 ```
 
-If package installation succeeded, record the actual versions and a Mac-local
-dependency snapshot:
+Check CUDA from a Python file:
 
-```bash
-python -c "import torch,torchvision,transformers; print(torch.__version__,torchvision.__version__,transformers.__version__)"
-python -m pip freeze > requirements-lock-macos-local.txt
+```python
+import torch
+print(torch.__version__, torch.version.cuda)
+print("CUDA available:", torch.cuda.is_available())
+if torch.cuda.is_available():
+    print(torch.cuda.get_device_name(0))
 ```
 
-This snapshot is not a replacement for the Windows lock. Before sharing it,
-remove machine-specific editable-install paths (`-e ...`) and any private package
-URLs. Report the chip, macOS/Python versions, dependency check, test results,
-cache validation and reference metrics. Distinguish checks that passed from
-checks that haven't been run. Don't start a PyTorch source build as routine setup.
+Copy the same cache/metadata pair to the remote machine. For the first pilot,
+change the runner settings to:
 
-**Brief to copy to your coding agent:**
-
-> Help me set up AgentIR on this Mac. Read README.md, pyproject.toml and
-> TESTING.md first. Detect the physical chip, interpreter architecture, macOS
-> and Python versions. Create an isolated native .venv; don't copy the Windows
-> environment or install its Windows wheel builds/lock file. Keep direct package
-> pins when supported and diagnose wheel incompatibility before changing them.
-> For Intel or unsupported macOS, explain the restriction and use an existing
-> compatible remote environment or the team's Colab workflow; don't provision a
-> paid machine or silently downgrade PyTorch. Obtain the two authorized Drive
-> cache files without re-encoding or downloading image pixels. Run pip check
-> and pytest, then set four targets and three states for a small CPU evaluation.
-> Select the environment in VS Code and use Run Python File. Once it works,
-> check the 32-target/11-state reference described in TESTING.md. Preserve the
-> original cache, manifest, reference results and model revision. Don't call
-> paid APIs, implement Qwen, or change experiment logic during setup. Report
-> exactly which checks passed and record Mac environment versions separately.
-
-</details>
-
-## Windows setup (Leo / Windows teammates)
-
-In this folder's PowerShell terminal run `setup_windows.ps1`, which creates the
-local environment and installs the tested Windows CPU package snapshot.
-Then select `.venv/Scripts/python.exe` in VS Code, download the same two cache
-files if needed, and use the same click-Run workflow above. Mac users should
-follow the Mac steps instead. Historical verification is in [TESTING.md](TESTING.md).
-
-## What is shared through GitHub
-
-Share the source, tests, setup instructions, protocol files and reference data.
-The existing `.gitignore` excludes `.venv`, local caches, model weights,
-generated results, and `.env` files. Do not add these ignored files
-to a commit. Drive access is managed separately from repository access.
-
-## Repository map and current scope
-
-```text
-pyproject.toml                 # Project installation recipe and dependency pins
-experiment.json                # Local cache/protocol/reference file locations
-run_evaluation.py              # Edit settings and methods, then click Run
-src/agentir/cache.py           # Validate and load saved image vectors
-src/agentir/retrieval.py       # Existing BLIP text encoder and cosine search
-src/agentir/evaluation.py      # Reusable experiment comparisons and shared metrics
-EXPERIMENTS.md                 # Experiment interface and result interpretation
-assets/protocol/              # Image order and matched public query data
-assets/colab_reference/        # Saved 32-target reference results/config
-tests/                        # Synthetic/offline checks
-data/cache/                   # Downloaded Drive files; ignored by Git
-runs/                         # Generated results; ignored by Git
+```python
+N_TARGETS = 1
+N_STATES = 3
+DEVICE = "cuda"
+LIVE_DEVICE = "cuda"
+RUN_LIVE_PLUGIR = True
+OFFLINE = False
 ```
 
-The frozen image vectors use BLIP revision
-`19502f1e215844f7e48bd48473f86932486d3441`. Windows verification reproduced the
-earlier **32-target/11-state** Colab reference; Mac execution still needs checking.
-The supplied PlugIR and raw VisDial methods may use different conversations,
-so their difference is not a controlled rewrite-only result. This runner doesn't
-automatically compare against Colab and isn't a full reproduction of the paper.
-Qwen integration, new question generation, BLIP-2 live answering, and agent
-branch exploration are future work, not part of this installation.
+Only BLIP-2 needs target pixels. Missing selected JPEGs are downloaded into
+`data/images/` when `DOWNLOAD_MISSING_TARGETS=True`. Alternatively, set
+`IMAGE_ARCHIVE` to a local `plugir_corpus_50k.tar`; only selected JPEGs are restored.
+Drive files must be copied to the machine before ordinary paths can read them.
+
+Qwen and BLIP-2 run locally without OpenRouter/Ollama. Initial weights take many
+GB of disk space; models alternate between GPU and host RAM. Check both storage
+and memory, especially on a 50 GB disk. Full pretrained inference and peak memory
+remain unverified; start with the pilot before increasing targets or states.
+
+Completed rounds and model calls are saved under `runs/live_upstream/<identity>/`.
+Matching reruns reuse them; increasing only `N_STATES` extends the completed
+prefix. Source/model/cache/runtime changes create a new identity. Use one writer
+per checkpoint folder. Live dialogue is also exported with the common results.
+
+## Troubleshooting and sharing
+
+| Issue | Check |
+|---|---|
+| `agentir` cannot be imported | Correct interpreter and editable project installation |
+| Mac wheel unavailable | Python/macOS/architecture; use native ARM or the remote route |
+| Cache missing or checksum mismatch | Both original Drive files, correct names and manifest; re-download damaged files |
+| Offline model missing | Allow the initial download with `OFFLINE=False` |
+| CUDA unavailable | Remote interpreter, NVIDIA driver and CUDA-enabled Torch build |
+| Run takes too long | Target/state counts; all searches still include 50k images |
+
+Keep dependency pins from `pyproject.toml`. When requesting setup help, include
+OS/chip, Python/package versions, interpreter path and the complete error.
+
+**Brief for a teammate's coding agent:** Read this README, `pyproject.toml` and
+`TESTING.md`. Create a native local environment, preserve dependency/cache/model
+identities, run the checks, and launch the small saved-query example through VS
+Code. Diagnose incompatible wheels before changing pins. Report what passed.
+
+Git shares source, tests, protocol data and curated results. `.venv`, downloaded
+models/cache, secrets and new `runs/` outputs remain ignored. Share large files
+through Drive with the appropriate access.
 
 ## Attribution
 
-Protocol data, dialogue interpretation and feature/metric formulas follow
-[PlugIR](https://github.com/Saehyung-Lee/PlugIR) at commit
-`ce79c9ff834aabc9de698efb706c6cb9427ecf35`. Its MIT notice is preserved in
-`third_party/PlugIR_LICENSE`. Paper:
-[Interactive Text-to-Image Retrieval with Large Language Models](https://arxiv.org/abs/2406.03411).
-BLIP uses the public [Salesforce checkpoint](https://huggingface.co/Salesforce/blip-itm-large-coco);
-consult its model card for the original model background.
+[PlugIR paper](https://arxiv.org/abs/2406.03411) and
+[source repository](https://github.com/Saehyung-Lee/PlugIR). Pinned original source,
+checksums and MIT notice are in [third_party/PlugIR](third_party/PlugIR).
+The candidate-caption catalogue is copied from that pinned protocol.
