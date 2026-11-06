@@ -417,7 +417,8 @@ def test_shared_runner_includes_enabled_methods(case, tmp_path, monkeypatch, mod
     for filename in config.values():
         (root / filename).write_text('[]')
     for filename in ('run_evaluation.py', 'src/agentir/live.py', 'src/agentir/live_models.py',
-                     'src/agentir/plugir_upstream.py', 'src/agentir/retrieval.py'):
+                     'src/agentir/plugir_upstream.py', 'src/agentir/retrieval.py',
+                     'src/agentir/probe_agent.py'):
         path = root / filename
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text('# fixture source')
