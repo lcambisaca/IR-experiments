@@ -172,7 +172,7 @@ def unchanged_progress(items):
 
 def generate_live_dialogue(retriever, *, initial_caption, target_id, image_path, captions,
                            questioner, answerer, settings, n_states, checkpoint_path, run_identity,
-                           _kmeans=None):
+                           _kmeans=None, selection="plugir_kl"):
     """Execute/resume the authors' loop using our selected cache and local transports.
     Only the initial caption enters the dialogue. BLIP-2 alone sees target pixels;
     target ranks are measured after a round and never influence question choice.
@@ -186,6 +186,8 @@ def generate_live_dialogue(retriever, *, initial_caption, target_id, image_path,
     identity = {"run": run_identity, "initial_caption": initial_caption,
                 "target": retriever.cache.paths[target_id], "image_sha256": digest(image_path),
                 "settings": asdict(settings), "upstream": provenance()}
+    if selection != "plugir_kl":  # AGENT: the default keeps the original identity unchanged.
+        identity["selection"] = selection
     case_id = signature(identity)
     path = Path(checkpoint_path)
     namespace = {"torch": torch, "normalize": normalize, "Optional": Optional, "Image": Image,
@@ -202,6 +204,9 @@ def generate_live_dialogue(retriever, *, initial_caption, target_id, image_path,
                  "dial_new": [], "dial_new_recon": []}
     original_answer, loop_code, audit = load_generator(namespace)
     bind_original_text_encoder(namespace, retriever)
+    if selection != "plugir_kl":  # AGENT: swap only the question-selection step.
+        from .probe_agent import make_selector
+        namespace["select_question"] = make_selector(selection, namespace, questioner, case_id)
 
     def observed_rank(text):
         """Log rank with the original generation encoder; this value never enters its loop."""
@@ -256,6 +261,7 @@ def generate_live_dialogue(retriever, *, initial_caption, target_id, image_path,
                       "candidate_questions": list(namespace["questions"]),
                       "candidate_caption_prompt": namespace["prompt_fake"],
                       "target_rank": observed_rank(namespace["caption_recon"]),
+                      "selection": namespace.pop("selection_log", None),
                       "llm_calls": questioner.records[call_start:]}
             state["dialog"] = list(namespace["dial_gen"])
             state["reformulated"] = list(namespace["captions_recon"])
@@ -289,7 +295,7 @@ def generate_live_dialogue(retriever, *, initial_caption, target_id, image_path,
 def prepare_live_experiment(root, retriever, pairs, *, n_states, settings, device="cuda", offline=False,
                             candidate_captions="assets/protocol/visdial_captions.json",
                             image_root="data/images", image_archive=None, download_missing=True,
-                            max_input_tokens=4096):
+                            max_input_tokens=4096, selection="plugir_kl"):
     """Generate original-loop Qwen conversations, then enter the common evaluation.
     Reuse the existing image cache and target selection. Save source/model identity,
     original prompts/responses and each completed round. No saved human answers or
@@ -301,6 +307,9 @@ def prepare_live_experiment(root, retriever, pairs, *, n_states, settings, devic
     from .evaluation import PreparedExperiment
     from .live_models import BLIP2_ID, BLIP2_REVISION, QWEN_ID, QWEN_REVISION, Blip2Answerer, Qwen3, require_cuda
 
+    from .probe_agent import SELECTIONS
+    if selection not in SELECTIONS:
+        raise ValueError(f"SELECTION must be one of {SELECTIONS}.")
     require_cuda(device)
     if any(importlib.util.find_spec(name) is None for name in ("accelerate", "sentencepiece", "fast_pytorch_kmeans", "psutil")):
         raise RuntimeError('Install live extras in the GPU environment: python -m pip install -e ".[live,test]"')
@@ -314,7 +323,7 @@ def prepare_live_experiment(root, retriever, pairs, *, n_states, settings, devic
         archive=None if image_archive is None else root / image_archive,
         download=download_missing and not offline) for raw, _ in pairs]
     runtime = {"python": platform.python_version(), "platform": platform.platform(),
-               "gpu": torch.cuda.get_device_name(torch.device(device)), "cuda_build": torch.version.cuda,
+               "gpu": "Apple MPS" if torch.device(device).type == "mps" else torch.cuda.get_device_name(torch.device(device)), "cuda_build": torch.version.cuda,  # Apple MPS support
                "generation_device": device, "retrieval_device": str(retriever.device),
                "versions": {name: importlib.metadata.version(name) for name in
                    ("torch", "torchvision", "transformers", "accelerate", "sentencepiece", "pillow", "fast-pytorch-kmeans", "psutil")}}
@@ -323,7 +332,10 @@ def prepare_live_experiment(root, retriever, pairs, *, n_states, settings, devic
                 "cache": retriever.cache.report, "candidate_captions_sha256": digest(caption_path),
                 "max_input_tokens": max_input_tokens, "runtime": runtime,
                 "source_sha256": {name: digest(root / name) for name in
-                    ("src/agentir/live.py", "src/agentir/live_models.py", "src/agentir/plugir_upstream.py", "src/agentir/retrieval.py")}}
+                    ("src/agentir/live.py", "src/agentir/live_models.py", "src/agentir/plugir_upstream.py", "src/agentir/retrieval.py",
+                     "src/agentir/probe_agent.py")}}
+    if selection != "plugir_kl":
+        identity["selection"] = selection
     folder = root / "runs" / "live_upstream" / signature(identity)[:20]
     save_json(folder / "identity.json", identity)
     questioner = Qwen3(folder / "qwen_calls", device=device, offline=offline,
@@ -338,12 +350,13 @@ def prepare_live_experiment(root, retriever, pairs, *, n_states, settings, devic
                 target_id=path_to_id[raw["img"]], image_path=image_path, captions=catalogue,
                 questioner=questioner, answerer=answerer, settings=settings, n_states=n_states,
                 checkpoint_path=folder / "dialogues" / (signature(raw["img"]) + ".json"),
-                run_identity=signature(identity)))
+                run_identity=signature(identity), selection=selection))
     finally:
         questioner.park()
         answerer.park()
     return PreparedExperiment(
-        methods={"live_plugir_qwen": generated_query_method(conversations),
+        methods={("live_plugir_qwen" if selection == "plugir_kl" else f"live_{selection}_qwen"):
+                     generated_query_method(conversations),
                  "live_raw_same_dialogue": generated_query_method(conversations, raw=True)},
         metadata={"identity": identity, "checkpoint_folder": str(folder),
                   "n_states": n_states, "n_targets": len(pairs),

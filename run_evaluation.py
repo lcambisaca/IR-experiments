@@ -38,6 +38,7 @@ RUN_LABEL = "baseline_full_50k"
 # On GCP, start with N_TARGETS=1, N_STATES=3, DEVICE="cuda", then enable this.
 RUN_LIVE_PLUGIR = False
 LIVE_DEVICE = "cuda"       # Qwen/BLIP-2 generation GPU; DEVICE above controls BLIP retrieval.
+SELECTION = "plugir_kl"    # "plugir_kl" = original PlugIR; "probe_split" = our agent; "random" = check.
 MAX_INPUT_TOKENS = 4096    # Stop rather than silently truncate older Qwen dialogue.
 # Output lengths/temperatures come directly from the original PlugIR functions:
 # questions 32 tokens, filters 10, reformulation/paraphrase 512. BLIP-2 uses checkpoint defaults.
@@ -82,7 +83,7 @@ def prepare_qwen_live(root, retriever, pairs, *, n_states, offline):
     return prepare_live_experiment(root, retriever, pairs, n_states=n_states, settings=LIVE,
         device=LIVE_DEVICE, offline=offline, candidate_captions=CANDIDATE_CAPTIONS,
         image_root=IMAGE_ROOT, image_archive=IMAGE_ARCHIVE, download_missing=DOWNLOAD_MISSING_TARGETS,
-        max_input_tokens=MAX_INPUT_TOKENS)
+        max_input_tokens=MAX_INPUT_TOKENS, selection=SELECTION)
 
 
 # FUTURE EXPERIMENTS THAT NEED SETUP/GENERATION FIRST:

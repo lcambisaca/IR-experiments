@@ -19,6 +19,8 @@ BLIP2_REVISION = "0eb0d3b46c14c1f8c7680bca2693baafdb90bb28"
 def require_cuda(device):
     """Stop before downloads if the selected NVIDIA device is unavailable."""
     device = torch.device(device)
+    if device.type == "mps" and torch.backends.mps.is_available():  # Apple MPS support
+        return device
     if device.type != "cuda" or not torch.cuda.is_available():
         raise RuntimeError("Live Qwen/BLIP-2 needs a working CUDA PyTorch environment on the GPU machine.")
     if device.index is not None and device.index >= torch.cuda.device_count():
@@ -36,8 +38,11 @@ class Qwen3:
         self.device = require_cuda(device)
         self.folder, self.offline = Path(folder), offline
         self.max_input_tokens, self.seed = max_input_tokens, seed
-        with torch.cuda.device(self.device):
-            self.dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
+        if self.device.type == "mps":  # Apple MPS support
+            self.dtype = torch.bfloat16
+        else:
+            with torch.cuda.device(self.device):
+                self.dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
         self.tokenizer = self.model = None
         self.case_id, self.round_index, self.ordinal = "", 0, 0
         self.records = []
@@ -64,7 +69,7 @@ class Qwen3:
         if self.model is not None:
             self.model.to("cpu")
             gc.collect()
-            torch.cuda.empty_cache()
+            torch.mps.empty_cache() if self.device.type == "mps" else torch.cuda.empty_cache()  # Apple MPS support
 
     def create(self, **kwargs):
         """Replace original ChatCompletion.create with local inference, preserving request text.
@@ -164,7 +169,7 @@ class Blip2Answerer:
         if self.model is not None:
             self.model.to("cpu")
             gc.collect()
-            torch.cuda.empty_cache()
+            torch.mps.empty_cache() if self.device.type == "mps" else torch.cuda.empty_cache()  # Apple MPS support
 
     def answer_original(self, original_function, image_path, query):
         """Call upstream generate_answer with FP16 pixels or replay its saved answer.
