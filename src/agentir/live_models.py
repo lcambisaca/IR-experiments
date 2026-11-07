@@ -198,3 +198,71 @@ class Blip2Answerer:
             reused = False
         self.records.append({**record, "reused": reused})
         return record["answer"]
+
+
+VLM_ID = "Qwen/Qwen2.5-VL-3B-Instruct"
+VLM_MAX_PIXELS = 256 * 28 * 28  # About 256 image tokens per photo; enough for short answers.
+
+
+class VisionAnswerer:
+    """The agent's own vision model (deliberately not BLIP-2, which plays the user).
+    Answers one question about a batch of candidate photos in a few words, greedy.
+    Answers are cached per (photo, question), so interrupted runs resume without recomputation.
+    """
+
+    def __init__(self, folder, *, device="cuda", offline=False):
+        self.device = require_cuda(device)
+        self.folder, self.offline = Path(folder), offline
+        self.model = self.processor = None
+        self.revision = None
+        self.records = []
+
+    def _activate(self):
+        if self.model is None:
+            from huggingface_hub import snapshot_download
+            from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
+            print(f"Loading {VLM_ID}; first use downloads several GB.", flush=True)
+            local = snapshot_download(VLM_ID, local_files_only=self.offline)
+            self.revision = Path(local).name
+            self.processor = AutoProcessor.from_pretrained(local, max_pixels=VLM_MAX_PIXELS)
+            self.processor.tokenizer.padding_side = "left"
+            self.model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
+                local, torch_dtype=torch.bfloat16, low_cpu_mem_usage=True).eval()
+        self.model.to(self.device)
+
+    def park(self):
+        if self.model is not None:
+            self.model.to("cpu")
+            gc.collect()
+            torch.mps.empty_cache() if self.device.type == "mps" else torch.cuda.empty_cache()  # Apple MPS support
+
+    def answer(self, image_paths, question):
+        """Short answers (lowercase) for each photo, in order."""
+        from PIL import Image
+        keys = [signature({"image": Path(p).name, "question": question, "model": VLM_ID}) for p in image_paths]
+        answers, missing = {}, []
+        for key, path in zip(keys, image_paths):
+            cached = self.folder / (key + ".json")
+            if cached.is_file():
+                answers[key] = read_json(cached)["answer"]
+            else:
+                missing.append((key, path))
+        if missing:
+            self._activate()
+            prompt = f"{question} Answer in one to three words."
+            messages = [{"role": "user", "content": [{"type": "image"}, {"type": "text", "text": prompt}]}]
+            text = self.processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+            images = [Image.open(path).convert("RGB") for _, path in missing]
+            inputs = self.processor(text=[text] * len(images), images=images, padding=True,
+                                    return_tensors="pt").to(self.device)
+            with torch.inference_mode():
+                output = self.model.generate(**inputs, max_new_tokens=8, do_sample=False)
+            decoded = self.processor.batch_decode(output[:, inputs["input_ids"].shape[1]:], skip_special_tokens=True)
+            for (key, path), reply in zip(missing, decoded):
+                answers[key] = reply.strip().lower()
+                save_json(self.folder / (key + ".json"), {"image": Path(path).name, "question": question,
+                                                          "model": VLM_ID, "revision": self.revision,
+                                                          "answer": answers[key]})
+        result = [answers[key] for key in keys]
+        self.records.append({"question": question, "images": [Path(p).name for p in image_paths], "answers": result})
+        return result

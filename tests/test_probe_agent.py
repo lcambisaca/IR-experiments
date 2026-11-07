@@ -15,7 +15,9 @@ class AgentQuestioner(ScriptedQuestioner):
     """Scripted PlugIR responses plus guessed answers for the agent's probe step."""
     def create(self, **kwargs):
         import inspect
-        stage = inspect.currentframe().f_back.f_code.co_name
+        return self.respond(inspect.currentframe().f_back.f_code.co_name, kwargs)
+
+    def respond(self, stage, kwargs):
         assert ".jpg" not in json.dumps(kwargs) and "target_rank" not in json.dumps(kwargs)
         self.ordinal += 1
         if stage == "guess_answers":
@@ -89,3 +91,77 @@ def test_random_check_is_reproducible(case, tmp_path):
     first, _ = run(case, tmp_path / "a", "random")
     second, _ = run(case, tmp_path / "b", "random")
     assert first["dialog"] == second["dialog"]
+
+
+from pathlib import Path
+
+from PIL import Image
+from agentir.probe_agent import answer_entropy, bucket
+
+
+class FakeVision:
+    """Agent vision model double: 'color' questions get one answer for every photo, others vary by photo."""
+    def __init__(self):
+        self.calls, self.parked = [], 0
+    def answer(self, paths, question):
+        self.calls.append((list(paths), question))
+        if "color" in question.lower():
+            return ["White."] * len(paths)
+        return [f"thing {int(str(p)[-6:-4]) % 4}" for p in paths]
+    def park(self):
+        self.parked += 1
+
+
+class ColorQuestioner(AgentQuestioner):
+    """Alternate between a colour question and a varied question as PlugIR's candidates."""
+    def respond(self, stage, kwargs):
+        if stage.startswith("generate_questions"):
+            self.ordinal += 1
+            content = "What color is the wall?" if self.ordinal % 4 == 1 else "What object is on the table?"
+            result = {"choices": [{"message": {"content": content}}]}
+            self.records.append({"stage": stage, "request": kwargs, "response": result})
+            return result
+        return super().respond(stage, kwargs)
+
+
+def test_bucket_and_entropy():
+    assert bucket("A red bus.") == bucket("red bus") == "red bus"
+    assert bucket("I can't tell") == bucket("unknown") == "(unsure)"
+    assert answer_entropy(["white"] * 20) == 0
+    assert abs(answer_entropy(["red", "blue"] * 10) - 1) < 1e-6
+
+
+def run_vlm(case, tmp_path, target_id=0):
+    root = tmp_path / "images"
+    for name in case["retriever"].cache.paths:
+        (root / name).parent.mkdir(parents=True, exist_ok=True)
+        Image.new("RGB", (4, 4)).save(root / name)
+    qwen, vision = ColorQuestioner(), FakeVision()
+    result = generate_live_dialogue(**case, initial_caption="a room", target_id=target_id, questioner=qwen,
+        answerer=ScriptedAnswerer(qwen), n_states=3, checkpoint_path=tmp_path / "vlm.json", run_identity="test",
+        _kmeans=RoundRobinKMeans(), selection="probe_vlm", vlm=vision, image_root=root)
+    return result, qwen, vision
+
+
+def test_probe_vlm_skips_questions_everyone_answers_the_same(case, tmp_path):
+    result, _, vision = run_vlm(case, tmp_path)
+    for state in result["states"][1:]:
+        log = state["selection"]
+        assert not log["fallback_to_plugir"] and "color" not in state["question"].lower()
+        assert any(row["answers"] == {"white": 20} and row["score"] == 0 for row in log["candidates"])
+    assert all(len(paths) == 20 for paths, _ in vision.calls) and vision.parked >= 2
+
+
+def test_probe_vlm_never_depends_on_the_target(case, tmp_path):
+    first, q1, v1 = run_vlm(case, tmp_path / "a", target_id=0)
+    second, q2, v2 = run_vlm(case, tmp_path / "b", target_id=90)
+    names = lambda vision: [([Path(x).name for x in paths], q) for paths, q in vision.calls]
+    assert first["dialog"] == second["dialog"] and names(v1) == names(v2)
+
+
+def test_opinion_questions_are_skipped():
+    from agentir.probe_agent import OPINION
+    assert OPINION.search("What might the green paint symbolize in this scene?")
+    assert OPINION.search("What mood does the room suggest?")
+    assert not OPINION.search("What color is the bag on the towel rack?")
+    assert not OPINION.search("How many people are sitting at the table?")

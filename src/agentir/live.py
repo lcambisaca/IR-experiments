@@ -172,7 +172,7 @@ def unchanged_progress(items):
 
 def generate_live_dialogue(retriever, *, initial_caption, target_id, image_path, captions,
                            questioner, answerer, settings, n_states, checkpoint_path, run_identity,
-                           _kmeans=None, selection="plugir_kl"):
+                           _kmeans=None, selection="plugir_kl", vlm=None, image_root=None):
     """Execute/resume the authors' loop using our selected cache and local transports.
     Only the initial caption enters the dialogue. BLIP-2 alone sees target pixels;
     target ranks are measured after a round and never influence question choice.
@@ -206,7 +206,9 @@ def generate_live_dialogue(retriever, *, initial_caption, target_id, image_path,
     bind_original_text_encoder(namespace, retriever)
     if selection != "plugir_kl":  # AGENT: swap only the question-selection step.
         from .probe_agent import make_selector
-        namespace["select_question"] = make_selector(selection, namespace, questioner, case_id)
+        resolve = lambda name: resolve_target_image(image_root, name, download=True)
+        namespace["select_question"] = make_selector(selection, namespace, questioner, case_id, vlm=vlm,
+                                                     resolve_image=resolve)
 
     def observed_rank(text):
         """Log rank with the original generation encoder; this value never enters its loop."""
@@ -336,11 +338,18 @@ def prepare_live_experiment(root, retriever, pairs, *, n_states, settings, devic
                      "src/agentir/probe_agent.py")}}
     if selection != "plugir_kl":
         identity["selection"] = selection
+    if selection == "probe_vlm":
+        from .live_models import VLM_ID, VLM_MAX_PIXELS
+        identity["agent_vlm"] = [VLM_ID, VLM_MAX_PIXELS]
     folder = root / "runs" / "live_upstream" / signature(identity)[:20]
     save_json(folder / "identity.json", identity)
     questioner = Qwen3(folder / "qwen_calls", device=device, offline=offline,
                        max_input_tokens=max_input_tokens, seed=settings.seed)
     answerer = Blip2Answerer(folder / "blip2_calls", device=device, offline=offline)
+    vlm = None
+    if selection == "probe_vlm":
+        from .live_models import VisionAnswerer
+        vlm = VisionAnswerer(folder / "vlm_calls", device=device, offline=offline)
     conversations = []
     path_to_id = {name: i for i, name in enumerate(retriever.cache.paths)}
     print(f"Original PlugIR + Qwen: {len(pairs)} target(s), {n_states} states. Checkpoints: {folder}", flush=True)
@@ -350,10 +359,12 @@ def prepare_live_experiment(root, retriever, pairs, *, n_states, settings, devic
                 target_id=path_to_id[raw["img"]], image_path=image_path, captions=catalogue,
                 questioner=questioner, answerer=answerer, settings=settings, n_states=n_states,
                 checkpoint_path=folder / "dialogues" / (signature(raw["img"]) + ".json"),
-                run_identity=signature(identity), selection=selection))
+                run_identity=signature(identity), selection=selection, vlm=vlm, image_root=root / image_root))
     finally:
         questioner.park()
         answerer.park()
+        if vlm is not None:
+            vlm.park()
     return PreparedExperiment(
         methods={("live_plugir_qwen" if selection == "plugir_kl" else f"live_{selection}_qwen"):
                      generated_query_method(conversations),

@@ -15,13 +15,19 @@ Only the selection step changes. Question generation, filtering, the BLIP-2 answ
 stay PlugIR's. The agent never sees the target image or its rank, and probes are not shown to the
 simulated user or scored.
 """
+from collections import Counter
 import random
 import re
 
 import torch
 from torch.nn.functional import normalize
 
-SELECTIONS = ("plugir_kl", "probe_split", "random")
+SELECTIONS = ("plugir_kl", "probe_split", "probe_vlm", "random")
+VLM_PHOTOS = 20  # probe_vlm: how many of the current top results the agent's vision model looks at.
+FILLER = re.compile(r"^(?:a|an|the|some|it is|it's|they are|there is|there are)\s+")
+# Questions about meaning or opinion have no factual answer in a photo; their answers vary from guessing.
+OPINION = re.compile(r"\b(symboli[sz]e|symbol|represent|might|mood|feel|feeling|suggest|why|think|emotion|atmosphere|meaning)\b", re.I)
+UNSURE = ("unknown", "not sure", "cannot", "can't", "unclear", "not visible", "no idea")
 MAX_ANSWERS = 3
 VOTE_TEMPERATURE = 0.01  # Fixed before any pilot; a typical contrastive temperature for BLIP-style scores.
 GUESS_SYSTEM = ("You help an image search system. Given a description of the image the user wants, "
@@ -56,7 +62,23 @@ def split_score(probe_vectors, window_vectors, temperature=VOTE_TEMPERATURE):
     return float(entropy(share) - entropy(votes).mean()), [round(float(s), 3) for s in share]
 
 
-def make_selector(selection, namespace, questioner, case_seed):
+def bucket(answer):
+    """Group answers that mean the same: lowercase, no punctuation or filler words; unsure answers together."""
+    if any(word in answer.lower() for word in UNSURE):
+        return "(unsure)"
+    answer = re.sub(r"[^\w\s]", " ", answer.lower()).strip()
+    answer = FILLER.sub("", " ".join(answer.split()))
+    return answer or "(unsure)"
+
+
+def answer_entropy(answers):
+    """How varied the answers are, in bits: 0 when all agree; log2(n) when n answers are equally common."""
+    counts = torch.tensor(list(Counter(bucket(a) for a in answers).values()), dtype=torch.float)
+    share = counts / counts.sum()
+    return float(-(share * share.log2()).sum())
+
+
+def make_selector(selection, namespace, questioner, case_seed, vlm=None, resolve_image=None):
     """Return a drop-in replacement for upstream select_question, recording each decision."""
     original = namespace["select_question"]
 
@@ -74,6 +96,35 @@ def make_selector(selection, namespace, questioner, case_seed):
         if selection == "random":
             chosen = random.Random(f"{case_seed}-{round}").choice(unique)
             namespace["selection_log"] = {"selection": selection, "questions": unique, "chosen": chosen}
+            return chosen
+        if selection == "probe_vlm":
+            # Ask the agent's own vision model each question about the current top results (never told
+            # which, if any, is the target) and ask the user the question whose answers vary most.
+            factual = [q for q in unique if not OPINION.search(q)]
+            if not factual:
+                chosen = original(caption_recon=caption_recon, questions=questions, cossim_prev=cossim_prev, k=k,
+                                  img_embs=img_embs, threshold=threshold, round=round)
+                namespace["selection_log"] = {"selection": selection, "candidates": [], "skipped_opinion": unique,
+                                              "chosen": chosen, "fallback_to_plugir": True}
+                return chosen
+            top = cossim_prev.argsort(descending=True)[:VLM_PHOTOS].tolist()
+            paths = [resolve_image(namespace["search_space"][i]) for i in top]
+            questioner.park()
+            rows = []
+            try:
+                for question in factual:
+                    answers = vlm.answer(paths, question)
+                    rows.append({"question": question, "score": answer_entropy(answers),
+                                 "answers": dict(Counter(bucket(a) for a in answers))})
+            finally:
+                vlm.park()
+            best = max(rows, key=lambda row: row["score"])
+            fallback = best["score"] == 0
+            chosen = original(caption_recon=caption_recon, questions=questions, cossim_prev=cossim_prev, k=k,
+                              img_embs=img_embs, threshold=threshold, round=round) if fallback else best["question"]
+            namespace["selection_log"] = {"selection": selection, "photos": VLM_PHOTOS, "candidates": rows,
+                                          "skipped_opinion": [q for q in unique if q not in factual],
+                                          "chosen": chosen, "fallback_to_plugir": fallback}
             return chosen
         size = int(threshold - (round - 1) * (threshold / 10.0))
         window = img_embs[cossim_prev.argsort()[-size:]]
