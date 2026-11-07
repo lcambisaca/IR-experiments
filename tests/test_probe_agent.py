@@ -165,3 +165,32 @@ def test_opinion_questions_are_skipped():
     assert OPINION.search("What mood does the room suggest?")
     assert not OPINION.search("What color is the bag on the towel rack?")
     assert not OPINION.search("How many people are sitting at the table?")
+
+
+def test_plugir_identity_ignores_agent_code(tmp_path, monkeypatch):
+    """Changing the agent's file must not invalidate saved PlugIR conversations, only agent ones."""
+    import agentir.live as live
+    captured = {}
+    monkeypatch.setattr(live, "save_json", lambda path, value: captured.setdefault("identity", value))
+    def stop(*args, **kwargs):
+        raise RuntimeError("stop after identity")
+    monkeypatch.setattr("agentir.live_models.Qwen3", stop)
+    root = Path(__file__).resolve().parents[1]
+    monkeypatch.setattr(live, "require_cuda", lambda device: device, raising=False)
+    import agentir.live_models as models
+    monkeypatch.setattr(models, "require_cuda", lambda device: device)
+    import torch
+    monkeypatch.setattr(torch.cuda, "get_device_name", lambda device: "test")
+    from types import SimpleNamespace
+    names = [f"unlabeled2017/{i:012d}.jpg" for i in range(100)]
+    retriever = SimpleNamespace(cache=SimpleNamespace(paths=names, report={}), device="cpu")
+    for selection in ("plugir_kl", "probe_vlm"):
+        captured.clear()
+        monkeypatch.setattr(live, "load_candidate_captions", lambda path, paths: {})
+        try:
+            live.prepare_live_experiment(root, retriever, [], n_states=3, settings=live.LiveSettings(threshold_low=100, recall_hitting=2),
+                                         device="cuda", selection=selection)
+        except RuntimeError:
+            pass
+        has_agent = "src/agentir/probe_agent.py" in captured["identity"]["source_sha256"]
+        assert has_agent == (selection != "plugir_kl")

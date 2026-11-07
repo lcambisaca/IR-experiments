@@ -334,10 +334,11 @@ def prepare_live_experiment(root, retriever, pairs, *, n_states, settings, devic
                 "cache": retriever.cache.report, "candidate_captions_sha256": digest(caption_path),
                 "max_input_tokens": max_input_tokens, "runtime": runtime,
                 "source_sha256": {name: digest(root / name) for name in
-                    ("src/agentir/live.py", "src/agentir/live_models.py", "src/agentir/plugir_upstream.py", "src/agentir/retrieval.py",
-                     "src/agentir/probe_agent.py")}}
+                    ("src/agentir/live.py", "src/agentir/live_models.py", "src/agentir/plugir_upstream.py", "src/agentir/retrieval.py")}}
     if selection != "plugir_kl":
         identity["selection"] = selection
+        # Only agent runs depend on the agent's code; original PlugIR results stay valid when the agent changes.
+        identity["source_sha256"]["src/agentir/probe_agent.py"] = digest(root / "src/agentir/probe_agent.py")
     if selection == "probe_vlm":
         from .live_models import VLM_ID, VLM_MAX_PIXELS
         identity["agent_vlm"] = [VLM_ID, VLM_MAX_PIXELS]
