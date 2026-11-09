@@ -1,5 +1,8 @@
 # Historical results
 
+> **Live experiments (Nov 2026):** see [live_experiments/README.md](live_experiments/README.md) for
+> agent search vs PlugIR, Matan's extra-search strategies and the caption mix, all on live conversations.
+
 These are saved-query and initial-caption experiments, not results from the new
 live Qwen pipeline. New runs go to ignored `runs/` folders; the files here are
 curated shared records. Metrics are percentages unless stated otherwise.

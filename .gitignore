@@ -13,3 +13,7 @@ runs/
 *.tar
 *.zip
 .DS_Store
+
+# Local raw run copies and logs (compact exports live in results/)
+vm_results/
+*.log
