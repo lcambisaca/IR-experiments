@@ -56,6 +56,19 @@ LIVE = LiveSettings(
     select=True,            # Original minimum-KL question choice.
 )
 
+# THREE-AGENT EXPERIMENT: new prompts/peer revision; original clustering and KL helpers.
+# For the first GCP pilot set N_TARGETS=1, N_STATES=2, DEVICE="cuda", then enable.
+# Both modes produce their own shared-answer histories and neutral official rankings.
+RUN_THREE_AGENTS = False
+AGENT_INPUT_TOKENS = 8192
+AGENT_MODES = (False, True)  # no critique, then one peer-critique/revision round
+from agentir.multi_agent import AgentSettings
+AGENTS = AgentSettings(
+    seed=1021, threshold_low=500, exclude_top_k=10,
+    replacement_attempts=1, max_calls_per_round=40,
+    diagnostic_top_k=10, max_targets=2,
+)
+
 
 def my_first_experiment(context, retriever):
     """Replace this function body with your own query-building idea.
@@ -85,6 +98,16 @@ def prepare_qwen_live(root, retriever, pairs, *, n_states, offline):
         max_input_tokens=MAX_INPUT_TOKENS)
 
 
+def prepare_three_agents(root, retriever, pairs, *, n_states, offline):
+    """Prepare both agent conditions for the same target selection and common evaluator."""
+    from agentir.multi_agent import prepare_agent_experiment
+    return prepare_agent_experiment(root, retriever, pairs, n_states=n_states,
+        settings=AGENTS, device=LIVE_DEVICE, offline=offline,
+        candidate_captions=CANDIDATE_CAPTIONS, image_root=IMAGE_ROOT,
+        image_archive=IMAGE_ARCHIVE, download_missing=DOWNLOAD_MISSING_TARGETS,
+        max_input_tokens=AGENT_INPUT_TOKENS, modes=AGENT_MODES)
+
+
 # FUTURE EXPERIMENTS THAT NEED SETUP/GENERATION FIRST:
 # Add a function with prepare_qwen_live's signature returning PreparedExperiment.
 # Ordinary per-state text/vector/fusion callbacks still belong in EXPERIMENTS above.
@@ -105,6 +128,10 @@ def collect_experiments(root, retriever, pairs):
         if "qwen_live" in preparers:
             raise ValueError("qwen_live is reserved for the built-in live preparation.")
         preparers["qwen_live"] = prepare_qwen_live
+    if RUN_THREE_AGENTS:
+        if "three_agents" in preparers:
+            raise ValueError("three_agents is reserved for the built-in agent preparation.")
+        preparers["three_agents"] = prepare_three_agents
     reserved = {"caption_only", "raw_dialogue", "supplied_plugir", "round", "example_index", "target"}
     if any(not isinstance(name, str) or not name.strip() or name in reserved or not callable(callback)
            for name, callback in methods.items()):
@@ -161,6 +188,10 @@ def main():
     print(f"Evaluating {len(pairs)}/{available} targets, {N_STATES} states, {len(cache.paths):,} candidate images.")
     print("References: caption_only, raw_dialogue, supplied_plugir (saved queries, not a live LLM).")
     print(f"Custom experiments: {', '.join(EXPERIMENTS) or 'none registered yet'}")
+    if RUN_THREE_AGENTS:
+        AGENTS.validate(len(cache.paths), N_STATES)
+        if len(pairs) > AGENTS.max_targets:
+            raise ValueError("Set N_TARGETS=1 for the first agent pilot, or explicitly increase AGENTS.max_targets.")
     retriever = BlipRetriever(cache, device=DEVICE, batch_size=TEXT_BATCH_SIZE,
                               threads=CPU_THREADS, local_files_only=OFFLINE)
     methods, prepared = collect_experiments(root, retriever, pairs)

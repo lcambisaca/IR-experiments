@@ -186,3 +186,11 @@ through Drive with the appropriate access.
 [source repository](https://github.com/Saehyung-Lee/PlugIR). Pinned original source,
 checksums and MIT notice are in [third_party/PlugIR](third_party/PlugIR).
 The candidate-caption catalogue is copied from that pinned protocol.
+# Three-agent experiment
+
+The optional three-agent question pipeline is now available through the same
+`run_evaluation.py` template. See [AGENT_EXPERIMENT.md](AGENT_EXPERIMENT.md) for
+the one-target GPU pilot, reviewed prompts, critique/no-critique comparison,
+per-round rankings and diversity/critique logs. `RUN_THREE_AGENTS=False` preserves
+the existing saved-baseline defaults. Spectral clustering and rank fusion remain
+future comparisons.

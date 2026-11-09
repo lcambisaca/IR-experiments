@@ -1,4 +1,6 @@
-"""Execute checksum-verified PlugIR definitions and its interaction loop.
+"""This file helps preserve the original PlugIR algorithm while adding the practical controls your experiment needs.
+
+Execute checksum-verified PlugIR definitions and its interaction loop.
 
 The vendored files stay unchanged. We skip their top-level CLI/model downloads,
 inject local runtime objects, and edit only loop paths/bounds/checkpoint hooks.

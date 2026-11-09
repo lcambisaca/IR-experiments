@@ -126,3 +126,12 @@ seeds and costs in addition to the runner snapshot.
 The [comparison](PLUGIR_COMPARISON.md) explains source fidelity and runtime
 differences. The separate [paraphrase study](results/README.md#paraphrase-study)
 uses saved rewrites or Ollama; it is not the live Transformers pipeline.
+# Optional three-agent questions
+
+Enable `RUN_THREE_AGENTS` in the main template only after setting the GPU pilot
+to one target/two states. This adds `agents_no_critique` and `agents_critique` to
+the common rank/Recall/Hits/BRI comparison. Their official rankings use neutral
+shared-context descriptions, while agent searches supply question evidence.
+See [AGENT_EXPERIMENT.md](AGENT_EXPERIMENT.md) for prompt contracts, budgets,
+resume and audit outputs. This is a new experiment, separate from the original
+PlugIR-loop baseline. Existing saved settings are unchanged.
