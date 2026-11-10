@@ -15,6 +15,7 @@ dependencies = [
 
 [project.optional-dependencies]
 test = ["pytest==8.3.5"]
+analysis = ["matplotlib==3.10.9"]
 live = ["accelerate==1.6.0", "sentencepiece==0.2.1", "fast-pytorch-kmeans==0.2.2", "psutil==7.1.0"]
 
 [tool.setuptools.packages.find]

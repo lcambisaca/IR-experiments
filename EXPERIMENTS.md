@@ -124,8 +124,7 @@ seeds and costs in addition to the runner snapshot.
 6. [evaluation.py](src/agentir/evaluation.py): scoring, metrics and exports.
 
 The [comparison](PLUGIR_COMPARISON.md) explains source fidelity and runtime
-differences. The separate [paraphrase study](results/README.md#paraphrase-study)
-uses saved rewrites or Ollama; it is not the live Transformers pipeline.
+differences.
 # Optional three-agent questions
 
 Enable `RUN_THREE_AGENTS` in the main template only after setting the GPU pilot

@@ -12,7 +12,7 @@ is implemented; its full GPU pilot is pending.
 | [EXPERIMENTS.md](EXPERIMENTS.md) | Methods, metrics, outputs and adding experiments |
 | [PLUGIR_COMPARISON.md](PLUGIR_COMPARISON.md) | What matches original PlugIR and what the wrapper changes |
 | [TESTING.md](TESTING.md) | Running checks and verified results |
-| [results/README.md](results/README.md) | Historical baseline and paraphrase experiments |
+| [results/README.md](results/README.md) | Historical saved-query baseline results |
 
 ## 1. Install the project
 

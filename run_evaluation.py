@@ -23,16 +23,16 @@ from agentir.live import LiveSettings
 
 
 # SETTINGS: start small; every search still includes all 50,000 candidate images.
-N_TARGETS = 32         # Set to 32 for our reference sample, or None for all 2,064.
+N_TARGETS = 1         # Set to 32 for our reference sample, or None for all 2,064.
 N_STATES = 2       # 1 = caption only; 11 = caption plus ten dialogue turns.
 START_TARGET = 0      # Choose a different first matched example without changing the image pool.
 K_VALUES = [1, 10, 100]
-DEVICE = "cpu"        # Use "cuda" only with a working NVIDIA PyTorch setup.
+DEVICE = "cuda"        # Use "cuda" only with a working NVIDIA PyTorch setup.
 TEXT_BATCH_SIZE = 8   # Maximum texts per encoding call; methods below run one case at a time.
 CPU_THREADS = 4
 OFFLINE = False       # True requires BLIP model files already on this machine.
 SEED = 42
-RUN_LABEL = "baseline_full_50k"
+RUN_LABEL = "three_agents_pilot"
 
 # OPTIONAL LIVE METHOD: False keeps your existing CPU/saved-baseline workflow.
 # On GCP, start with N_TARGETS=1, N_STATES=3, DEVICE="cuda", then enable this.
@@ -59,7 +59,7 @@ LIVE = LiveSettings(
 # THREE-AGENT EXPERIMENT: new prompts/peer revision; original clustering and KL helpers.
 # For the first GCP pilot set N_TARGETS=1, N_STATES=2, DEVICE="cuda", then enable.
 # Both modes produce their own shared-answer histories and neutral official rankings.
-RUN_THREE_AGENTS = False
+RUN_THREE_AGENTS = True
 AGENT_INPUT_TOKENS = 8192
 AGENT_MODES = (False, True)  # no critique, then one peer-critique/revision round
 from agentir.multi_agent import AgentSettings

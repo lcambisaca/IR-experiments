@@ -16,10 +16,10 @@ from typing import Optional
 
 import torch
 
-COMMIT = "ce79c9ff834aabc9de698efb706c6cb9427ecf35"
-GENERATOR_SHA256 = "fa61dcd1bf56fe02d249b849d37cdf186bfd76e11b99eb9024965b9b16ec4d7f"
-EVALUATOR_SHA256 = "2f5ed55dd5fcfb7959d502a8d3b10aa59b77adf6ab94126b77574bfba72263ea"
-VENDOR = Path(__file__).resolve().parents[2] / "third_party" / "PlugIR"
+COMMIT = "ce79c9ff834aabc9de698efb706c6cb9427ecf35" #Version of PlugIR commit used in this experiment
+GENERATOR_SHA256 = "fa61dcd1bf56fe02d249b849d37cdf186bfd76e11b99eb9024965b9b16ec4d7f" # Fingerprint of the upstream generate_dialog.py file used in this experiment
+EVALUATOR_SHA256 = "2f5ed55dd5fcfb7959d502a8d3b10aa59b77adf6ab94126b77574bfba72263ea" # Fingerprint of the upstream eval.py file used in this experiment
+VENDOR = Path(__file__).resolve().parents[2] / "third_party" / "PlugIR" # Path to the vendored PlugIR source files, which are not modified in this experiment.
 
 
 class UpstreamExecutionStop(BaseException):
@@ -49,11 +49,12 @@ def generator_parts(*, folder=None):
     Return AST nodes for compilation and independent parity tests; the source hash
     is checked first, so extraction cannot silently target a different revision.
     """
-    source, path = verified_source("generate_dialog.py", folder=folder)
-    tree = ast.parse(source)
-    definitions = [node for node in tree.body if isinstance(node, (ast.FunctionDef, ast.ClassDef))]
+    source, path = verified_source("generate_dialog.py", folder=folder) 
+    # Here source is read and verified against the expected SHA256 hash. And returns the source code as a string and the path to the file.
+    tree = ast.parse(source) # This parses the source code into an AST (Abstract Syntax Tree) representation.
+    definitions = [node for node in tree.body if isinstance(node, (ast.FunctionDef, ast.ClassDef))] # This collects all function and class definitions from the AST into a list called definitions. 
     loops = [node for node in tree.body if isinstance(node, ast.For)
-             and isinstance(node.target, ast.Name) and node.target.id == "idx"]
+             and isinstance(node.target, ast.Name) and node.target.id == "idx"] # This collects all for loops from the AST that iterate over a variable named "idx" into a list called loops.
     if len(loops) != 1 or len(definitions) != 12:
         raise ValueError("Unexpected upstream generator structure.")
     return definitions, loops[0], path
