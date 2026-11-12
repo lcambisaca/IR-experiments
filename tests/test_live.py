@@ -377,6 +377,24 @@ def test_qwen_preserves_original_options_slots_and_rng(tmp_path, monkeypatch):
         assert qwen.model.calls[-1]['max_new_tokens'] == tokens
 
 
+@pytest.mark.parametrize('limit,requested,accepted', [(512,960,False),(1024,960,True),(1024,1025,False)])
+def test_agent_batch_transport_budget_is_explicit_and_bounded(tmp_path, limit, requested, accepted):
+    """A 15-proposal filter needs 960 tokens; original calls retain their smaller ceiling."""
+    qwen=Qwen3.__new__(Qwen3)
+    qwen.device,qwen.dtype,qwen.folder=torch.device('cpu'),torch.float32,tmp_path
+    qwen.max_input_tokens,qwen.max_output_tokens,qwen.seed=8192,limit,1021
+    qwen.model,qwen.tokenizer,qwen.records=CausalModel(),CausalTokenizer(),[]
+    qwen.begin_round(0,'agent-filter')
+    request={'messages':[{'role':'user','content':'combined filter'}], 'max_tokens':requested,'temperature':0.}
+    if accepted:
+        qwen._create('agent_batch_filter',request)
+        assert qwen.model.calls[0]['max_new_tokens']==requested
+    else:
+        with pytest.raises(ValueError,match='token cap'):
+            qwen._create('agent_batch_filter',request)
+        assert not qwen.model.calls
+
+
 def test_blip2_calls_original_function_with_checkpoint_defaults(case, tmp_path, monkeypatch):
     """Check exact prompt/greedy options, integer IDs, FP16 pixels and cached answer replay."""
     from agentir.plugir_upstream import load_generator
@@ -447,7 +465,8 @@ def test_shared_runner_includes_enabled_methods(case, tmp_path, monkeypatch, mod
     monkeypatch.setattr(live_models, 'Blip2Answerer', (lambda *args, **kwargs: answerer) if mode == 'live' else no_models)
     for name, value in {'__file__': str(root / 'run_evaluation.py'), 'N_TARGETS': 1, 'N_STATES': 3,
                         'K_VALUES': [1, 10], 'CANDIDATE_CAPTIONS': 'captions.json',
-                        'LIVE': case['settings'], 'RUN_LIVE_PLUGIR': mode == 'live'}.items():
+                        'LIVE': case['settings'], 'RUN_LIVE_PLUGIR': mode == 'live',
+                        'RUN_THREE_AGENTS': False, 'START_TARGET': 0, 'TARGET_IMAGES':None}.items():
         monkeypatch.setattr(runner, name, value)
     def identity(context, model):
         """Provide a simple ordinary experiment that must match saved raw dialogue."""

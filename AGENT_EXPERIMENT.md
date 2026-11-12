@@ -1,166 +1,146 @@
-# Three-agent question experiment
+# Specialist questions with shared retrieval evidence
 
-This implements the agreed first experiment: three searches generate questions,
-optional peer critique revises them, one common KL selector chooses a question,
-and one BLIP-2 answer updates the shared conversation. The official rank at every
-state comes from a **neutral description of the original caption and shared QA**.
-Agent ranks are diagnostics. There is no rank fusion or spectral clustering yet.
+The next development experiment uses one neutral query, one retrieved candidate
+pool and the same ten representative captions for three question generators.
+Their specialities affect question generation, not which confirmed facts survive
+or which search produces the official rank. Critique is off for this test.
 
-## Run through the existing template
+## Selected cases and rounds
 
-Use `run_evaluation.py`, the same entry point as saved baselines and the original
-PlugIR + Qwen adaptation. Normal defaults remain saved-only, CPU, 32 targets and
-two states. Merely importing the agent module does not load generation models.
+`run_evaluation.py` selects exactly these two image identities, in this order:
 
-For the first GPU pilot, change these settings in that file:
+| Initial caption | Image | Verified CPU starting rank / 50,000 |
+|---|---|---:|
+| A group of people posing in front of a cake | unlabeled2017/000000364869.jpg | 9 |
+| A giraffe is standing in an open field | unlabeled2017/000000562109.jpg | 89 |
 
-```python
-N_TARGETS = 1
-N_STATES = 2                  # caption plus ONE shared-answer interaction
-DEVICE = "cuda"              # BLIP retrieval
-LIVE_DEVICE = "cuda"         # Qwen and BLIP-2, activated in separate phases
-RUN_LABEL = "three_agents_pilot"
-RUN_THREE_AGENTS = True
-RUN_LIVE_PLUGIR = False       # enable separately to also generate the original baseline
-AGENT_MODES = (False, True)   # no critique and critique
-```
+`N_STATES=6` records the initial caption plus five interaction rounds per case.
+`TARGET_IMAGES` selects identities explicitly, avoiding a contiguous slice that
+would accidentally include other targets. Missing or duplicate names fail before
+model preparation. Set `TARGET_IMAGES=None` to restore contiguous selection with
+`START_TARGET` and `N_TARGETS` for other experiments.
 
-The existing validated 50k image-vector cache, catalogue and selected target JPEG
-are reused. No new image encoding is performed. Do not copy the Windows `.venv`
-to Linux. On the GCP machine use a working NVIDIA driver and CUDA-enabled PyTorch
-matching the project's requirements; then install the project live/test extras
-in its Linux environment (`python -m pip install -e ".[live,test]"`). The existing
-CPU lockfile is not the GCP GPU setup. We must verify the actual VM/environment
-before starting a pretrained pilot; this change has not started a VM or installed
-GPU packages.
-
-Run `python run_evaluation.py` from the project, or use VS Code's Run action with
-the correct environment. No API key or paid LLM service is used. Cloud GPU runtime
-and first-use model downloads still consume time, disk and the VM budget.
-
-The pilot guard allows at most two targets (`AGENTS.max_targets`). Leaving the
-saved baseline's 32-target default while enabling agents fails before BLIP loads.
-After inspecting the one-interaction pilot, use three states, then up to eleven.
-State count can be extended without regenerating completed compatible prefixes.
-
-## Roles and example prompts
-
-`src/agentir/agent_prompts.py` contains editable shared instructions, stage schemas,
-role cards and varied examples: a kitchen/cake, jacket/suitcase, dogs/collars, and
-a child/bench. It includes redundancy, unsupported-premise, abstention, and keeping
-a good question outside one's specialty. These are few-shot prompts, not training.
-The exact pack is exported with every completed experiment.
-
-- Full context: initial caption unchanged, then faithful neutral descriptions.
-- Attributes: confirmed colours, counts, clothing and object details.
-- Relationships: confirmed actions, locations and spatial relationships.
-
-All queries rebuild from the authoritative initial caption and **actually asked**
-QA, never from the previous role rewrite. Each generated query has a separate
-LLM fidelity check. This check can miss errors: it is an audited heuristic, not a
-semantic guarantee. A rejected query or malformed response stops with a checkpoint
-instead of silently using an invented description.
+These are deliberately selected development cases, not an unbiased benchmark.
+Cake starts inside the top ten; it can show rank/BRI changes but initial Recall@10
+is already successful. The giraffe starts outside the top ten. GPU ranks should
+be recorded rather than assumed identical to CPU ranks.
 
 ## One interaction
 
-1. Independently rewrite and retrieve for each role. Agent 1 uses the original
-   caption unchanged before any answers. Each branch gets original PlugIR's
-   shrinking 500-to-50 window, ten cosine KMeans clusters and entropy-selected
-   captions. These clusters do not become attribute-only or relation-only clusters.
-2. Each agent proposes at most one question using all its representative captions
-   together. Invalid/redundant proposals may be replaced once. Attempts and reasons remain internal, separate from asked QA. Prior rejected attempts are supplied as avoidance history; exact previously asked questions are blocked.
-3. A neutral shared-context filter checks redundancy, unsupported assumptions and
-   candidate evidence. Candidate IDs must belong to the actual branch evidence.
-   A caption missing an attribute does not establish its absence.
-4. Exact normalized duplicate questions get one selection slot. Other proposing
-   roles are recorded; semantically equivalent but differently worded duplicates
-   may remain. No voting/fusion weight is assigned here.
-5. In critique mode, Agent 1 reviews Agent 2, Agent 2 reviews Agent 3, Agent 3
-   reviews Agent 1. Each author gets one opportunity to retain, revise or withdraw.
-   Authors receive the critic's comments and their own cited evidence. Revised
-   questions go through the same neutral filter and deduplication again.
-6. Original `select_question` chooses minimum KL using **one neutral description
-   and the same candidate slice** for every surviving question. With default K,
-   the top ten are excluded, matching the original helper. The unanswered question
-   is appended to the neutral description for this comparison. No target label,
-   target rank or hypothetical target answer is used to select it.
-7. Only the selected question is sent to BLIP-2, using the original answer helper
-   and neutral-description-plus-question prompt. Qwen is parked first. BLIP-2 can
-   inspect the target pixels; agents cannot. Its answer may be wrong or uncertain.
-8. Append the one asked QA to the shared record, neutrally reformulate with a
-   fidelity audit, retrieve, and measure the official rank. If no question survives
-   the bounded attempts, carry the description/rank forward and log no question.
+Original caption + confirmed, actually asked Q&A
+→ current neutral description (the original caption at round zero)
+→ retrieve the candidate pool and cluster ONCE
+→ select ten representatives using the original entropy/KMeans helper
+→ give the SAME description, record and ten captions to each agent
+→ each generates up to FIVE questions in ONE response
+→ omit malformed, unsupported-ID, previously asked/rejected and exact duplicate questions
+→ one combined neutral filter checks all remaining proposals
+→ original minimum-KL selection chooses ONE question against the neutral query
+→ obtain ONE BLIP-2 answer
+→ append actual Q&A, create one neutral rewrite and audit its faithfulness
+→ measure the official target rank against the full 50k database.
 
-Human answering is a future transport extension; the GPU builder currently wires
-the existing BLIP-2 answerer. It never asks all proposals to choose the best answer.
+The original shrinking candidate-window schedule is retained: 500, 450, 400,
+350 and 300 across the five interactions. All agents share the current round's
+pool, not a permanently frozen set. Target inclusion in that pool is not guaranteed.
+There is no specialist reranking, new clustering, rank fusion or image re-encoding.
+If no question survives, log a no-question state without calling the answerer or
+inventing Q&A; the six states do not guarantee five valid answered questions.
 
-## Comparison and interpretation
+## Prompts and evidence
 
-Two new method names enter the common evaluator:
+The common prompt follows PlugIR's description/dialogue/candidate distinction,
+with synthetic worked examples and compact structured output. This is a local
+adaptation, not an exact paper reproduction or weight training.
 
-- `agents_no_critique`: three-role proposals, filter, common KL, answer, neutral rank.
-- `agents_critique`: the same pipeline plus one peer-critique/revision round.
+| Stable branch ID | Question preference |
+|---|---|
+| full | Generalist: any useful unresolved distinction |
+| attributes | Colours, counts, materials, clothing and object types |
+| relations | Actions, interactions, spatial relationships and settings |
 
-Proposal sampling seeds depend on the confirmed context, role, stage and request,
-not on the condition name. At an identical starting context, initial proposals
-match; cached calls can be reused. Later histories may diverge because different
-questions produce different answers. This is a full-rollout comparison, not a
-claim that every later round has matched context or that a question revision is
-automatically beneficial. The logs include the pre-critique KL choice on each
-critique context, but that counterfactual question is NOT also answered.
+Every agent receives all confirmed facts. Candidate captions are possibilities,
+not facts about the target. Missing details remain unknown. Questions already
+answered by the original caption or a confirmed answer must be omitted even when
+candidate captions omit or contradict that detail. Specialists may return fewer
+questions or an empty list rather than force an unsupported question.
 
-The three saved references remain visible. Their existing human/supplied dialogue
-histories are evaluation references, never prompts for generation. Original live
-PlugIR is still available separately and executes the authors' original loop. Its
-default five proposals and these three initial agent proposals are different
-budgets; the existing original run is not an equal-compute control. A later study
-should also compare a single questioner with equal proposal/search budgets.
+Live proposal output is only `question` and `evidence_ids`, inside `proposals`.
+The worked examples include short explanations, while live generation does not
+request extended reasoning. Cited captions are retained in the audit and can be
+looked up without asking the model to restate them. The combined filter uses
+globally unique slots, short reasons, and receives no author-role labels.
 
-## Outputs and resume
+Reformulation happens once after a shared answer. It rebuilds from the original
+caption and actual Q&A, preserving counts, negations, uncertainty, photographic
+properties and who does what. A separate fidelity audit may still miss mistakes;
+these are fallible language-model checks, not semantic guarantees.
 
-The existing `runs/experiments/<timestamp>/` contains per-round Recall/Hits,
-per-example target ranks, BRI and side-by-side rank comparison. Under
-`prepared/three_agents/` it also contains:
+## Runtime bounds
 
-- `agent_dialogues.json`: shared QA, official neutral queries/ranks, branch queries,
-  observation-only branch ranks, representative captions, all proposals/filters,
-  peer critiques, revisions, common KL scores and model-call records.
-- `diagnostics.json`: compact tables for role diversity, critique changes and rounds.
-- `prompt_pack.json`: exact shared/role/task instructions and few-shot examples.
+At most six Qwen requests per interaction with critique off:
+three proposal batches, one combined filter, one rewrite and one fidelity audit.
+The runner sets `max_calls_per_round=6`, `questions_per_agent=5`,
+`replacement_attempts=0` and `AGENT_MODES=(False,)`. There are no replacement
+loops. Proposal responses are capped at 512 tokens; the combined filter has a
+bounded budget proportional to its proposal count. Invalid/truncated responses
+stop with an interrupted checkpoint instead of a hidden repair loop.
 
-Resumable checkpoints and model call caches live under
-`runs/three_agents/<identity>/`. That folder also gets `diversity.csv`,
-`critique_changes.csv` and `round_diagnostics.csv` after preparation completes.
-Interrupted work remains in checkpoints even if common evaluator export has not
-yet occurred. Use only one process/writer per identity folder.
+The agent transport explicitly allows up to 1024 output tokens, accommodating
+the combined filter's maximum 960-token request. Individual proposal requests
+remain capped at 512; the original live PlugIR transport keeps its default
+512-token ceiling. These limits are ceilings, not mandatory output lengths.
 
-Diversity records include query-embedding cosine similarity, exact normalized
-query equality and Jaccard overlap of the agents' top-ten result sets. Critique
-records include before/after text, verdict, action, reason and final filter status.
-Round diagnostics include selected-question changes, retained proposal counts,
-official rank, Qwen calls and new versus reused generation tokens/time. These
-measure behavior, not semantic correctness or calibrated confidence.
+For two cases and five interactions, this is at most 60 Qwen requests and ten
+BLIP-2 answers. Request count is not a runtime guarantee: encoding candidate
+captions for entropy, model transfers and longer histories also take time.
+Cases run sequentially, using the same model instances in preparation.
 
-Qwen generation seconds exclude BLIP-2, retrieval and memory transfers. Metadata
-also records total preparation wall time by condition, including startup/cache
-effects; it is not a controlled latency comparison. Qwen request caches retain
-actual input/output token counts and response time for new generations.
+The existing CUDA environment, pinned Qwen/BLIP-2 weights and saved image vectors
+are reused. Opening/importing the runner does not launch models. Running the
+entry point does; selected target JPEGs may be downloaded if missing and allowed
+by `DOWNLOAD_MISSING_TARGETS`. Windows CPU dependencies are not a GPU environment.
 
-Both modes share pinned Qwen/BLIP-2 weights, alternating GPU phases rather than
-loading three LLM copies. Each interaction allows at most 40 Qwen requests,
-including validation and critique, with bounded token outputs. This is an upper
-bound, not a prediction of GPU cost. Model semantic behavior, full-model memory
-fit, speed and retrieval improvement require the real GCP pilot.
+## Outputs, memory and interpretation
 
-## Provenance
+The normal evaluator exports per-round ranks, Recall/Hits and BRI under
+`runs/experiments/<timestamp>/`, along with the exact runner snapshot. Saved
+human/supplied dialogues remain comparison references and never enter generation.
 
-The vendored PlugIR files remain unchanged and checksum verified. The experiment
-directly calls original retrieval-context extraction (KMeans/entropy), BLIP feature
-method, question-selection KL and answer generation helpers. Its role prompts,
-structured filters, discussion, canonical reformulation and round orchestration
-are new. This is an agent extension, not an exact paper reproduction.
+`prepared/three_agents/agent_dialogues.json` contains original/shared descriptions,
+all generated questions, filters, evidence IDs/captions, shared pool IDs, selected
+questions/answers and target ranks. `prompt_pack.json` includes the actual role,
+shared, task, worked-example and neutral-rewrite instructions.
 
-The original caption selector returns strings rather than representative IDs.
-For identical catalogue captions, evidence IDs use the highest-ranked matching
-member of that branch's window. They identify support for the returned caption;
-they do not claim to recover the internal representative's exact index.
+Resumable checkpoints are under `runs/three_agents/<identity>/`. The prompt
+version `three_roles_v5_shared_evidence_specialists` and source hashes distinguish
+this experiment from the earlier per-agent searches. Old results are preserved
+and are not silently reused as new-protocol checkpoints.
+
+`question_memory` records proposals separately from confirmed facts. Asked and
+rejected questions form avoidance history; normalised exact repeats are blocked.
+Useful unasked proposals may remain eligible later. Semantic duplicates can still
+slip through. Candidate IDs never identify the target to the agents.
+
+Diagnostic CSVs include per-role proposal/retained counts, selected roles, batch
+call counts and actual token/generation timings. Shared query/Top-10 overlap is
+expected to be one; it is no longer evidence of failed agent diversification.
+Inspect question content to judge whether specialities actually differ. Duplicate
+questions have one selection slot and gain no voting weight.
+
+Minimum KL measures distribution stability, not expected information gain.
+Neither grounded questions nor a generalist proposal guarantees improved ranks.
+Rank improvement and real GPU runtime must be measured in the development run.
+
+## Phase two and provenance
+
+Optional critique/revision code is retained for phase two but is not enabled by
+this runner. Its additional calls require an explicitly larger budget. Specialist
+caption selection and larger per-cluster shortlists remain unimplemented ideas.
+
+Vendored PlugIR files remain unchanged and checksum verified. Original text
+encoding, candidate clustering/entropy, KL selection and answer helpers are
+reused. Specialist prompts, combined filtering, memory and orchestration are ours.
+The caption selector returns strings; duplicate catalogue captions are linked to
+the highest-ranked matching image in the current window, not necessarily the
+internal representative's exact image identity.

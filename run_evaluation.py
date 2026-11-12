@@ -23,16 +23,20 @@ from agentir.live import LiveSettings
 
 
 # SETTINGS: start small; every search still includes all 50,000 candidate images.
-N_TARGETS = 1         # Set to 32 for our reference sample, or None for all 2,064.
-N_STATES = 2       # 1 = caption only; 11 = caption plus ten dialogue turns.
-START_TARGET = 0      # Choose a different first matched example without changing the image pool.
+N_TARGETS = 2
+N_STATES = 6          # Original caption plus FIVE question-answer interactions.
+START_TARGET = 0      # Used for contiguous selection when TARGET_IMAGES is None.
+TARGET_IMAGES = (
+    "unlabeled2017/000000364869.jpg",  # Group posing in front of a cake; CPU initial rank 9.
+    "unlabeled2017/000000562109.jpg",  # Giraffe standing in an open field; CPU initial rank 89.
+)
 K_VALUES = [1, 10, 100]
 DEVICE = "cuda"        # Use "cuda" only with a working NVIDIA PyTorch setup.
 TEXT_BATCH_SIZE = 8   # Maximum texts per encoding call; methods below run one case at a time.
 CPU_THREADS = 4
 OFFLINE = False       # True requires BLIP model files already on this machine.
 SEED = 42
-RUN_LABEL = "three_agents_pilot"
+RUN_LABEL = "specialists_shared_cake_giraffe_5_rounds"
 
 # OPTIONAL LIVE METHOD: False keeps your existing CPU/saved-baseline workflow.
 # On GCP, start with N_TARGETS=1, N_STATES=3, DEVICE="cuda", then enable this.
@@ -61,11 +65,11 @@ LIVE = LiveSettings(
 # Both modes produce their own shared-answer histories and neutral official rankings.
 RUN_THREE_AGENTS = True
 AGENT_INPUT_TOKENS = 8192
-AGENT_MODES = (False, True)  # no critique, then one peer-critique/revision round
+AGENT_MODES = (False,)  # Shared evidence, specialist questions; critique is on hold.
 from agentir.multi_agent import AgentSettings
 AGENTS = AgentSettings(
     seed=1021, threshold_low=500, exclude_top_k=10,
-    replacement_attempts=1, max_calls_per_round=40,
+    replacement_attempts=0, max_calls_per_round=6, questions_per_agent=5,
     diagnostic_top_k=10, max_targets=2,
 )
 
@@ -156,6 +160,30 @@ def collect_experiments(root, retriever, pairs):
     return methods, bundles
 
 
+def select_target_pairs(pairs, *, image_names=None, start=0, count=None):
+    """Select explicit image identities or a contiguous slice; never silently substitute targets."""
+    if type(start) is not int or not 0 <= start < len(pairs):
+        raise ValueError("START_TARGET must select an available matched example.")
+    if count is not None and (type(count) is not int or count < 1):
+        raise ValueError("N_TARGETS must be a positive integer or None.")
+    if image_names is not None:
+        if (not isinstance(image_names, (tuple, list)) or not image_names
+                or any(not isinstance(n, str) or not n for n in image_names)
+                or len(set(image_names)) != len(image_names)):
+            raise ValueError("TARGET_IMAGES must contain distinct image names.")
+        if start != 0 or (count is not None and count != len(image_names)):
+            raise ValueError("Explicit TARGET_IMAGES require START_TARGET=0 and matching N_TARGETS.")
+        by_name = {left["img"]: (left, right) for left, right in pairs}
+        missing = set(image_names) - set(by_name)
+        if missing:
+            raise ValueError(f"Selected target missing from matched examples: {sorted(missing)}")
+        return [by_name[name] for name in image_names]
+    selected = pairs[start:]
+    if count is not None and count > len(selected):
+        raise ValueError(f"N_TARGETS must be 1..{len(selected)} or None.")
+    return selected if count is None else selected[:count]
+
+
 def main():
     """Load the shared cache/model and evaluate the registered methods together.
     Resolve paths relative to this file, print metrics, and save a new result
@@ -174,13 +202,7 @@ def main():
     pairs = matched_queries(read_json(paths["baseline_queries"]),
                             read_json(paths["supplied_queries"]), cache.paths)
     available = len(pairs)
-    if type(START_TARGET) is not int or not 0 <= START_TARGET < available:
-        raise ValueError("START_TARGET must select an available matched example.")
-    pairs = pairs[START_TARGET:]
-    if N_TARGETS is not None:
-        if isinstance(N_TARGETS, bool) or not isinstance(N_TARGETS, int) or not 1 <= N_TARGETS <= len(pairs):
-            raise ValueError(f"N_TARGETS must be 1..{len(pairs)} or None for all remaining targets.")
-        pairs = pairs[:N_TARGETS]
+    pairs = select_target_pairs(pairs, image_names=TARGET_IMAGES, start=START_TARGET, count=N_TARGETS)
     if type(N_STATES) is not int or not 1 <= N_STATES <= 11:
         raise ValueError("N_STATES must be 1..11.")
     if not K_VALUES or any(type(k) is not int or not 1 <= k <= len(cache.paths) for k in K_VALUES):
@@ -208,6 +230,7 @@ def main():
                          ("baseline_queries", "supplied_queries", "manifest")},
         "runner_sha256": digest(Path(__file__)),
         "selected_target_start": START_TARGET,
+        "selected_target_images": [left["img"] for left, _ in pairs],
         "prepared_experiments": {name: {"methods": list(bundle.methods), "metadata": bundle.metadata,
             "artifacts": [f"prepared/{name}/{filename}" for filename in bundle.artifacts]}
             for name, bundle in prepared.items()},

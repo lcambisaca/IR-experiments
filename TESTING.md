@@ -11,7 +11,37 @@ optional live dependency is absent. Run `python -m pip check` after installation
 Then run the small saved-query example in [README.md](README.md#3-run-a-small-saved-query-check)
 to exercise your actual downloaded cache and BLIP weights.
 
-## Latest verified checks — November 3, 2026
+## Current test scope — November 11, 2026
+
+Latest result: **92 passed, 3 skipped** (Windows CPU, 44.70 seconds).
+
+The live-transport tests explicitly verify the combined filter's 960-token
+budget is accepted only by an agent transport configured for up to 1024 tokens.
+Original live PlugIR calls retain their default 512-token ceiling, and larger
+requests fail before generation. This catches a compatibility gap that the
+earlier controlled agent transport did not expose.
+
+The previous cleaned suite passed 79 checks with 3 skips. The specialist/shared
+evidence update adds checks for a single retrieval per round, one global batch
+filter with collision-free slots, six calls per answered round, five-round
+history updates, role prompt isolation and exact cake/giraffe target selection.
+
+The active suite covers the saved baselines, original PlugIR loop, retrieval and
+reporting, and the current three-agent batch-question pipeline. All agents use
+the same neutral query and ten representatives, with different question
+specialities. Each generates up to five questions together; duplicate/history
+checks and one combined filter precede one selected question and one shared answer. The suite checks
+checkpoint-resumed question memory and keeps useful unasked questions eligible.
+
+Removed the twelve checks for the abandoned shared-representative experiment
+(`test_shared_evidence.py`) and the unused per-question proposal mock. Phase-two
+critique tests remain because critique is paused rather than removed. Historical
+experiment outputs are not tests and remain available for comparison.
+
+Offline tests check the workflow and scoring contracts; they do not prove that
+model outputs preserve every fact or that retrieval improves.
+
+## Historical checks — November 3, 2026
 
 | Check | Result |
 |---|---|
@@ -26,7 +56,7 @@ clustering packages were isolated for testing, not installed into that environme
 The teammate also reported matching Windows/Mac saved-baseline results on the
 shared cache; their full environment was not independently verified here.
 
-**Pending:** full pretrained Qwen + BLIP-2 GPU inference, CUDA test execution,
+**Pending at that time:** full pretrained Qwen + BLIP-2 GPU inference, CUDA test execution,
 peak host/GPU memory, and retrieval quality of live Q&A or future agents.
 Source parity and small regression checks do not establish benchmark improvement.
 
