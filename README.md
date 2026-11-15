@@ -13,6 +13,7 @@ is implemented; its full GPU pilot is pending.
 | [PLUGIR_COMPARISON.md](PLUGIR_COMPARISON.md) | What matches original PlugIR and what the wrapper changes |
 | [TESTING.md](TESTING.md) | Running checks and verified results |
 | [results/README.md](results/README.md) | Historical baseline and paraphrase experiments |
+| [CAPTION_MIX_FACT_FUSION.md](CAPTION_MIX_FACT_FUSION.md) | Caption mix and fact fusion: method, code, how to run, results |
 
 ## 1. Install the project
 
