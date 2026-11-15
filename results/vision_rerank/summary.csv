@@ -1,0 +1,5 @@
+method,recall@1,recall@5,recall@10
+"BLIP (original caption), all 200",46.0,63.1,74.5
+rule 1: BLIP top 30 re-ranked by qwen2.5vl:7b score (weighted estimate),40.5,67.7,72.55
+"rule 2: qwen2.5vl:7b yes/no at 5, BLIP order inside (weighted estimate)",49.95,66.95,78.5
+ceiling: target in BLIP top 30,88.0,88.0,88.0
