@@ -172,7 +172,7 @@ def unchanged_progress(items):
 
 def generate_live_dialogue(retriever, *, initial_caption, target_id, image_path, captions,
                            questioner, answerer, settings, n_states, checkpoint_path, run_identity,
-                           _kmeans=None, search="rewrite"):
+                           _kmeans=None, search="rewrite", selection="plugir_kl", vlm=None, image_root=None):
     """Execute/resume the authors' loop using our selected cache and local transports.
     Only the initial caption enters the dialogue. BLIP-2 alone sees target pixels;
     target ranks are measured after a round and never influence question choice.
@@ -190,6 +190,8 @@ def generate_live_dialogue(retriever, *, initial_caption, target_id, image_path,
         raise ValueError('search must be "rewrite" (original PlugIR) or "facts" (end-to-end fact fusion).')
     if search == "facts":  # FACTS: the default keeps the original identity unchanged.
         identity["search"] = "facts_only"
+    if selection != "plugir_kl":  # AGENT: the default keeps the original identity unchanged.
+        identity["selection"] = selection
     case_id = signature(identity)
     path = Path(checkpoint_path)
     namespace = {"torch": torch, "normalize": normalize, "Optional": Optional, "Image": Image,
@@ -206,6 +208,10 @@ def generate_live_dialogue(retriever, *, initial_caption, target_id, image_path,
                  "dial_new": [], "dial_new_recon": []}
     original_answer, loop_code, audit = load_generator(namespace)
     bind_original_text_encoder(namespace, retriever)
+    if selection != "plugir_kl":  # AGENT: swap only the question-selection step (probe_agent.py).
+        from .probe_agent import make_selector
+        resolve = lambda name: resolve_target_image(image_root, name, download=True)
+        namespace["select_question"] = make_selector(selection, namespace, questioner, vlm, resolve)
     facts = []  # Confirmed facts so far (FACTS search only); restored from the checkpoint on resume.
     if search == "facts":  # Every search of the description inside the loop now uses the fact-fusion vector.
         from .facts_e2e import install
@@ -275,6 +281,8 @@ def generate_live_dialogue(retriever, *, initial_caption, target_id, image_path,
                       "candidate_caption_prompt": namespace["prompt_fake"],
                       "target_rank": observed_rank(namespace["caption_recon"]),
                       "llm_calls": questioner.records[call_start:]}
+            if selection != "plugir_kl":  # AGENT: every candidate question, its photo answers and entropy.
+                record["selection"] = namespace.pop("selection_log", None)
             if search == "facts":  # target_rank above is the fact-fusion search the loop itself used.
                 record.update(fact=fact, facts=list(facts), rewrite_only_rank=rewrite_rank(namespace["caption_recon"]))
                 state["facts"] = list(facts)
@@ -310,7 +318,7 @@ def generate_live_dialogue(retriever, *, initial_caption, target_id, image_path,
 def prepare_live_experiment(root, retriever, pairs, *, n_states, settings, device="cuda", offline=False,
                             candidate_captions="assets/protocol/visdial_captions.json",
                             image_root="data/images", image_archive=None, download_missing=True,
-                            max_input_tokens=4096, search="rewrite"):
+                            max_input_tokens=4096, search="rewrite", selection="plugir_kl"):
     """Generate original-loop Qwen conversations, then enter the common evaluation.
     Reuse the existing image cache and target selection. Save source/model identity,
     original prompts/responses and each completed round. No saved human answers or
@@ -323,6 +331,9 @@ def prepare_live_experiment(root, retriever, pairs, *, n_states, settings, devic
     from .live_models import BLIP2_ID, BLIP2_REVISION, QWEN_ID, QWEN_REVISION, Blip2Answerer, Qwen3, require_cuda
 
     require_cuda(device)
+    from .probe_agent import SELECTIONS
+    if selection not in SELECTIONS:
+        raise ValueError(f"SELECTION must be one of {SELECTIONS}.")
     if any(importlib.util.find_spec(name) is None for name in ("accelerate", "sentencepiece", "fast_pytorch_kmeans", "psutil")):
         raise RuntimeError('Install live extras in the GPU environment: python -m pip install -e ".[live,test]"')
     if type(max_input_tokens) is not int or max_input_tokens < 1:
@@ -348,11 +359,20 @@ def prepare_live_experiment(root, retriever, pairs, *, n_states, settings, devic
     if search == "facts":
         identity["search"] = "facts_only"
         identity["source_sha256"]["src/agentir/facts_e2e.py"] = digest(root / "src/agentir/facts_e2e.py")
+    if selection != "plugir_kl":  # AGENT: only agent runs depend on the agent's code.
+        from .live_models import VLM_ID, VLM_MAX_PIXELS
+        identity["selection"] = selection
+        identity["source_sha256"]["src/agentir/probe_agent.py"] = digest(root / "src/agentir/probe_agent.py")
+        identity["agent_vlm"] = [VLM_ID, VLM_MAX_PIXELS]
     folder = root / "runs" / "live_upstream" / signature(identity)[:20]
     save_json(folder / "identity.json", identity)
     questioner = Qwen3(folder / "qwen_calls", device=device, offline=offline,
                        max_input_tokens=max_input_tokens, seed=settings.seed)
     answerer = Blip2Answerer(folder / "blip2_calls", device=device, offline=offline)
+    vlm = None
+    if selection == "probe_vlm":
+        from .live_models import VisionAnswerer
+        vlm = VisionAnswerer(folder / "vlm_calls", device=device, offline=offline)
     conversations = []
     path_to_id = {name: i for i, name in enumerate(retriever.cache.paths)}
     print(f"Original PlugIR + Qwen: {len(pairs)} target(s), {n_states} states. Checkpoints: {folder}", flush=True)
@@ -362,12 +382,16 @@ def prepare_live_experiment(root, retriever, pairs, *, n_states, settings, devic
                 target_id=path_to_id[raw["img"]], image_path=image_path, captions=catalogue,
                 questioner=questioner, answerer=answerer, settings=settings, n_states=n_states,
                 checkpoint_path=folder / "dialogues" / (signature(raw["img"]) + ".json"),
-                run_identity=signature(identity), search=search))
+                run_identity=signature(identity), search=search,
+                selection=selection, vlm=vlm, image_root=root / image_root))
     finally:
         questioner.park()
         answerer.park()
+        if vlm is not None:
+            vlm.park()
     return PreparedExperiment(
-        methods={"live_plugir_qwen" + ("_facts_e2e" if search == "facts" else ""): generated_query_method(conversations),
+        methods={("live_plugir_qwen" if selection == "plugir_kl" else f"live_{selection}_qwen")
+                 + ("_facts_e2e" if search == "facts" else ""): generated_query_method(conversations),
                  "live_raw_same_dialogue": generated_query_method(conversations, raw=True)},
         metadata={"identity": identity, "checkpoint_folder": str(folder),
                   "n_states": n_states, "n_targets": len(pairs),

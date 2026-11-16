@@ -134,4 +134,4 @@ for five rounds (`N_STATES = 6`) with critique off (`AGENT_MODES = (False,)`), a
 adds the method `agents_no_critique` to the common rank/Recall/Hits/BRI comparison.
 Official rankings use the neutral shared description; agent searches only supply
 question evidence. These targets are a development check, not a benchmark. See
-[AGENT_EXPERIMENT.md](AGENT_EXPERIMENT.md) for prompts, budgets, resume and audit outputs.
+[AGENT_EXPERIMENT.md](src/agentir/multagent_experiment/AGENT_EXPERIMENT.md) for prompts, budgets, resume and audit outputs.
