@@ -2,3 +2,6 @@
 * text=auto eol=lf
 # This file's exact bytes are checked against the saved image-cache metadata.
 assets/protocol/manifest_50k.json -text
+# Keep pinned upstream bytes identical across Windows/Mac/Linux checkouts.
+third_party/PlugIR/*.py -text
+third_party/PlugIR/LICENSE -text

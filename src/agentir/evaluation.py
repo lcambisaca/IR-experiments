@@ -1,16 +1,13 @@
 """Matched raw/provided-query evaluation using PlugIR's metric definitions."""
 import csv
 from dataclasses import dataclass, field
-import hashlib
 import json
 from pathlib import Path
 
 import torch
 
 from .retrieval import ranks_for_targets
-
-METHOD_LABELS = {"raw": "VisDial raw dialogue", "supplied": "Supplied PlugIR queries"}
-
+from .plugir_upstream import provenance
 
 @dataclass(frozen=True)
 class ExperimentContext:
@@ -42,6 +39,19 @@ class SearchOutput:
     query: str | None = None
     notes: dict = field(default_factory=dict)
     state: object = None
+
+
+@dataclass
+class PreparedExperiment:
+    """Methods created by a setup/generation stage before common metric evaluation.
+    methods maps result names to ordinary evaluator callbacks; metadata records
+    the experiment's source/settings, and artifacts maps JSON filenames to full
+    generated outputs. This lets live agents and later experiments share one runner.
+    """
+
+    methods: dict
+    metadata: dict = field(default_factory=dict)
+    artifacts: dict = field(default_factory=dict)
 
 
 def text_output(retriever, text, *, notes=None, state=None):
@@ -117,26 +127,16 @@ def metrics_from_ranks(ranks, ks):
     """Turn target ranks into Recall@K, cumulative Hits@K, and BRI.
     Input axes are [round, example], with rank 1 meaning first place.
     Recall measures this round; Hits remembers earlier successes; lower BRI
-    rewards reaching good best-so-far ranks earlier. Return metric rows and BRI."""
+    rewards reaching good best-so-far ranks earlier. Delegate to the authors'
+    actual metric functions/block after validating and converting rank indexing.
+    Return metric rows and BRI (None for a single state)."""
     ranks = torch.as_tensor(ranks, dtype=torch.long)
     if ranks.ndim != 2 or min(ranks.shape) < 1 or (ranks < 1).any():
         raise ValueError("Ranks must be a nonempty [round, example] matrix of positive ranks.")
-    best = torch.cummin(ranks, dim=0).values
-    rows = []
-    for r in range(len(ranks)):
-        for k in ks:
-            if k < 1:
-                raise ValueError("K must be positive.")
-            rows.append({"round": r, "k": k,
-                         "recall_percent": float((ranks[r] <= k).float().mean() * 100),
-                         "hits_percent": float((best[r] <= k).float().mean() * 100)})
-    bri = None
-    if len(ranks) > 1:
-        # Natural log of best-so-far ONE-based rank, trapezoids over rounds;
-        # equals upstream log(zero_based_rank + 1), average over examples/intervals.
-        log_best = best.float().log()
-        bri = float(((log_best[:-1] + log_best[1:]) / 2).mean(dim=1).mean())
-    return rows, bri
+    if any(type(k) is not int or k < 1 for k in ks):
+        raise ValueError("K must be a positive integer.")
+    from .plugir_upstream import upstream_metrics
+    return upstream_metrics(ranks, ks)
 
 
 def benchmark(retriever, pairs, methods, rounds, ks):
@@ -169,51 +169,14 @@ def benchmark(retriever, pairs, methods, rounds, ks):
     return {"per_round": metrics, "per_example": examples, "summary": summary}
 
 
-def compare_colab(result, pairs, run_config_path, per_round_path, summary_path):
-    """Check local results against our saved 32-target, 11-state Colab run.
-    Require the same targets and query contents, then compare Recall@10,
-    Hits@10, and BRI within small tolerances. Return a match flag and differences
-    so a new environment can be checked before testing new ideas."""
-    run = json.loads(Path(run_config_path).read_text(encoding="utf-8"))
-    expected = run["targets"]
-    actual = [left["img"] for left, _ in pairs]
-    if actual != expected or any(row["rounds"] != run["rounds"] for row in result["summary"].values()):
-        raise ValueError("Colab comparison requires the same first 32 targets and 11 query states.")
-    for field, index in (("baseline_sha256", 0), ("plugir_sha256", 1)):
-        encoded = json.dumps([pair[index] for pair in pairs]).encode()
-        if hashlib.sha256(encoded).hexdigest() != run[field]:
-            raise ValueError(f"Query bytes do not match Colab: {field}")
-    reference = {}
-    with Path(per_round_path).open(encoding="utf-8", newline="") as stream:
-        for row in csv.DictReader(stream):
-            reference[(row["Method"], int(row["Round"]))] = row
-    differences = []
-    for row in result["per_round"]:
-        if row["k"] != run["K"]:
-            continue
-        ref = reference[(METHOD_LABELS[row["method"]], row["round"])]
-        for actual_key, expected_key in (("recall_percent", "Recall@10 (%)"), ("hits_percent", "Hits@10 (%)")):
-            if abs(row[actual_key] - float(ref[expected_key])) > 0.011:
-                differences.append({"method": row["method"], "round": row["round"],
-                                    "metric": actual_key, "local": row[actual_key], "colab": float(ref[expected_key])})
-    with Path(summary_path).open(encoding="utf-8", newline="") as stream:
-        bri_reference = {row["Method"]: float(row["BRI (lower is better)"]) for row in csv.DictReader(stream)}
-    for method, summary in result["summary"].items():
-        target = bri_reference[METHOD_LABELS[method]]
-        if abs(summary["BRI"] - target) > 1e-4:
-            differences.append({"method": method, "metric": "BRI", "local": summary["BRI"], "colab": target})
-    return {"matches_colab": not differences, "differences": differences,
-            "percentage_tolerance": 0.011, "bri_tolerance": 1e-4,
-            "note": "CPU versus CUDA float arithmetic and deterministic tie handling can affect borderline ranks."}
-
-
 def evaluate_experiments(retriever, pairs, experiments=None, *, rounds=3, ks=(1, 10, 50)):
     """Compare registered experiments with caption, raw-dialogue, and PlugIR references.
     Each callback receives (context, retriever) and returns text or SearchOutput.
     Only this evaluator uses target labels to measure ranks after scoring; those
     ranks never feed back into callbacks. Return per-example rank changes,
     per-round Recall/Hits, and overall BRI on exactly the same targets and pool.
-    This is saved-dialogue evaluation, not a live question/answer generation loop.
+    This function measures searches; optional preparation stages may generate
+    their own conversations first and register callbacks for those query states.
     """
     experiments = dict(experiments or {})
     references = ("caption_only", "raw_dialogue", "supplied_plugir")
@@ -329,10 +292,11 @@ def evaluate_experiments(retriever, pairs, experiments=None, *, rounds=3, ks=(1,
             "pool": len(retriever.cache.paths), "targets": [raw["img"] for raw, _ in pairs],
             "rounds": rounds, "k": ks, "methods": methods,
             "tie_break": "Descending score, then original manifest index",
-            "scope": "Saved raw dialogue is shared with custom methods. Supplied PlugIR queries are a saved reference with potentially different dialogue, not live generation or a controlled rewrite-only comparison.",
+            "metric_implementation": provenance(),
+            "scope": "References use saved captions/dialogue. Ordinary callbacks receive past raw context; prepared live methods may return their own generated query states instead. Supplied PlugIR is a saved reference with potentially different dialogue.",
             "labels": "Targets are used only after a method returns scores. Callbacks receive no target labels or measured ranks. The retriever exposes the whole candidate pool, so experiment authors must also avoid external label lookups.",
-            "round_zero": "Initial-caption state; later states add one saved raw dialogue turn each. Callbacks must not ask for future turns.",
-            "costs": "Agent calls are internal computation, not extra user rounds. This runner does not call APIs or answer new questions.",
+            "round_zero": "State 0 is the initial caption. Later states use the registered method's saved or generated history. Callbacks must not ask for future turns.",
+            "costs": "Metric calculation does not generate Q&A. Preparation-stage provenance records live generation where enabled; compare interaction and internal model/search budgets explicitly.",
         },
     }
 

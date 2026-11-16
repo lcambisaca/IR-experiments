@@ -16,7 +16,11 @@ from .cache import MODEL_ID
 Use those positions to evaluate retrieval performance.
 """
 def ranks_for_targets(scores, target_ids):
-    """One-based target ranks; exact ties break by original manifest index."""
+    """Measure where each known target appears after ranking the full image pool.
+    Input rows are query-to-image scores in manifest order. Return CPU one-based
+    ranks; exact ties break by original manifest index. This measures a search
+    after scoring, and does not help a questioner choose a query or question.
+    """
     if scores.ndim != 2 or len(target_ids) != len(scores):
         raise ValueError("Expected one target ID per score row.")
     if not torch.isfinite(scores).all():
@@ -30,6 +34,10 @@ def ranks_for_targets(scores, target_ids):
 
 class BlipRetriever:
     def __init__(self, cache, *, device="cpu", batch_size=8, threads=4, local_files_only=False):
+        """Load the existing BLIP architecture/weights and keep it with the saved image vectors.
+        device selects CPU/CUDA, batch_size limits text encoding batches, and
+        threads controls CPU work. No training or image re-encoding happens here.
+        """
         if batch_size < 1 or threads < 1:
             raise ValueError("Batch size and CPU threads must be positive.")
         installed = importlib.metadata.version("transformers")
@@ -38,7 +46,10 @@ class BlipRetriever:
             raise ValueError(f"Use transformers=={saved}, matching the saved cache. Installed: {installed}.")
         self.device = torch.device(device)
         if self.device.type == "cuda" and not torch.cuda.is_available():
-            raise RuntimeError("CUDA unavailable. Use --device cpu for local retrieval testing.")
+            raise RuntimeError(
+                'CUDA unavailable. Set DEVICE = "cpu", or install a CUDA-enabled '
+                'PyTorch build on the NVIDIA machine and verify its driver.'
+            )
         torch.set_num_threads(threads)
         torch.backends.cuda.matmul.allow_tf32 = False
         self.cache, self.batch_size = cache, batch_size
@@ -78,8 +89,24 @@ class BlipRetriever:
         """Compare each description's embedding with every saved image embedding.
         Return cosine similarity scores; higher means a closer model match.
         """
+        return self.score_vectors(self.embed_texts(texts))
+
+    def score_vectors(self, vectors):
+        """Compare normalized query vectors with images on the images' device.
+        Accept [queries, embedding_size] from CPU or GPU; return CPU cosine
+        scores for ranking/fusion. Embeddings stay cached on CPU to limit VRAM.
+        Reject zero, nonfinite or non-unit vectors rather than mislabel scores.
+        """
         with torch.inference_mode():
-            return (self.embed_texts(texts).to(self.device) @ self.images.T).cpu()
+            vectors = torch.as_tensor(vectors, dtype=self.images.dtype, device=self.images.device)
+            if vectors.ndim != 2 or vectors.shape[0] < 1 or vectors.shape[1] != self.images.shape[1]:
+                raise ValueError("Expected [queries, image_embedding_size] query vectors.")
+            lengths = vectors.norm(dim=-1)
+            if not torch.isfinite(vectors).all() or not torch.allclose(
+                lengths, torch.ones_like(lengths), atol=1e-4, rtol=1e-4
+            ):
+                raise ValueError("Query vectors must be finite and normalized to unit length.")
+            return (vectors @ self.images.T).cpu()
 
     def search(self, text, top_k=10):
         """Rank images by similarity to the description.
