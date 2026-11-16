@@ -125,12 +125,13 @@ seeds and costs in addition to the runner snapshot.
 
 The [comparison](PLUGIR_COMPARISON.md) explains source fidelity and runtime
 differences.
-# Optional three-agent questions
+# Multi-agent questioner pilot
 
-Enable `RUN_THREE_AGENTS` in the main template only after setting the GPU pilot
-to one target/two states. This adds `agents_no_critique` and `agents_critique` to
-the common rank/Recall/Hits/BRI comparison. Their official rankings use neutral
-shared-context descriptions, while agent searches supply question evidence.
-See [AGENT_EXPERIMENT.md](AGENT_EXPERIMENT.md) for prompt contracts, budgets,
-resume and audit outputs. This is a new experiment, separate from the original
-PlugIR-loop baseline. Existing saved settings are unchanged.
+Set `RUN_MULTI_AGENT_PILOT = True` in [run_evaluation.py](run_evaluation.py) (CUDA
+required). This runs the two hand-picked development targets in
+[setup.py](src/agentir/multagent_experiment/setup.py) (cake 364869, giraffe 562109)
+for five rounds (`N_STATES = 6`) with critique off (`AGENT_MODES = (False,)`), and
+adds the method `agents_no_critique` to the common rank/Recall/Hits/BRI comparison.
+Official rankings use the neutral shared description; agent searches only supply
+question evidence. These targets are a development check, not a benchmark. See
+[AGENT_EXPERIMENT.md](AGENT_EXPERIMENT.md) for prompts, budgets, resume and audit outputs.
