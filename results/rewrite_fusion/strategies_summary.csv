@@ -1,0 +1,32 @@
+method,recall@1,recall@10,recall@100,median_rank
+original caption,46.0,74.5,95.5,2.0
+original + PRF (no LLM),44.0,74.5,95.0,2.0
+paraphrase: single variant (avg),41.8,73.7,94.8,2.0
+paraphrase: mean_embedding (orig + 5),45.5,75.0,97.0,2.0
+paraphrase: rrf (orig + 5),45.5,75.0,97.0,2.0
+paraphrase: max_score (orig + 5),43.0,77.0,96.5,2.0
+paraphrase: mean_embedding+prf (orig + 5),44.5,72.5,95.0,2.0
+paraphrase: best of orig + 5 (oracle*),52.0,80.0,97.0,1.0
+detail: single variant (avg),37.8,68.0,91.4,3.0
+detail: mean_embedding (orig + 5),46.0,74.0,95.5,2.0
+detail: rrf (orig + 5),43.0,73.5,95.0,2.0
+detail: max_score (orig + 5),39.0,73.0,94.5,2.0
+detail: mean_embedding+prf (orig + 5),43.0,74.0,95.5,2.0
+detail: best of orig + 5 (oracle*),54.5,82.5,98.0,1.0
+refocus: single variant (avg),39.9,71.0,92.3,2.0
+refocus: mean_embedding (orig + 5),44.0,75.0,95.5,2.0
+refocus: rrf (orig + 5),44.0,74.0,95.5,2.0
+refocus: max_score (orig + 5),44.0,73.0,95.5,2.0
+refocus: mean_embedding+prf (orig + 5),42.5,73.5,94.5,3.0
+refocus: best of orig + 5 (oracle*),53.5,81.0,97.0,1.0
+decompose: single variant (avg),12.3,35.8,64.4,35.5
+decompose: mean_embedding (orig + 5),36.5,71.5,93.0,3.0
+decompose: rrf (orig + 5),30.5,68.5,93.0,3.0
+decompose: max_score (orig + 5),37.0,70.5,93.5,3.0
+decompose: mean_embedding+prf (orig + 5),35.0,67.0,92.0,3.5
+decompose: best of orig + 5 (oracle*),52.0,80.5,96.5,1.0
+ALL strategies: mean_embedding,44.5,74.5,95.5,2.0
+ALL strategies: rrf,41.0,75.0,95.5,2.0
+ALL strategies: max_score,37.0,70.5,92.0,3.0
+ALL strategies: mean_embedding+prf,43.0,72.5,93.5,2.0
+ALL strategies: best of all (oracle*),59.0,86.5,98.5,1.0
