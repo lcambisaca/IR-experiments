@@ -73,14 +73,15 @@ globally unique slots, short reasons, and receives no author-role labels.
 
 Reformulation happens once after a shared answer. It rebuilds from the original
 caption and actual Q&A, preserving counts, negations, uncertainty, photographic
-properties and who does what. A separate fidelity audit may still miss mistakes;
-these are fallible language-model checks, not semantic guarantees.
+properties and who does what, as requested by the prompt. The standard pilot
+uses that rewrite directly, with format validation but no separate model fidelity
+check or forced paraphrase. Saved Q&A and queries allow later inspection for drift.
 
 ## Runtime bounds
 
-At most six Qwen requests per interaction with critique off:
-three proposal batches, one combined filter, one rewrite and one fidelity audit.
-The runner sets `max_calls_per_round=6`, `questions_per_agent=5`,
+At most five Qwen requests per interaction with critique off:
+three proposal batches, one combined filter, and one rewrite.
+The runner sets `max_calls_per_round=5`, `questions_per_agent=5`,
 `replacement_attempts=0` and `AGENT_MODES=(False,)`. There are no replacement
 loops. Proposal responses are capped at 512 tokens; the combined filter has a
 bounded budget proportional to its proposal count. Invalid/truncated responses
@@ -91,7 +92,7 @@ the combined filter's maximum 960-token request. Individual proposal requests
 remain capped at 512; the original live PlugIR transport keeps its default
 512-token ceiling. These limits are ceilings, not mandatory output lengths.
 
-For two cases and five interactions, this is at most 60 Qwen requests and ten
+For two cases and five interactions, this is at most 50 Qwen requests and ten
 BLIP-2 answers. Request count is not a runtime guarantee: encoding candidate
 captions for entropy, model transfers and longer histories also take time.
 Cases run sequentially, using the same model instances in preparation.

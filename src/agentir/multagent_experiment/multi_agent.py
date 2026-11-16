@@ -256,10 +256,8 @@ class RetrievalContext:
         return selected, log
 
 
-def checked_query(chat, record, role, *, original=False):
-    """Generate and separately audit a role query; fail closed on detected fact drift."""
-    if original:
-        return record["initial_caption"]
+def rewrite_query(chat, record, role):
+    """Generate one search caption and validate its format without a second model call."""
     payload = {"record": record}
     result = chat.complete("reformulate", role, payload)
     query = result.get("query")
@@ -267,9 +265,6 @@ def checked_query(chat, record, role, *, original=False):
         raise ValueError("Missing/overlong role query.")
     if "?" in query:
         raise ValueError("Role query must be a declarative image description, not a question.")
-    check = chat.complete("query_check", "full", {"record": record, "query": query})
-    if check.get("faithful") is not True:
-        raise ValueError(f"Query fidelity audit rejected {role}: {check.get('reason')}")
     return query.strip()
 
 
@@ -536,7 +531,7 @@ def generate_agent_dialogue(retriever, *, initial_caption, target_id, image_path
                     next_dialogue, neutral = grounded_answer_update(chat, record, question, answer)
                 else:
                     next_dialogue.append({"question": question, "answer": answer.strip()})
-                    neutral = checked_query(chat, {"initial_caption": initial_caption, "dialogue": next_dialogue}, "full")
+                    neutral = rewrite_query(chat, {"initial_caption": initial_caption, "dialogue": next_dialogue}, "full")
             raw = ", ".join([initial_caption] + [qa["question"] + " " + qa["answer"] for qa in next_dialogue])
             # Target ranks are added ONLY after selection/answering/reformulation.
             for branch in audit["branches"].values():
@@ -690,7 +685,7 @@ def prepare_agent_experiment(root, retriever, pairs, *, n_states, settings, devi
                                        "neutral reformulation of original caption plus shared asked QA; no fusion"),
                   "retrieval_evidence": "one neutral query, shared candidate pool and ten original representatives per round",
                   "limitations": "New agent prompts/filter/orchestration; original clustering and KL helpers. "
-                      "LLM fidelity/filter decisions are fallible. Exact duplicate detection only. "
+                      "Rewrites can drift; the standard rewrite has no separate fidelity check. Exact duplicate detection only. "
                       "Conditions share initial proposals at the same context, then histories can diverge. "
                       "Model quality, speed and GPU fit need a real pilot."},
         artifacts={"agent_dialogues.json": conversations, "diagnostics.json": tables,

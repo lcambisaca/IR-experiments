@@ -11,7 +11,7 @@ AGENT_MODES = (False,)
 AGENT_INPUT_TOKENS = 8192
 AGENTS = AgentSettings(
     seed=1021, threshold_low=500, exclude_top_k=10,
-    replacement_attempts=0, max_calls_per_round=6, questions_per_agent=5,
+    replacement_attempts=0, max_calls_per_round=5, questions_per_agent=5,
     diagnostic_top_k=10, max_targets=2,
 )
 

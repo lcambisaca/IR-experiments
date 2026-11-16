@@ -466,7 +466,7 @@ def test_shared_runner_includes_enabled_methods(case, tmp_path, monkeypatch, mod
     for name, value in {'__file__': str(root / 'run_evaluation.py'), 'N_TARGETS': 1, 'N_STATES': 3,
                         'K_VALUES': [1, 10], 'CANDIDATE_CAPTIONS': 'captions.json',
                         'LIVE': case['settings'], 'RUN_LIVE_PLUGIR': mode == 'live',
-                        'RUN_THREE_AGENTS': False, 'START_TARGET': 0, 'TARGET_IMAGES':None}.items():
+                        'RUN_MULTI_AGENT_PILOT': False, 'START_TARGET': 0}.items():
         monkeypatch.setattr(runner, name, value)
     def identity(context, model):
         """Provide a simple ordinary experiment that must match saved raw dialogue."""

@@ -12,17 +12,17 @@ from agentir.multagent_experiment.agent_prompts import messages_for
 from agentir.evaluation import evaluate_experiments
 from agentir.live import generated_query_method, signature
 from agentir.multagent_experiment.multi_agent import (AgentChat, AgentSettings, RetrievalContext,
-    checked_query, generate_agent_dialogue, question_key, unique_proposals)
+    rewrite_query, generate_agent_dialogue, question_key, unique_proposals)
 from test_live import TinyRetriever, RoundRobinKMeans, ScriptedAnswerer
 
 
 class AgentTransport:
     """Deterministic JSON transport exposing stage messages and interruption behavior."""
 
-    def __init__(self, *, known=False, bad_query=False, malformed=False, fail_stage=None):
+    def __init__(self, *, known=False, malformed=False, fail_stage=None):
         """Choose semantic branches without introducing target-dependent responses."""
         self.records, self.cache, self.active = [], {}, False
-        self.known, self.bad_query, self.malformed = known, bad_query, malformed
+        self.known, self.malformed = known, malformed
         self.fail_stage = fail_stage
         self.new_calls = 0
 
@@ -56,7 +56,7 @@ class AgentTransport:
                           ' '.join(qa['answer'] for qa in r['dialogue']),
                           'emphasis': role, 'coverage_issue': 'none'}
             elif stage == 'query_check':
-                result = {'faithful': not self.bad_query, 'reason': 'scripted audit'}
+                result = {'faithful': True, 'reason': 'scripted audit'}
             elif stage == 'propose_batch':
                 result = {'proposals': [
                     {'question': f'What is the {role} detail {slot} round {self.interaction}?',
@@ -186,11 +186,10 @@ def test_all_redundant_proposals_do_not_force_answer(agent_case, tmp_path):
         assert s['audit']['reviews'] == []
 
 
-@pytest.mark.parametrize('kwargs,message', [({'bad_query':True}, 'fidelity'), ({'malformed':True}, 'Invalid JSON')])
-def test_invalid_model_outputs_fail_closed(agent_case, tmp_path, kwargs, message):
-    """Do not quietly add unsupported query facts or repair arbitrary malformed responses."""
-    with pytest.raises(ValueError, match=message):
-        run_case(agent_case, tmp_path / 'bad.json', transport=AgentTransport(**kwargs))
+def test_invalid_model_outputs_fail_closed(agent_case, tmp_path):
+    """Do not silently repair malformed model responses."""
+    with pytest.raises(ValueError, match='Invalid JSON'):
+        run_case(agent_case, tmp_path / 'bad.json', transport=AgentTransport(malformed=True))
     saved = json.loads((tmp_path / 'bad.json').read_text())
     assert saved['status'] == 'interrupted' and not saved['dialogue']
 
@@ -243,7 +242,7 @@ def test_question_cannot_be_used_as_retrieval_description():
             assert stage == 'reformulate'
             return {'query': 'What colour is the jacket?'}
     with pytest.raises(ValueError, match='declarative'):
-        checked_query(QuestionInsteadOfDescription(),
+        rewrite_query(QuestionInsteadOfDescription(),
                       {'initial_caption': 'A person wears a jacket.', 'dialogue': []}, 'attributes')
 
 
@@ -330,7 +329,7 @@ def test_batch_duplicates_are_omitted_without_replacements(agent_case, tmp_path)
     assert answerer.model.calls==1
 
 
-def test_five_round_shared_evidence_uses_six_calls_and_one_answer_per_round(agent_case, tmp_path, monkeypatch):
+def test_five_round_shared_evidence_uses_five_calls_and_one_answer_per_round(agent_case, tmp_path, monkeypatch):
     """Count real orchestration across five rounds; all role-local slots survive one global audit."""
     from dataclasses import replace
     calls = []
@@ -339,20 +338,20 @@ def test_five_round_shared_evidence_uses_six_calls_and_one_answer_per_round(agen
         calls.append((query, interaction, role))
         return original(self, query, interaction, role, record)
     monkeypatch.setattr(RetrievalContext, 'candidates', tracked)
-    agent_case['settings'] = replace(agent_case['settings'], questions_per_agent=5, max_calls_per_round=6)
+    agent_case['settings'] = replace(agent_case['settings'], questions_per_agent=5, max_calls_per_round=5)
     state, qwen, answerer = run_case(agent_case,tmp_path/'five_rounds.json',critique=False,n_states=6)
     assert len(state['states'])==6 and len(state['dialogue'])==answerer.model.calls==5
     assert len(calls)==5 and all(role=='shared' for _,_,role in calls)
-    assert len(qwen.records)==30
+    assert len(qwen.records)==25
     for previous, current in zip(state['states'],state['states'][1:]):
         audit=current['audit']
         shared=audit['shared_retrieval']
         assert shared['query']==previous['query']
         assert all(branch['query']==previous['query'] and branch['captions']==shared['captions']
                    and branch['pool_ids']==shared['pool_ids'] for branch in audit['branches'].values())
-        assert len(audit['final_proposals'])==15 and current['llm_calls']==6
+        assert len(audit['final_proposals'])==15 and current['llm_calls']==5
         stages=[entry['stage'] for entry in current['llm_audit']]
-        assert stages==['propose_batch']*3+['filter_batch','reformulate','query_check']
+        assert stages==['propose_batch']*3+['filter_batch','reformulate']
         decisions=next(entry for entry in current['llm_audit'] if entry['stage']=='filter_batch')
         assert [p['slot'] for p in decisions['payload']['proposals']]==list(range(15))
         assert all('owner' not in p for p in decisions['payload']['proposals'])
@@ -435,44 +434,30 @@ def test_disabled_runner_does_not_prepare_models(monkeypatch):
     def forbidden(*args, **kwargs):
         """Fail if disabled generation attempts any model preparation."""
         raise AssertionError('Disabled method attempted model preparation')
-    for name, value in {'RUN_THREE_AGENTS': False, 'RUN_LIVE_PLUGIR': False,
+    for name, value in {'RUN_MULTI_AGENT_PILOT': False, 'RUN_LIVE_PLUGIR': False,
                         'EXPERIMENTS': {}, 'PREPARED_EXPERIMENTS': {},
                         'prepare_three_agents': forbidden, 'prepare_qwen_live': forbidden}.items():
         monkeypatch.setattr(runner, name, value)
     assert runner.collect_experiments(None, None, []) == ({}, {})
 
 
-@pytest.fixture
-def runner_config():
-    """Import settings without preparing models or launching a run."""
-    path = Path(__file__).resolve().parents[1]/'run_evaluation.py'
-    spec = importlib.util.spec_from_file_location('specialist_runner_settings',path)
-    module=importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+def test_pilot_selects_only_cake_and_giraffe_by_identity_for_five_rounds():
+    from agentir.multagent_experiment import setup
+    root = Path(__file__).resolve().parents[1]
+    rows = json.loads((root / 'assets/protocol/baseline_matched.json').read_text())
+    selected = setup.select_pilot_pairs([(r, r) for r in reversed(rows)])
+    assert [left['dialog'][0] for left, _ in selected] == [
+        'a group of people posing in front of a cake', 'a giraffe is standing in an open field']
+    assert setup.N_STATES == 6 and setup.AGENT_MODES == (False,)
+    assert setup.AGENTS.questions_per_agent == setup.AGENTS.max_calls_per_round == 5
 
 
-def test_runner_selects_only_cake_and_giraffe_by_identity_for_five_rounds(runner_config):
-    root=Path(__file__).resolve().parents[1]
-    rows=json.loads((root/'assets/protocol/baseline_matched.json').read_text())
-    selected=runner_config.select_target_pairs([(r,r) for r in reversed(rows)],
-        image_names=runner_config.TARGET_IMAGES, count=runner_config.N_TARGETS)
-    assert [left['dialog'][0] for left,_ in selected]==[
-        'a group of people posing in front of a cake','a giraffe is standing in an open field']
-    assert runner_config.N_STATES==6 and runner_config.AGENT_MODES==(False,)
-    assert runner_config.AGENTS.questions_per_agent==5
-    assert runner_config.AGENTS.max_calls_per_round==6
-
-
-@pytest.mark.parametrize('kwargs', [
-    {'image_names':('missing',)}, {'image_names':('a','a')}, {'image_names':()},
-    {'image_names':True}, {'image_names':('a',),'start':1},
-    {'image_names':('a',),'count':2}, {'start':True}, {'count':True},
-])
-def test_explicit_target_selection_rejects_silent_substitutions(runner_config, kwargs):
-    pairs=[({'img':name},{'img':name}) for name in ('a','b')]
-    with pytest.raises(ValueError):
-        runner_config.select_target_pairs(pairs,**kwargs)
+@pytest.mark.parametrize('indices', [(0,), (0, 1, 1)])
+def test_pilot_selection_rejects_missing_or_duplicate_targets(indices):
+    from agentir.multagent_experiment import setup
+    rows = [{'img': name} for name in setup.TARGET_IMAGES]
+    with pytest.raises(ValueError, match='Expected one matched pair'):
+        setup.select_pilot_pairs([(rows[i], rows[i]) for i in indices])
 
 
 def test_specialist_prompts_share_grounding_and_demonstrate_different_questions():
@@ -545,8 +530,9 @@ def test_prepared_experiment_runs_both_modes_and_exports_diagnostics(agent_case,
     monkeypatch.setattr(runner,'matched_queries',lambda *args:pairs)
     monkeypatch.setattr(runner,'BlipRetriever',lambda *args,**kwargs:agent_case['retriever'])
     monkeypatch.setattr(runner,'prepare_three_agents',lambda *args,**kwargs:bundle)
-    for key,value in {'__file__':str(root/'run_evaluation.py'),'N_TARGETS':1,'N_STATES':3,'TARGET_IMAGES':None,
-        'K_VALUES':[1,10],'RUN_THREE_AGENTS':True,'AGENTS':agent_case['settings']}.items():
+    monkeypatch.setattr(runner,'select_pilot_pairs',lambda selected: selected)
+    for key,value in {'__file__':str(root/'run_evaluation.py'),'N_TARGETS':1,'PILOT_STATES':3,
+        'K_VALUES':[1,10],'RUN_MULTI_AGENT_PILOT':True}.items():
         monkeypatch.setattr(runner,key,value)
     runner.main()
     exported = next((root/'runs/experiments').iterdir())

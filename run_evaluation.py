@@ -20,6 +20,9 @@ from agentir.evaluation import (
 )
 from agentir.retrieval import BlipRetriever
 from agentir.live import LiveSettings
+from agentir.multagent_experiment.setup import (
+    N_STATES as PILOT_STATES, RUN_LABEL as PILOT_LABEL, prepare_three_agents, select_pilot_pairs,
+)
 
 
 # SETTINGS: start small; every search still includes all 50,000 candidate images.
@@ -36,6 +39,7 @@ RUN_LABEL = "baseline_full_50k"
 
 # OPTIONAL LIVE METHOD: False keeps your existing CPU/saved-baseline workflow.
 # On GCP, start with N_TARGETS=1, N_STATES=3, DEVICE="cuda", then enable this.
+RUN_MULTI_AGENT_PILOT = False  # Enable to run cake and giraffe for five rounds on CUDA.
 RUN_LIVE_PLUGIR = False
 LIVE_DEVICE = "cuda"       # Qwen/BLIP-2 generation GPU; DEVICE above controls BLIP retrieval.
 SEARCH = "rewrite"         # "rewrite" = original PlugIR search; "facts" = fact fusion inside the live loop (facts_e2e.py).
@@ -80,10 +84,12 @@ def prepare_qwen_live(root, retriever, pairs, *, n_states, offline):
     and returns ordinary search callbacks plus provenance and saved dialogue.
     """
     from agentir.live import prepare_live_experiment
+    if SEARCH != "rewrite":
+        raise ValueError("Live fact fusion requires the teammate's fact-fusion branch.")
     return prepare_live_experiment(root, retriever, pairs, n_states=n_states, settings=LIVE,
         device=LIVE_DEVICE, offline=offline, candidate_captions=CANDIDATE_CAPTIONS,
         image_root=IMAGE_ROOT, image_archive=IMAGE_ARCHIVE, download_missing=DOWNLOAD_MISSING_TARGETS,
-        max_input_tokens=MAX_INPUT_TOKENS, search=SEARCH)
+        max_input_tokens=MAX_INPUT_TOKENS)
 
 
 # FUTURE EXPERIMENTS THAT NEED SETUP/GENERATION FIRST:
@@ -94,7 +100,7 @@ PREPARED_EXPERIMENTS = {
 }
 
 
-def collect_experiments(root, retriever, pairs):
+def collect_experiments(root, retriever, pairs, *, n_states=None):
     """Combine direct callbacks and enabled preparation-stage methods into one comparison.
     Check unique names and serializable provenance/artifacts. A preparation may
     generate live histories; metric callbacks receive no target labels/ranks.
@@ -102,6 +108,10 @@ def collect_experiments(root, retriever, pairs):
     """
     methods, bundles = dict(EXPERIMENTS), {}
     preparers = dict(PREPARED_EXPERIMENTS)
+    if RUN_MULTI_AGENT_PILOT:
+        if "three_agents" in preparers:
+            raise ValueError("three_agents is reserved for the built-in pilot.")
+        preparers["three_agents"] = prepare_three_agents
     if RUN_LIVE_PLUGIR:
         if "qwen_live" in preparers:
             raise ValueError("qwen_live is reserved for the built-in live preparation.")
@@ -113,7 +123,7 @@ def collect_experiments(root, retriever, pairs):
     for name, prepare in preparers.items():
         if not isinstance(name, str) or not name.isidentifier() or not callable(prepare):
             raise ValueError("Use identifier names and callable PREPARED_EXPERIMENTS.")
-        bundle = prepare(root, retriever, pairs, n_states=N_STATES, offline=OFFLINE)
+        bundle = prepare(root, retriever, pairs, n_states=N_STATES if n_states is None else n_states, offline=OFFLINE)
         if not isinstance(bundle, PreparedExperiment) or not isinstance(bundle.methods, dict) or not bundle.methods:
             raise TypeError("A preparation must return PreparedExperiment with at least one method.")
         for method, callback in bundle.methods.items():
@@ -148,27 +158,32 @@ def main():
     pairs = matched_queries(read_json(paths["baseline_queries"]),
                             read_json(paths["supplied_queries"]), cache.paths)
     available = len(pairs)
-    if type(START_TARGET) is not int or not 0 <= START_TARGET < available:
-        raise ValueError("START_TARGET must select an available matched example.")
-    pairs = pairs[START_TARGET:]
-    if N_TARGETS is not None:
-        if isinstance(N_TARGETS, bool) or not isinstance(N_TARGETS, int) or not 1 <= N_TARGETS <= len(pairs):
-            raise ValueError(f"N_TARGETS must be 1..{len(pairs)} or None for all remaining targets.")
-        pairs = pairs[:N_TARGETS]
-    if type(N_STATES) is not int or not 1 <= N_STATES <= 11:
+    n_states = PILOT_STATES if RUN_MULTI_AGENT_PILOT else N_STATES
+    device = LIVE_DEVICE if RUN_MULTI_AGENT_PILOT else DEVICE
+    if RUN_MULTI_AGENT_PILOT:
+        pairs = select_pilot_pairs(pairs)
+    else:
+        if type(START_TARGET) is not int or not 0 <= START_TARGET < available:
+            raise ValueError("START_TARGET must select an available matched example.")
+        pairs = pairs[START_TARGET:]
+        if N_TARGETS is not None:
+            if isinstance(N_TARGETS, bool) or not isinstance(N_TARGETS, int) or not 1 <= N_TARGETS <= len(pairs):
+                raise ValueError(f"N_TARGETS must be 1..{len(pairs)} or None for all remaining targets.")
+            pairs = pairs[:N_TARGETS]
+    if type(n_states) is not int or not 1 <= n_states <= 11:
         raise ValueError("N_STATES must be 1..11.")
     if not K_VALUES or any(type(k) is not int or not 1 <= k <= len(cache.paths) for k in K_VALUES):
         raise ValueError("K_VALUES must contain positive integers inside the image pool.")
-    print(f"Evaluating {len(pairs)}/{available} targets, {N_STATES} states, {len(cache.paths):,} candidate images.")
+    print(f"Evaluating {len(pairs)}/{available} targets, {n_states} states, {len(cache.paths):,} candidate images.")
     print("References: caption_only, raw_dialogue, supplied_plugir (saved queries, not a live LLM).")
     print(f"Custom experiments: {', '.join(EXPERIMENTS) or 'none registered yet'}")
-    retriever = BlipRetriever(cache, device=DEVICE, batch_size=TEXT_BATCH_SIZE,
+    retriever = BlipRetriever(cache, device=device, batch_size=TEXT_BATCH_SIZE,
                               threads=CPU_THREADS, local_files_only=OFFLINE)
-    methods, prepared = collect_experiments(root, retriever, pairs)
+    methods, prepared = collect_experiments(root, retriever, pairs, n_states=n_states)
     print(f"Enabled comparison methods: {', '.join(methods) or 'saved references only'}")
-    result = evaluate_experiments(retriever, pairs, methods, rounds=N_STATES, ks=K_VALUES)
+    result = evaluate_experiments(retriever, pairs, methods, rounds=n_states, ks=K_VALUES)
     result["run"] = {
-        "label": RUN_LABEL, "seed": SEED, "device": DEVICE,
+        "label": PILOT_LABEL if RUN_MULTI_AGENT_PILOT else RUN_LABEL, "seed": SEED, "device": device,
         "text_batch_size": TEXT_BATCH_SIZE, "threads": CPU_THREADS,
         "python": platform.python_version(), "platform": platform.platform(),
         "versions": {name: importlib.metadata.version(name) for name in
@@ -177,7 +192,8 @@ def main():
         "input_sha256": {name: digest(paths[name]) for name in
                          ("baseline_queries", "supplied_queries", "manifest")},
         "runner_sha256": digest(Path(__file__)),
-        "selected_target_start": START_TARGET,
+        "selected_target_start": None if RUN_MULTI_AGENT_PILOT else START_TARGET,
+        "selected_target_images": [raw["img"] for raw, _ in pairs],
         "prepared_experiments": {name: {"methods": list(bundle.methods), "metadata": bundle.metadata,
             "artifacts": [f"prepared/{name}/{filename}" for filename in bundle.artifacts]}
             for name, bundle in prepared.items()},
