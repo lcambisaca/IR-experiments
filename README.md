@@ -11,8 +11,7 @@ is implemented; its full GPU pilot is pending.
 |---|---|
 | [EXPERIMENTS.md](EXPERIMENTS.md) | Methods, metrics, outputs and adding experiments |
 | [PLUGIR_COMPARISON.md](PLUGIR_COMPARISON.md) | What matches original PlugIR and what the wrapper changes |
-| [TESTING.md](TESTING.md) | Running checks and verified results |
-| [results/README.md](results/README.md) | Historical baseline and paraphrase experiments |
+| [AGENT_EXPERIMENT.md](AGENT_EXPERIMENT.md) | Multi-agent specialist questioner: design and pilot |
 | [CAPTION_MIX_FACT_FUSION.md](CAPTION_MIX_FACT_FUSION.md) | Caption mix and fact fusion: method, code, how to run, results |
 
 ## 1. Install the project
@@ -173,7 +172,7 @@ Keep dependency pins from `pyproject.toml`. When requesting setup help, include
 OS/chip, Python/package versions, interpreter path and the complete error.
 
 **Brief for a teammate's coding agent:** Read this README, `pyproject.toml` and
-`TESTING.md`. Create a native local environment, preserve dependency/cache/model
+`tests/`. Create a native local environment, preserve dependency/cache/model
 identities, run the checks, and launch the small saved-query example through VS
 Code. Diagnose incompatible wheels before changing pins. Report what passed.
 
@@ -187,3 +186,11 @@ through Drive with the appropriate access.
 [source repository](https://github.com/Saehyung-Lee/PlugIR). Pinned original source,
 checksums and MIT notice are in [third_party/PlugIR](third_party/PlugIR).
 The candidate-caption catalogue is copied from that pinned protocol.
+# Three-agent experiment
+
+The optional three-agent question pipeline is now available through the same
+`run_evaluation.py` template. See [AGENT_EXPERIMENT.md](AGENT_EXPERIMENT.md) for
+the one-target GPU pilot, reviewed prompts, critique/no-critique comparison,
+per-round rankings and diversity/critique logs. `RUN_THREE_AGENTS=False` preserves
+the existing saved-baseline defaults. Spectral clustering and rank fusion remain
+future comparisons.

@@ -28,11 +28,16 @@ def require_cuda(device):
 
 class Qwen3:
     """OpenAI-shaped local transport preserving upstream messages, options and single calls.
-    No JSON instructions, batched questions, content repairs or increased token caps.
+    No prompt changes or content repairs. Original calls keep their 512-token
+    ceiling; structured agent batches may explicitly opt into a 1024-token ceiling.
     """
 
-    def __init__(self, folder, *, device="cuda", offline=False, max_input_tokens=4096, seed=1021):
+    def __init__(self, folder, *, device="cuda", offline=False, max_input_tokens=4096, seed=1021,
+                 max_output_tokens=512):
         """Remember pinned model/cache settings; weights load only for an uncached call."""
+        if type(max_output_tokens) is not int or not 1 <= max_output_tokens <= 1024:
+            raise ValueError("max_output_tokens must be an integer from 1 to 1024.")
+        self.max_output_tokens = max_output_tokens
         self.device = require_cuda(device)
         self.folder, self.offline = Path(folder), offline
         self.max_input_tokens, self.seed = max_input_tokens, seed
@@ -83,7 +88,9 @@ class Qwen3:
         so a Qwen call cannot alter the KMeans random initialization sequence.
         """
         from transformers import __version__ as transformers_version
-        if kwargs.get("n", 1) != 1 or not 1 <= kwargs["max_tokens"] <= 512:
+        limit = getattr(self, "max_output_tokens", 512)
+        if (kwargs.get("n", 1) != 1 or type(kwargs.get("max_tokens")) is not int
+                or not 1 <= kwargs["max_tokens"] <= limit):
             raise ValueError("Unsupported upstream completion count or token cap.")
         slot = {"case": self.case_id, "round": self.round_index, "ordinal": self.ordinal}
         self.ordinal += 1

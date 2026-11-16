@@ -1,7 +1,6 @@
 """Matched raw/provided-query evaluation using PlugIR's metric definitions."""
 import csv
 from dataclasses import dataclass, field
-import hashlib
 import json
 from pathlib import Path
 
@@ -9,9 +8,6 @@ import torch
 
 from .retrieval import ranks_for_targets
 from .plugir_upstream import provenance
-
-METHOD_LABELS = {"raw": "VisDial raw dialogue", "supplied": "Supplied PlugIR queries"}
-
 
 @dataclass(frozen=True)
 class ExperimentContext:
@@ -171,44 +167,6 @@ def benchmark(retriever, pairs, methods, rounds, ks):
         summary[method] = {"examples": len(pairs), "rounds": rounds, "BRI": bri,
                            "final": [row for row in rows_of_metrics if row["round"] == rounds - 1]}
     return {"per_round": metrics, "per_example": examples, "summary": summary}
-
-
-def compare_colab(result, pairs, run_config_path, per_round_path, summary_path):
-    """Check local results against our saved 32-target, 11-state Colab run.
-    Require the same targets and query contents, then compare Recall@10,
-    Hits@10, and BRI within small tolerances. Return a match flag and differences
-    so a new environment can be checked before testing new ideas."""
-    run = json.loads(Path(run_config_path).read_text(encoding="utf-8"))
-    expected = run["targets"]
-    actual = [left["img"] for left, _ in pairs]
-    if actual != expected or any(row["rounds"] != run["rounds"] for row in result["summary"].values()):
-        raise ValueError("Colab comparison requires the same first 32 targets and 11 query states.")
-    for field, index in (("baseline_sha256", 0), ("plugir_sha256", 1)):
-        encoded = json.dumps([pair[index] for pair in pairs]).encode()
-        if hashlib.sha256(encoded).hexdigest() != run[field]:
-            raise ValueError(f"Query bytes do not match Colab: {field}")
-    reference = {}
-    with Path(per_round_path).open(encoding="utf-8", newline="") as stream:
-        for row in csv.DictReader(stream):
-            reference[(row["Method"], int(row["Round"]))] = row
-    differences = []
-    for row in result["per_round"]:
-        if row["k"] != run["K"]:
-            continue
-        ref = reference[(METHOD_LABELS[row["method"]], row["round"])]
-        for actual_key, expected_key in (("recall_percent", "Recall@10 (%)"), ("hits_percent", "Hits@10 (%)")):
-            if abs(row[actual_key] - float(ref[expected_key])) > 0.011:
-                differences.append({"method": row["method"], "round": row["round"],
-                                    "metric": actual_key, "local": row[actual_key], "colab": float(ref[expected_key])})
-    with Path(summary_path).open(encoding="utf-8", newline="") as stream:
-        bri_reference = {row["Method"]: float(row["BRI (lower is better)"]) for row in csv.DictReader(stream)}
-    for method, summary in result["summary"].items():
-        target = bri_reference[METHOD_LABELS[method]]
-        if abs(summary["BRI"] - target) > 1e-4:
-            differences.append({"method": method, "metric": "BRI", "local": summary["BRI"], "colab": target})
-    return {"matches_colab": not differences, "differences": differences,
-            "percentage_tolerance": 0.011, "bri_tolerance": 1e-4,
-            "note": "CPU versus CUDA float arithmetic and deterministic tie handling can affect borderline ranks."}
 
 
 def evaluate_experiments(retriever, pairs, experiments=None, *, rounds=3, ks=(1, 10, 50)):
