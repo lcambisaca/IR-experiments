@@ -23,25 +23,22 @@ from agentir.live import LiveSettings
 
 
 # SETTINGS: start small; every search still includes all 50,000 candidate images.
-N_TARGETS = 2
-N_STATES = 6          # Original caption plus FIVE question-answer interactions.
-START_TARGET = 0      # Used for contiguous selection when TARGET_IMAGES is None.
-TARGET_IMAGES = (
-    "unlabeled2017/000000364869.jpg",  # Group posing in front of a cake; CPU initial rank 9.
-    "unlabeled2017/000000562109.jpg",  # Giraffe standing in an open field; CPU initial rank 89.
-)
+N_TARGETS = 32         # Set to 32 for our reference sample, or None for all 2,064.
+N_STATES = 2       # 1 = caption only; 11 = caption plus ten dialogue turns.
+START_TARGET = 0      # Choose a different first matched example without changing the image pool.
 K_VALUES = [1, 10, 100]
-DEVICE = "cuda"        # Use "cuda" only with a working NVIDIA PyTorch setup.
+DEVICE = "cpu"        # Use "cuda" only with a working NVIDIA PyTorch setup.
 TEXT_BATCH_SIZE = 8   # Maximum texts per encoding call; methods below run one case at a time.
 CPU_THREADS = 4
 OFFLINE = False       # True requires BLIP model files already on this machine.
 SEED = 42
-RUN_LABEL = "specialists_shared_cake_giraffe_5_rounds"
+RUN_LABEL = "baseline_full_50k"
 
 # OPTIONAL LIVE METHOD: False keeps your existing CPU/saved-baseline workflow.
 # On GCP, start with N_TARGETS=1, N_STATES=3, DEVICE="cuda", then enable this.
 RUN_LIVE_PLUGIR = False
 LIVE_DEVICE = "cuda"       # Qwen/BLIP-2 generation GPU; DEVICE above controls BLIP retrieval.
+SEARCH = "rewrite"         # "rewrite" = original PlugIR search; "facts" = fact fusion inside the live loop (facts_e2e.py).
 MAX_INPUT_TOKENS = 4096    # Stop rather than silently truncate older Qwen dialogue.
 # Output lengths/temperatures come directly from the original PlugIR functions:
 # questions 32 tokens, filters 10, reformulation/paraphrase 512. BLIP-2 uses checkpoint defaults.
@@ -58,19 +55,6 @@ LIVE = LiveSettings(
     referring=True,         # Original ten-cluster/entropy candidate-caption prompting.
     filtering=True,         # Original sequential question filtering and retry/fallback logic.
     select=True,            # Original minimum-KL question choice.
-)
-
-# THREE-AGENT EXPERIMENT: new prompts/peer revision; original clustering and KL helpers.
-# For the first GCP pilot set N_TARGETS=1, N_STATES=2, DEVICE="cuda", then enable.
-# Both modes produce their own shared-answer histories and neutral official rankings.
-RUN_THREE_AGENTS = True
-AGENT_INPUT_TOKENS = 8192
-AGENT_MODES = (False,)  # Shared evidence, specialist questions; critique is on hold.
-from agentir.multi_agent import AgentSettings
-AGENTS = AgentSettings(
-    seed=1021, threshold_low=500, exclude_top_k=10,
-    replacement_attempts=0, max_calls_per_round=6, questions_per_agent=5,
-    diagnostic_top_k=10, max_targets=2,
 )
 
 
@@ -99,17 +83,7 @@ def prepare_qwen_live(root, retriever, pairs, *, n_states, offline):
     return prepare_live_experiment(root, retriever, pairs, n_states=n_states, settings=LIVE,
         device=LIVE_DEVICE, offline=offline, candidate_captions=CANDIDATE_CAPTIONS,
         image_root=IMAGE_ROOT, image_archive=IMAGE_ARCHIVE, download_missing=DOWNLOAD_MISSING_TARGETS,
-        max_input_tokens=MAX_INPUT_TOKENS)
-
-
-def prepare_three_agents(root, retriever, pairs, *, n_states, offline):
-    """Prepare both agent conditions for the same target selection and common evaluator."""
-    from agentir.multi_agent import prepare_agent_experiment
-    return prepare_agent_experiment(root, retriever, pairs, n_states=n_states,
-        settings=AGENTS, device=LIVE_DEVICE, offline=offline,
-        candidate_captions=CANDIDATE_CAPTIONS, image_root=IMAGE_ROOT,
-        image_archive=IMAGE_ARCHIVE, download_missing=DOWNLOAD_MISSING_TARGETS,
-        max_input_tokens=AGENT_INPUT_TOKENS, modes=AGENT_MODES)
+        max_input_tokens=MAX_INPUT_TOKENS, search=SEARCH)
 
 
 # FUTURE EXPERIMENTS THAT NEED SETUP/GENERATION FIRST:
@@ -132,10 +106,6 @@ def collect_experiments(root, retriever, pairs):
         if "qwen_live" in preparers:
             raise ValueError("qwen_live is reserved for the built-in live preparation.")
         preparers["qwen_live"] = prepare_qwen_live
-    if RUN_THREE_AGENTS:
-        if "three_agents" in preparers:
-            raise ValueError("three_agents is reserved for the built-in agent preparation.")
-        preparers["three_agents"] = prepare_three_agents
     reserved = {"caption_only", "raw_dialogue", "supplied_plugir", "round", "example_index", "target"}
     if any(not isinstance(name, str) or not name.strip() or name in reserved or not callable(callback)
            for name, callback in methods.items()):
@@ -160,30 +130,6 @@ def collect_experiments(root, retriever, pairs):
     return methods, bundles
 
 
-def select_target_pairs(pairs, *, image_names=None, start=0, count=None):
-    """Select explicit image identities or a contiguous slice; never silently substitute targets."""
-    if type(start) is not int or not 0 <= start < len(pairs):
-        raise ValueError("START_TARGET must select an available matched example.")
-    if count is not None and (type(count) is not int or count < 1):
-        raise ValueError("N_TARGETS must be a positive integer or None.")
-    if image_names is not None:
-        if (not isinstance(image_names, (tuple, list)) or not image_names
-                or any(not isinstance(n, str) or not n for n in image_names)
-                or len(set(image_names)) != len(image_names)):
-            raise ValueError("TARGET_IMAGES must contain distinct image names.")
-        if start != 0 or (count is not None and count != len(image_names)):
-            raise ValueError("Explicit TARGET_IMAGES require START_TARGET=0 and matching N_TARGETS.")
-        by_name = {left["img"]: (left, right) for left, right in pairs}
-        missing = set(image_names) - set(by_name)
-        if missing:
-            raise ValueError(f"Selected target missing from matched examples: {sorted(missing)}")
-        return [by_name[name] for name in image_names]
-    selected = pairs[start:]
-    if count is not None and count > len(selected):
-        raise ValueError(f"N_TARGETS must be 1..{len(selected)} or None.")
-    return selected if count is None else selected[:count]
-
-
 def main():
     """Load the shared cache/model and evaluate the registered methods together.
     Resolve paths relative to this file, print metrics, and save a new result
@@ -202,7 +148,13 @@ def main():
     pairs = matched_queries(read_json(paths["baseline_queries"]),
                             read_json(paths["supplied_queries"]), cache.paths)
     available = len(pairs)
-    pairs = select_target_pairs(pairs, image_names=TARGET_IMAGES, start=START_TARGET, count=N_TARGETS)
+    if type(START_TARGET) is not int or not 0 <= START_TARGET < available:
+        raise ValueError("START_TARGET must select an available matched example.")
+    pairs = pairs[START_TARGET:]
+    if N_TARGETS is not None:
+        if isinstance(N_TARGETS, bool) or not isinstance(N_TARGETS, int) or not 1 <= N_TARGETS <= len(pairs):
+            raise ValueError(f"N_TARGETS must be 1..{len(pairs)} or None for all remaining targets.")
+        pairs = pairs[:N_TARGETS]
     if type(N_STATES) is not int or not 1 <= N_STATES <= 11:
         raise ValueError("N_STATES must be 1..11.")
     if not K_VALUES or any(type(k) is not int or not 1 <= k <= len(cache.paths) for k in K_VALUES):
@@ -210,10 +162,6 @@ def main():
     print(f"Evaluating {len(pairs)}/{available} targets, {N_STATES} states, {len(cache.paths):,} candidate images.")
     print("References: caption_only, raw_dialogue, supplied_plugir (saved queries, not a live LLM).")
     print(f"Custom experiments: {', '.join(EXPERIMENTS) or 'none registered yet'}")
-    if RUN_THREE_AGENTS:
-        AGENTS.validate(len(cache.paths), N_STATES)
-        if len(pairs) > AGENTS.max_targets:
-            raise ValueError("Set N_TARGETS=1 for the first agent pilot, or explicitly increase AGENTS.max_targets.")
     retriever = BlipRetriever(cache, device=DEVICE, batch_size=TEXT_BATCH_SIZE,
                               threads=CPU_THREADS, local_files_only=OFFLINE)
     methods, prepared = collect_experiments(root, retriever, pairs)
@@ -230,7 +178,6 @@ def main():
                          ("baseline_queries", "supplied_queries", "manifest")},
         "runner_sha256": digest(Path(__file__)),
         "selected_target_start": START_TARGET,
-        "selected_target_images": [left["img"] for left, _ in pairs],
         "prepared_experiments": {name: {"methods": list(bundle.methods), "metadata": bundle.metadata,
             "artifacts": [f"prepared/{name}/{filename}" for filename in bundle.artifacts]}
             for name, bundle in prepared.items()},

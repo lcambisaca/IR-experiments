@@ -8,10 +8,10 @@ from PIL import Image
 import pytest
 import torch
 
-from agentir.agent_prompts import messages_for
+from agentir.multagent_experiment.agent_prompts import messages_for
 from agentir.evaluation import evaluate_experiments
 from agentir.live import generated_query_method, signature
-from agentir.multi_agent import (AgentChat, AgentSettings, RetrievalContext,
+from agentir.multagent_experiment.multi_agent import (AgentChat, AgentSettings, RetrievalContext,
     checked_query, generate_agent_dialogue, question_key, unique_proposals)
 from test_live import TinyRetriever, RoundRobinKMeans, ScriptedAnswerer
 
@@ -477,7 +477,7 @@ def test_explicit_target_selection_rejects_silent_substitutions(runner_config, k
 
 def test_specialist_prompts_share_grounding_and_demonstrate_different_questions():
     """Specialities change questions, while neutral rewrites never receive a specialist role."""
-    from agentir.agent_prompts import EXAMPLES, ROLES, COMMON_EXAMPLE
+    from agentir.multagent_experiment.agent_prompts import EXAMPLES, ROLES, COMMON_EXAMPLE
     assert len(set(EXAMPLES.values())) == 3
     assert all(COMMON_EXAMPLE in example for example in EXAMPLES.values())
     assert 'colour' in EXAMPLES['attributes'] and 'table near' in EXAMPLES['relations']
@@ -493,10 +493,10 @@ def test_prepared_experiment_runs_both_modes_and_exports_diagnostics(agent_case,
     import agentir.live_models as models
     import sys
     from types import SimpleNamespace
-    from agentir.multi_agent import prepare_agent_experiment
+    from agentir.multagent_experiment.multi_agent import prepare_agent_experiment
     root = tmp_path.parent / 'agent_project'
     root.mkdir()
-    paths = ('src/agentir/multi_agent.py', 'src/agentir/agent_prompts.py', 'src/agentir/live_models.py',
+    paths = ('src/agentir/multagent_experiment/multi_agent.py', 'src/agentir/multagent_experiment/agent_prompts.py', 'src/agentir/live_models.py',
              'src/agentir/plugir_upstream.py', 'src/agentir/retrieval.py')
     for name in paths:
         file = root / name
@@ -516,7 +516,7 @@ def test_prepared_experiment_runs_both_modes_and_exports_diagnostics(agent_case,
     original_version = importlib.metadata.version
     monkeypatch.setattr(importlib.metadata,'version',lambda name: 'test' if name=='fast-pytorch-kmeans' else original_version(name))
     monkeypatch.setitem(sys.modules,'fast_pytorch_kmeans',SimpleNamespace(KMeans=lambda **kwargs:RoundRobinKMeans()))
-    monkeypatch.setattr('agentir.multi_agent.resolve_target_image',lambda *args,**kwargs:agent_case['image_path'])
+    monkeypatch.setattr('agentir.multagent_experiment.multi_agent.resolve_target_image',lambda *args,**kwargs:agent_case['image_path'])
     target = agent_case['retriever'].cache.paths[0]
     pairs = [({'img':target,'dialog':['a room','HUMAN_SECRET','FUTURE_SECRET']},
               {'img':target,'dialog':['a room','saved one','saved two']})]
@@ -554,3 +554,28 @@ def test_prepared_experiment_runs_both_modes_and_exports_diagnostics(agent_case,
     assert {'agents_critique','agents_no_critique'} <= set(report['summary'])
     assert (exported/'prepared/three_agents/diagnostics.json').is_file()
     assert (exported/'rank_comparison.csv').is_file()
+
+
+def test_agent_answer_prompt_contains_only_selected_question(agent_case, tmp_path):
+    """Catch caption-prefixed VQA inputs through the actual upstream prompt wrapper."""
+    state, _, answerer = run_case(agent_case, tmp_path/'answer_prompt.json',
+                                  critique=False, n_states=3)
+    assert answerer.processor.prompts == [
+        'Question: ' + item['question'] + ' Answer:'
+        for item in state['states'][1:]
+    ]
+
+
+def test_short_answer_grounding_examples_reach_neutral_stages():
+    """Verify live prompts include the observed failure and its negative controls.
+
+    This is a prompt contract check, not proof of pretrained model judgement.
+    """
+    from agentir.multagent_experiment.agent_prompts import QA_GROUNDING_EXAMPLE
+    for stage in ('reformulate', 'query_check', 'filter', 'filter_batch'):
+        prompt = messages_for(stage, 'full', {})[0]['content']
+        assert QA_GROUNDING_EXAMPLE in prompt
+        assert 'Interpret each answer together with its question' in prompt
+    assert 'If the answer were no' in QA_GROUNDING_EXAMPLE
+    assert 'only repeated the original caption' in QA_GROUNDING_EXAMPLE
+    assert 'does not confirm their count or species' in QA_GROUNDING_EXAMPLE
