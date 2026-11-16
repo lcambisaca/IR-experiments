@@ -55,8 +55,6 @@ class AgentTransport:
                 result = {'query': r['initial_caption'] + ' ' + role + ' ' +
                           ' '.join(qa['answer'] for qa in r['dialogue']),
                           'emphasis': role, 'coverage_issue': 'none'}
-            elif stage == 'query_check':
-                result = {'faithful': True, 'reason': 'scripted audit'}
             elif stage == 'propose_batch':
                 result = {'proposals': [
                     {'question': f'What is the {role} detail {slot} round {self.interaction}?',
@@ -66,15 +64,8 @@ class AgentTransport:
                 result = {'decisions': [
                     {'slot': p['slot'], 'status': 'already_known' if self.known else 'unknown',
                      'reason': 'scripted context check'} for p in data['proposals']]}
-            elif stage == 'filter':
-                result = {'status': 'already_known' if self.known else 'unknown', 'reason': 'scripted context check'}
             elif stage == 'critique':
-                result = {'verdict': 'revise', 'reason': 'make the detail more precise',
-                    'evidence_ids': data['proposal']['evidence_ids'],
-                    'suggested_question': data['proposal']['question'].replace('detail', 'specific detail')}
-            elif stage == 'revise':
-                result = {'action': 'revise', 'question': data['critique']['suggested_question'],
-                    'evidence_ids': data['proposal']['evidence_ids'], 'response_to_critique': 'accepted'}
+                result = {'slot': data['proposals'][-1]['slot'], 'reason': 'Best supported distinction.'}
             else:
                 raise AssertionError(stage)
             self.cache[cache_key] = result
@@ -99,7 +90,7 @@ def agent_case(tmp_path, monkeypatch):
     Image.new('RGB', (4, 4), 'blue').save(image)
     return dict(retriever=retriever, initial_caption='a room', target_id=0, image_path=image,
         captions={n: [f'public caption {i}'] for i, n in enumerate(retriever.cache.paths)},
-        settings=AgentSettings(threshold_low=100, exclude_top_k=2), run_identity='test',
+        settings=AgentSettings(threshold_low=100, exclude_top_k=2),
         _kmeans=RoundRobinKMeans())
 
 
@@ -112,20 +103,23 @@ def run_case(case, path, *, critique=True, transport=None, n_states=3):
     return state, qwen, answerer
 
 
-def test_two_conditions_share_initial_proposals_and_answer_once(agent_case, tmp_path):
+def test_two_conditions_share_initial_proposals_and_answer_once(agent_case, tmp_path, monkeypatch):
     """Critique changes proposals, while each interaction gets only one target-aware answer."""
     baseline, qb, ab = run_case(agent_case, tmp_path / 'b.json', critique=False)
+    def forbidden(*args, **kwargs):
+        raise AssertionError("Critique must skip KL selection")
+    monkeypatch.setattr(RetrievalContext, 'select', forbidden)
     debated, qd, ad = run_case(agent_case, tmp_path / 'd.json', critique=True)
     b, d = baseline['states'][1]['audit'], debated['states'][1]['audit']
     assert b['attempts'] == d['attempts']
     assert b['before_critique'] == d['before_critique']
-    assert len(d['reviews']) == 3 and all(r['question_changed'] for r in d['reviews'])
-    assert d['selected_question_changed']
+    assert b['selector'] == 'min_kl' and b['kl']
+    assert d['selector'] == 'critique' and d['kl'] == []
+    assert d['selected_question'] == d['final_proposals'][d['critique_decision']['slot']]['question']
+    assert [r['stage'] for r in qd.records][:6] == ['propose_batch'] * 3 + ['filter_batch', 'critique', 'reformulate']
     assert ab.model.calls == ad.model.calls == 2
-    assert all(len(s['audit']['final_proposals']) <= 3 for s in debated['states'][1:])
-    assert len(d['diversity']) == 3
+    assert all(len(s['audit']['final_proposals']) <= 3 * agent_case['settings'].questions_per_agent for s in debated['states'][1:])
     assert debated['states'][0]['query'] == 'a room'
-    assert all('target_rank_diagnostic' in v for v in d['branches'].values())
 
 
 def test_official_rank_each_state_enters_original_evaluator(agent_case, tmp_path):
@@ -140,7 +134,7 @@ def test_official_rank_each_state_enters_original_evaluator(agent_case, tmp_path
     assert len(rows) == 11
     assert [r['target_rank'] for r in rows] == [s['target_rank'] for s in state['states']]
     assert result['summary']['agents']['BRI'] is not None
-    assert [s['audit']['branches']['full']['window_size'] for s in state['states'][1:]] == list(range(100,0,-10))
+    assert [s['audit']['shared_retrieval']['window_size'] for s in state['states'][1:]] == list(range(100,0,-10))
 
 
 def test_no_target_rank_or_identity_enters_decisions(agent_case, tmp_path):
@@ -165,7 +159,7 @@ def test_completed_resume_and_extension(agent_case, tmp_path):
 
 def test_interrupted_round_replays_cached_calls(agent_case, tmp_path):
     """Partial critique failures keep the previous completed state and can resume exactly."""
-    transport = AgentTransport(fail_stage='revise')
+    transport = AgentTransport(fail_stage='critique')
     with pytest.raises(RuntimeError, match='deliberate'):
         run_case(agent_case, tmp_path / 'partial.json', transport=transport)
     saved = json.loads((tmp_path / 'partial.json').read_text())
@@ -182,8 +176,8 @@ def test_all_redundant_proposals_do_not_force_answer(agent_case, tmp_path):
     assert answer.model.calls == 0 and state['dialogue'] == []
     assert all(s['query'] == 'a room' for s in state['states'])
     for s in state['states'][1:]:
-        assert s['no_question'] and len(s['audit']['attempts']) == 3
-        assert s['audit']['reviews'] == []
+        assert s['no_question'] and len(s['audit']['attempts']) == 3 * agent_case['settings'].questions_per_agent
+        assert s['audit']['critique_decision'] is None
 
 
 def test_invalid_model_outputs_fail_closed(agent_case, tmp_path):
@@ -209,29 +203,14 @@ def test_reformulation_emphasis_is_optional_text_not_query_content(emphasis):
             chat.complete('reformulate', 'attributes', {})
 
 
-@pytest.mark.parametrize('action,question,ids,accepted', [
-    ('withdraw', 'abstain', 'missing', True),
-    ('withdraw', 'abstain', [], True),
-    ('withdraw', 'abstain', None, False),
-    ('withdraw', 'What colour?', [], False),
-    ('revise', 'What colour?', 'missing', False),
-    ('retain', 'What colour?', 'missing', False),
-])
-def test_only_explicit_withdrawal_may_omit_evidence(action, question, ids, accepted):
-    """An omitted list must not discard a safe withdrawal or admit an actual question."""
+@pytest.mark.parametrize("slot", [-1, 1, True, "0", None])
+def test_critique_cannot_select_an_unlisted_slot(slot):
     from types import SimpleNamespace
-    result = {'action': action, 'question': question, 'response_to_critique': 'Reviewed evidence.'}
-    if ids != 'missing':
-        result['evidence_ids'] = ids
-    transport = SimpleNamespace(create=lambda **kwargs: {
-        'choices': [{'message': {'content': json.dumps(result)}, 'finish_reason': 'stop'}]})
-    chat = AgentChat(transport, AgentSettings())
-    if accepted:
-        assert chat.complete('revise', 'relations', {}) == result
-        assert json.loads(chat.audit[-1]['response']) == result
-    else:
-        with pytest.raises(ValueError):
-            chat.complete('revise', 'relations', {})
+    response = {'slot': slot, 'reason': 'Reviewed evidence.'}
+    chat = AgentChat(SimpleNamespace(create=lambda **kwargs: {'choices': [
+        {'message': {'content': json.dumps(response)}, 'finish_reason': 'stop'}]}), AgentSettings())
+    with pytest.raises(ValueError, match='eligible proposal slot'):
+        chat.complete('critique', 'full', {'proposals': [{'slot': 0}]})
 
 
 def test_question_cannot_be_used_as_retrieval_description():
@@ -254,6 +233,10 @@ def test_common_kl_is_exact_original_helper(agent_case):
     scores = c.scores('a room')
     indices = scores.argsort()[-100:-2]
     p = scores[indices].softmax(0)
+    upstream = c.namespace["select_question"](
+        caption_recon='a room', questions=[p['question'] for p in proposals],
+        cossim_prev=scores, k=2, img_embs=c.retriever.images, threshold=100, round=1)
+    assert selected == upstream
     expected = []
     for proposal in proposals:
         q = c.scores('a room, ' + proposal['question'])[indices].softmax(0)
@@ -275,9 +258,9 @@ def test_call_budget_fails_before_additional_model_execution():
     q = AgentTransport()
     chat = AgentChat(q, AgentSettings(max_calls_per_round=1))
     chat.begin({'initial_caption':'room','dialogue':[]},0)
-    chat.complete('query_check','full', {'record':{},'query':'room'})
+    chat.complete('reformulate','full', {'record':{'initial_caption':'room','dialogue':[]}})
     with pytest.raises(RuntimeError,match='budget'):
-        chat.complete('query_check','full', {'record':{},'query':'room'})
+        chat.complete('reformulate','full', {'record':{'initial_caption':'room','dialogue':[]}})
     assert q.new_calls == 1
 
 
@@ -292,14 +275,14 @@ def test_three_batches_generate_five_questions_each_and_ask_one_answer(agent_cas
         proposals = [a for a in audit['attempts'] if a['owner']==role]
         assert {a['slot'] for a in proposals} == set(range(5))
         calls = [r for r in qwen.records if r['stage']=='propose_batch' and r['payload']['agent_role']==role]
-        assert len(calls) == 1 and calls[0]['payload']['candidates']==audit['branches'][role]['captions']
+        assert len(calls) == 1 and calls[0]['payload']['candidates']==audit['shared_retrieval']['captions']
     stages = [r['stage'] for r in qwen.records]
     assert stages.count('propose_batch') == 3 and stages.count('filter_batch') == 1
     assert max(i for i,s in enumerate(stages) if s=='propose_batch') < stages.index('filter_batch')
     assert not any(s in ('propose','filter') for s in stages)
     assert answerer.model.calls == 1
-    assert not audit['reviews']
-    assert not any(r['stage'] in ('critique','revise') for r in qwen.records)
+    assert audit['critique_decision'] is None
+    assert not any(r['stage'] in ('critique',) for r in qwen.records)
     assert state['states'][1]['question'] in {p['question'] for p in audit['final_proposals']}
 
 
@@ -347,8 +330,6 @@ def test_five_round_shared_evidence_uses_five_calls_and_one_answer_per_round(age
         audit=current['audit']
         shared=audit['shared_retrieval']
         assert shared['query']==previous['query']
-        assert all(branch['query']==previous['query'] and branch['captions']==shared['captions']
-                   and branch['pool_ids']==shared['pool_ids'] for branch in audit['branches'].values())
         assert len(audit['final_proposals'])==15 and current['llm_calls']==5
         stages=[entry['stage'] for entry in current['llm_audit']]
         assert stages==['propose_batch']*3+['filter_batch','reformulate']
@@ -449,7 +430,7 @@ def test_pilot_selects_only_cake_and_giraffe_by_identity_for_five_rounds():
     assert [left['dialog'][0] for left, _ in selected] == [
         'a group of people posing in front of a cake', 'a giraffe is standing in an open field']
     assert setup.N_STATES == 6 and setup.AGENT_MODES == (False,)
-    assert setup.AGENTS.questions_per_agent == setup.AGENTS.max_calls_per_round == 5
+    assert setup.AGENTS.questions_per_agent == 5 and setup.AGENTS.max_calls_per_round == 6
 
 
 @pytest.mark.parametrize('indices', [(0,), (0, 1, 1)])
@@ -472,7 +453,7 @@ def test_specialist_prompts_share_grounding_and_demonstrate_different_questions(
         assert ROLES[role] in messages_for('propose_batch',role,{})[0]['content']
 
 
-def test_prepared_experiment_runs_both_modes_and_exports_diagnostics(agent_case, tmp_path, monkeypatch):
+def test_prepared_experiment_runs_both_modes_and_exports_dialogues(agent_case, tmp_path, monkeypatch):
     """Exercise model wiring, actual prepared callbacks, audit CSVs and common metrics offline."""
     import importlib.metadata
     import agentir.live_models as models
@@ -508,9 +489,6 @@ def test_prepared_experiment_runs_both_modes_and_exports_diagnostics(agent_case,
     bundle = prepare_agent_experiment(root,agent_case['retriever'],pairs,n_states=3,
         settings=agent_case['settings'],candidate_captions='catalogue.json')
     assert set(bundle.methods) == {'agents_critique','agents_no_critique'}
-    tables = bundle.artifacts['diagnostics.json']
-    assert len(tables['round_diagnostics']) == 4 and len(tables['critique_changes']) == 6
-    assert all((Path(bundle.metadata['checkpoint_folder']) / (name+'.csv')).is_file() for name in tables)
     result = evaluate_experiments(agent_case['retriever'],pairs,bundle.methods,rounds=3,ks=[1,10])
     assert 'agents_critique' in result['summary'] and 'agents_no_critique' in result['summary']
     # Same first-round proposals are literally shared before histories diverge.
@@ -538,7 +516,9 @@ def test_prepared_experiment_runs_both_modes_and_exports_diagnostics(agent_case,
     exported = next((root/'runs/experiments').iterdir())
     report = json.loads((exported/'report.json').read_text())
     assert {'agents_critique','agents_no_critique'} <= set(report['summary'])
-    assert (exported/'prepared/three_agents/diagnostics.json').is_file()
+    saved = json.loads((exported/'prepared/three_agents/agent_dialogues.json').read_text())
+    assert saved == cases
+    assert all(s['audit']['critique_decision'] for s in saved['agents_critique'][0]['states'][1:])
     assert (exported/'rank_comparison.csv').is_file()
 
 
@@ -558,7 +538,7 @@ def test_short_answer_grounding_examples_reach_neutral_stages():
     This is a prompt contract check, not proof of pretrained model judgement.
     """
     from agentir.multagent_experiment.agent_prompts import QA_GROUNDING_EXAMPLE
-    for stage in ('reformulate', 'query_check', 'filter', 'filter_batch'):
+    for stage in ('reformulate', 'critique', 'filter_batch'):
         prompt = messages_for(stage, 'full', {})[0]['content']
         assert QA_GROUNDING_EXAMPLE in prompt
         assert 'Interpret each answer together with its question' in prompt

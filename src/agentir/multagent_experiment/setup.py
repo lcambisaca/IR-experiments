@@ -11,8 +11,8 @@ AGENT_MODES = (False,)
 AGENT_INPUT_TOKENS = 8192
 AGENTS = AgentSettings(
     seed=1021, threshold_low=500, exclude_top_k=10,
-    replacement_attempts=0, max_calls_per_round=5, questions_per_agent=5,
-    diagnostic_top_k=10, max_targets=2,
+    max_calls_per_round=6, questions_per_agent=5,
+    max_targets=2,
 )
 
 
@@ -33,7 +33,9 @@ def prepare_three_agents(root, retriever, pairs, *, n_states=N_STATES, offline=F
                          settings=AGENTS, modes=AGENT_MODES, device="cuda",
                          candidate_captions="assets/protocol/visdial_captions.json",
                          image_root="data/images", image_archive=None,
-                         download_missing=True, max_input_tokens=AGENT_INPUT_TOKENS):
+                         download_missing=True, max_input_tokens=AGENT_INPUT_TOKENS,
+                         run_name="shared_agents_simple_v1"):
+    
     """Prepare the supplied matched targets and return a PreparedExperiment.
 
     The caller owns target selection, scoring, and export, so the same cases
@@ -44,5 +46,5 @@ def prepare_three_agents(root, retriever, pairs, *, n_states=N_STATES, offline=F
         settings=settings, modes=modes, device=device,
         candidate_captions=candidate_captions, image_root=image_root,
         image_archive=image_archive, download_missing=download_missing,
-        max_input_tokens=max_input_tokens,
+        max_input_tokens=max_input_tokens, run_name=run_name,
     )

@@ -4,7 +4,7 @@ These adapt PlugIR's evidence/description/dialogue structure for a local batch
 experiment. Examples are synthetic instructions, not training or target facts.
 """
 
-PROMPT_VERSION = "three_roles_v7_anchored_facts_matched_generalist"
+PROMPT_VERSION = "three_roles_v8_critique_selector"
 # Stable IDs retain compatibility with existing audit/report readers.
 ROLES = {
     "full": "ROLE: generalist. Consider any useful unresolved distinction. Seek variety across your questions, following the shared grounding rules.",
@@ -22,10 +22,6 @@ A yes/no answer confirms/denies only the proposition explicitly asked; never
 discard a confirmed answer just because its information was absent from the original caption.
 An unanswered question, an uncertain answer or a repeated generic caption does
 not confirm the details suggested by the question.
-When a dialogue entry includes answer_quality and accepted_fact, a quality failure
-is a recorded non-answer, NOT a confirmed observation. Only accepted_fact adds
-information from that entry; its raw answer remains available for auditing.
-[Retrieval Candidates] candidates contains captions and IDs for possible matches.
 All agents receive the SAME neutral query and SAME candidate captions.
 Candidate details are possibilities, never confirmed facts about the target.
 In question-generation stages, craft clear, concise questions that could distinguish the candidates through
@@ -89,14 +85,10 @@ Decoration remains unresolved: that answer did not answer the question.
 """
 
 TASKS = {
-    "answer_fact": 'Assess whether the latest answer actually answers the selected question. Return {"usable":bool,"fact":str,"reason":str}. If usable, fact must be one short declarative sentence entailed by the question and answer, with its subject explicit. Do not add visual assumptions. yes/no must be interpreted with the question. Reject unknown, ambiguous, contradictory, question-like echoes and category restatements that do not answer the requested attribute. For example colour? -> a birthday cake gives no colour and is unusable. Preserve uncertain answers as uncertain: do not turn them into facts. If the answer merely repeats information already in the authoritative record, return usable=false. When unusable, fact must be an empty string. You cannot see the image, so this checks textual answer relevance and grounding, not visual truth. Keep the reason under 15 words.',
     "propose_batch": 'Generate the requested batch using all supplied captions together. Follow your ROLE. Return {"proposals":[{"question":str,"evidence_ids":[int]}]}. Cite only supplied IDs; no explanations or predicted answers. Each example above is one proposal object to put in the list. Return at most question_count entries.',
     "filter_batch": 'Audit ALL supplied proposals together. Return {"decisions":[{"slot":int,"status":"unknown"|"already_known"|"unsupported"|"ambiguous","reason":str}]}, exactly one decision per supplied slot. Check the authoritative description and every confirmed answer FIRST: answered questions are already_known regardless of candidate evidence. unknown means unresolved, relevant and grounded without unsupported premises. Check each proposal only against its cited candidate IDs; uncited captions cannot supply its evidence. Missing details are not contradictions. Never answer using a candidate caption. Keep each reason to at most ten words.',
     "reformulate": 'Rewrite the authoritative record as ONE neutral, declarative caption-style search description. Preserve ALL confirmed objects, counts, attributes, relationships, negation, uncertainty and who does what. Use the original caption and actual Q&A, never the previous rewrite as authority. Add no candidate-derived facts or unsupported negative claims. Return {"query":str,"emphasis":str,"coverage_issue":str}; emphasis may be empty and coverage_issue is "none" if faithful. Do not ask a question.',
-    "query_check": 'Audit the query against the authoritative record only. Reject ANY addition, contradiction or omitted confirmed fact, including photographic properties such as black-and-white. Preserve counts, negation, uncertainty and action ownership. A question instead of a description is unfaithful. Return {"faithful":bool,"reason":str}; keep the reason short.',
-    "filter": 'Audit the proposal against the authoritative record FIRST, then its cited evidence. Return {"status":"unknown"|"already_known"|"unsupported"|"ambiguous","reason":str}. Answered from the record means already_known even if candidates disagree. unknown requires unresolved information and no unsupported premise. Do not answer from candidate captions. Keep the reason short.',
-    "critique": 'Phase two: review the other agent question using the authoritative record and its cited candidate evidence. Check redundancy, unsupported premises, clarity and distinguishing evidence; do not argue for your speciality regardless of evidence. Return {"verdict":"keep"|"revise"|"reject","reason":str,"evidence_ids":[int],"suggested_question":str}. Give short evidence summaries.',
-    "revise": 'Phase two: respond to peer critique once. Return {"action":"retain"|"revise"|"withdraw","question":str,"evidence_ids":[int],"response_to_critique":str}. Retain verbatim, revise without inventing facts, or withdraw with question="abstain". Keep the response short.',
+    "critique": 'Compare the eligible questions and choose exactly one. Use the original description and actual dialogue to check what is still unknown. Prefer a clear question about a visible detail with plausible answers that distinguish the cited candidates. Missing caption details do not show absence. Avoid unsupported assumptions, vague distinctions, and questions a viewer is unlikely to answer. Do not generate or rewrite a question. Return {"slot":int,"reason":str}, using a supplied slot and a brief reason.',
 }
 
 
@@ -105,10 +97,10 @@ def messages_for(stage, role, payload):
     import json
     if role not in ROLES or stage not in TASKS:
         raise ValueError("Unknown agent role or stage.")
-    neutral = stage in ("reformulate", "query_check", "filter", "filter_batch", "answer_fact")
+    neutral = stage in ("reformulate", "filter_batch", "critique")
     instruction = "Act as a neutral evidence auditor and reconstructor." if neutral else ROLES[role]
     example = NEUTRAL_EXAMPLE if stage == "reformulate" else "" if neutral else EXAMPLES[role]
-    if stage in ("reformulate", "query_check", "filter", "filter_batch", "answer_fact"):
+    if stage in ("reformulate", "filter_batch", "critique"):
         example += "\n" + QA_GROUNDING_EXAMPLE
     return [{"role":"system", "content":SHARED + "\n" + instruction + "\n" + example + "\nCURRENT TASK: " + TASKS[stage]},
             {"role":"user", "content":json.dumps({"stage":stage,"reference_data":payload},ensure_ascii=False)}]
