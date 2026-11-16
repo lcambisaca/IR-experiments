@@ -13,7 +13,7 @@ Targets come from the same 200-caption sample as strategy_experiment.py, chosen 
 few already in the top 10 (to measure harm). Each stratum is weighted by its share of the 200,
 so the reported recall estimates the effect on the whole sample, not on the hand-picked mix.
 
-Two phases, so the vision model can run on a GPU machine (e.g. Colab) without the BLIP cache:
+Two phases, so the vision model can run on a GPU machine (e.g. Kaggle) without the BLIP cache:
 
     python vision_rerank_experiment.py shortlist [--all]     # local: BLIP, CPU, seconds
     python vision_rerank_experiment.py compare SHORTLISTS    # GPU: try each prompt on a few targets
@@ -21,7 +21,7 @@ Two phases, so the vision model can run on a GPU machine (e.g. Colab) without th
     python vision_rerank_experiment.py                       # both phases on one machine
 
 The rerank and compare phases need only the Python standard library, Pillow and an Ollama
-server with the vision model pulled (`ollama serve`, `ollama pull qwen2.5vl:3b`). Shortlisted
+server with the vision model pulled (`ollama serve`, `ollama pull qwen2.5vl:7b`). Shortlisted
 photos are downloaded once from images.cocodataset.org into IMAGE_DIR. Model answers are saved
 under data/vlm_scores/ and reused on later runs. Notebook for GPU runs: notebooks/vision_rerank_kaggle.ipynb. Guide and results: REWRITE_FUSION_VISION_RERANK.md.
 """

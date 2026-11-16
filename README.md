@@ -14,6 +14,8 @@ The repository contains:
 3. **Caption mix and fact fusion**: keep the dialogue, change how it becomes the
    search query. Fact fusion improves Recall@10 at round 10 from 64.4 to 77.2
    (219 targets).
+4. **Round-0 studies** (Arnav): fusing several rewrites of the caption, and a
+   vision-language model (Qwen2.5-VL-7B) re-ranking BLIP's top 30.
 
 | Guide | Purpose |
 |---|---|
@@ -21,6 +23,7 @@ The repository contains:
 | [PLUGIR_COMPARISON.md](PLUGIR_COMPARISON.md) | What matches original PlugIR and what the wrapper changes |
 | [AGENT_EXPERIMENT.md](AGENT_EXPERIMENT.md) | Multi-agent specialist questioner: design and pilot |
 | [CAPTION_MIX_FACT_FUSION.md](CAPTION_MIX_FACT_FUSION.md) | Caption mix and fact fusion: method, code, how to run, results |
+| [REWRITE_FUSION_VISION_RERANK.md](REWRITE_FUSION_VISION_RERANK.md) | Round 0: fusing caption rewrites and vision re-ranking |
 
 ## Repository map
 
@@ -30,6 +33,8 @@ The repository contains:
 | Live PlugIR + Qwen baseline | [live.py](src/agentir/live.py), [live_models.py](src/agentir/live_models.py), [plugir_upstream.py](src/agentir/plugir_upstream.py), [third_party/PlugIR](third_party/PlugIR) | [results/conversations/](results/conversations/) | `RUN_LIVE_PLUGIR = True` or [scripts/run_plugir_live.py](scripts/run_plugir_live.py) |
 | Multi-agent questioner | [multagent_experiment/](src/agentir/multagent_experiment/) | not committed yet | `RUN_MULTI_AGENT_PILOT = True` |
 | Caption mix and fact fusion | [fact_fusion.py](fact_fusion.py) (post-hoc), [facts_e2e.py](src/agentir/facts_e2e.py) (live), [scripts/](scripts/) | [results/fact_fusion/](results/fact_fusion/), [results/fact_fusion_confirm/](results/fact_fusion_confirm/) | `SEARCH = "facts"`; see [CAPTION_MIX_FACT_FUSION.md](CAPTION_MIX_FACT_FUSION.md) |
+| Round 0: fusing caption rewrites | [paraphrase_experiment.py](paraphrase_experiment.py), [strategy_experiment.py](strategy_experiment.py), [fusion_experiment.py](fusion_experiment.py) | [results/paraphrase/](results/paraphrase/), [results/rewrite_fusion/](results/rewrite_fusion/) | see [REWRITE_FUSION_VISION_RERANK.md](REWRITE_FUSION_VISION_RERANK.md) |
+| Round 0: vision re-ranking | [vision_rerank_experiment.py](vision_rerank_experiment.py), [notebook](notebooks/vision_rerank_kaggle.ipynb) | [results/vision_rerank/](results/vision_rerank/) | `python rewrite_vision_numbers.py` prints every reported number |
 | Tests (CPU, scripted models) | [tests/](tests/) | | `python -m pytest` |
 
 `assets/protocol/` holds target lists, the 50k image manifest and PlugIR's candidate
