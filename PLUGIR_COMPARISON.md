@@ -75,7 +75,7 @@ loop with controlled responses, then compare requests, selected questions,
 answers, captions and ranks with the wrapper. They cover original fallbacks,
 feature switches, real CPU KMeans and checkpoint recovery.
 
-[TESTING.md](TESTING.md) records measured checks. They establish matching decisions
+The tests in `tests/` record measured checks. They establish matching decisions
 for tested inputs, not correct model answers or identical benchmark scores.
 Full pretrained Qwen/BLIP-2 GPU inference and peak memory remain unverified.
 Use [README.md](README.md#4-run-the-live-qwen-baseline-on-an-nvidia-gpu) for the pilot

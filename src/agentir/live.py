@@ -172,7 +172,7 @@ def unchanged_progress(items):
 
 def generate_live_dialogue(retriever, *, initial_caption, target_id, image_path, captions,
                            questioner, answerer, settings, n_states, checkpoint_path, run_identity,
-                           _kmeans=None):
+                           _kmeans=None, search="rewrite"):
     """Execute/resume the authors' loop using our selected cache and local transports.
     Only the initial caption enters the dialogue. BLIP-2 alone sees target pixels;
     target ranks are measured after a round and never influence question choice.
@@ -186,6 +186,10 @@ def generate_live_dialogue(retriever, *, initial_caption, target_id, image_path,
     identity = {"run": run_identity, "initial_caption": initial_caption,
                 "target": retriever.cache.paths[target_id], "image_sha256": digest(image_path),
                 "settings": asdict(settings), "upstream": provenance()}
+    if search not in ("rewrite", "facts"):
+        raise ValueError('search must be "rewrite" (original PlugIR) or "facts" (end-to-end fact fusion).')
+    if search == "facts":  # FACTS: the default keeps the original identity unchanged.
+        identity["search"] = "facts_only"
     case_id = signature(identity)
     path = Path(checkpoint_path)
     namespace = {"torch": torch, "normalize": normalize, "Optional": Optional, "Image": Image,
@@ -202,10 +206,19 @@ def generate_live_dialogue(retriever, *, initial_caption, target_id, image_path,
                  "dial_new": [], "dial_new_recon": []}
     original_answer, loop_code, audit = load_generator(namespace)
     bind_original_text_encoder(namespace, retriever)
+    facts = []  # Confirmed facts so far (FACTS search only); restored from the checkpoint on resume.
+    if search == "facts":  # Every search of the description inside the loop now uses the fact-fusion vector.
+        from .facts_e2e import install
+        extract_fact, rewrite_features = install(namespace, questioner, initial_caption, facts)
 
     def observed_rank(text):
         """Log rank with the original generation encoder; this value never enters its loop."""
         scores = normalize(namespace["get_text_features"](text), dim=-1) @ retriever.images.T
+        return int(ranks_for_targets(scores.cpu(), [target_id])[0])
+
+    def rewrite_rank(text):
+        """FACTS diagnostic: the rank plain PlugIR would show for the same rewritten description."""
+        scores = normalize(rewrite_features(text), dim=-1) @ retriever.images.T
         return int(ranks_for_targets(scores.cpu(), [target_id])[0])
 
     def cached_answer(img_path="", query="", model_caps=None, processor_caps=None):
@@ -231,7 +244,10 @@ def generate_live_dialogue(retriever, *, initial_caption, target_id, image_path,
                      "dialog": [initial_caption], "reformulated": [initial_caption],
                      "states": [{"round": 0, "query": initial_caption, "raw_query": initial_caption,
                                  "target_rank": observed_rank(initial_caption)}], "rng": capture_rng()}
+            if search == "facts":
+                state["facts"], state["states"][0]["rewrite_only_rank"] = [], rewrite_rank(initial_caption)
             save_json(path, state)
+        facts[:] = state.get("facts", [])
         call_start = 0
 
         def restore_round_state():
@@ -239,6 +255,7 @@ def generate_live_dialogue(retriever, *, initial_caption, target_id, image_path,
             namespace["dial_gen"] = list(state["dialog"])
             namespace["captions_recon"] = list(state["reformulated"])
             namespace["caption_recon"] = state["reformulated"][-1]
+            facts[:] = state.get("facts", [])
             restore_rng(state["rng"])
 
         def begin_round(rnd):
@@ -250,6 +267,7 @@ def generate_live_dialogue(retriever, *, initial_caption, target_id, image_path,
         def checkpoint_round():
             """Save an original completed round plus observation-only ranks and call traces."""
             rnd = namespace["rnd"] + 1
+            fact = extract_fact(namespace["question_final"], namespace["answer_generated"]) if search == "facts" else None
             record = {"round": rnd, "query": namespace["caption_recon"],
                       "raw_query": ", ".join(namespace["dial_gen"]),
                       "question": namespace["question_final"], "answer": namespace["answer_generated"],
@@ -257,6 +275,9 @@ def generate_live_dialogue(retriever, *, initial_caption, target_id, image_path,
                       "candidate_caption_prompt": namespace["prompt_fake"],
                       "target_rank": observed_rank(namespace["caption_recon"]),
                       "llm_calls": questioner.records[call_start:]}
+            if search == "facts":  # target_rank above is the fact-fusion search the loop itself used.
+                record.update(fact=fact, facts=list(facts), rewrite_only_rank=rewrite_rank(namespace["caption_recon"]))
+                state["facts"] = list(facts)
             state["dialog"] = list(namespace["dial_gen"])
             state["reformulated"] = list(namespace["captions_recon"])
             state["dialogue"].append({"question": record["question"], "answer": record["answer"]})
@@ -289,7 +310,7 @@ def generate_live_dialogue(retriever, *, initial_caption, target_id, image_path,
 def prepare_live_experiment(root, retriever, pairs, *, n_states, settings, device="cuda", offline=False,
                             candidate_captions="assets/protocol/visdial_captions.json",
                             image_root="data/images", image_archive=None, download_missing=True,
-                            max_input_tokens=4096):
+                            max_input_tokens=4096, search="rewrite"):
     """Generate original-loop Qwen conversations, then enter the common evaluation.
     Reuse the existing image cache and target selection. Save source/model identity,
     original prompts/responses and each completed round. No saved human answers or
@@ -324,6 +345,9 @@ def prepare_live_experiment(root, retriever, pairs, *, n_states, settings, devic
                 "max_input_tokens": max_input_tokens, "runtime": runtime,
                 "source_sha256": {name: digest(root / name) for name in
                     ("src/agentir/live.py", "src/agentir/live_models.py", "src/agentir/plugir_upstream.py", "src/agentir/retrieval.py")}}
+    if search == "facts":
+        identity["search"] = "facts_only"
+        identity["source_sha256"]["src/agentir/facts_e2e.py"] = digest(root / "src/agentir/facts_e2e.py")
     folder = root / "runs" / "live_upstream" / signature(identity)[:20]
     save_json(folder / "identity.json", identity)
     questioner = Qwen3(folder / "qwen_calls", device=device, offline=offline,
@@ -338,12 +362,12 @@ def prepare_live_experiment(root, retriever, pairs, *, n_states, settings, devic
                 target_id=path_to_id[raw["img"]], image_path=image_path, captions=catalogue,
                 questioner=questioner, answerer=answerer, settings=settings, n_states=n_states,
                 checkpoint_path=folder / "dialogues" / (signature(raw["img"]) + ".json"),
-                run_identity=signature(identity)))
+                run_identity=signature(identity), search=search))
     finally:
         questioner.park()
         answerer.park()
     return PreparedExperiment(
-        methods={"live_plugir_qwen": generated_query_method(conversations),
+        methods={"live_plugir_qwen" + ("_facts_e2e" if search == "facts" else ""): generated_query_method(conversations),
                  "live_raw_same_dialogue": generated_query_method(conversations, raw=True)},
         metadata={"identity": identity, "checkpoint_folder": str(folder),
                   "n_states": n_states, "n_targets": len(pairs),

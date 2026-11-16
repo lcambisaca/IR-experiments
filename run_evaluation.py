@@ -84,12 +84,10 @@ def prepare_qwen_live(root, retriever, pairs, *, n_states, offline):
     and returns ordinary search callbacks plus provenance and saved dialogue.
     """
     from agentir.live import prepare_live_experiment
-    if SEARCH != "rewrite":
-        raise ValueError("Live fact fusion requires the teammate's fact-fusion branch.")
     return prepare_live_experiment(root, retriever, pairs, n_states=n_states, settings=LIVE,
         device=LIVE_DEVICE, offline=offline, candidate_captions=CANDIDATE_CAPTIONS,
         image_root=IMAGE_ROOT, image_archive=IMAGE_ARCHIVE, download_missing=DOWNLOAD_MISSING_TARGETS,
-        max_input_tokens=MAX_INPUT_TOKENS)
+        max_input_tokens=MAX_INPUT_TOKENS, search=SEARCH)
 
 
 # FUTURE EXPERIMENTS THAT NEED SETUP/GENERATION FIRST:
