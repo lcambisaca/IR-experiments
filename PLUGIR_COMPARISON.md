@@ -5,7 +5,7 @@ Qwen replaces GPT for chat responses.** This document describes the current
 baseline implementation. The optional three-agent experiment now generates its
 own conversations and enters the same evaluator. Its first version reuses the
 original clustering/entropy and KL helpers, with new role prompts, filters and
-peer revision. See [AGENT_EXPERIMENT.md](AGENT_EXPERIMENT.md); it is a separate
+peer revision. See [AGENT_EXPERIMENT.md](src/agentir/multagent_experiment/AGENT_EXPERIMENT.md); it is a separate
 experimental pipeline, not the unchanged original loop described below.
 
 ## Research pipeline

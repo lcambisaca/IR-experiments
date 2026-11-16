@@ -9,19 +9,21 @@ questioner/rewriter, BLIP-2 flan-t5-xl answerer), image pool and evaluator.
 The repository contains:
 
 1. **Live PlugIR + Qwen baseline**: the original PlugIR loop run live with Qwen3-4B.
-2. **Multi-agent questioner** (Leo): three specialist agents propose questions from
+2. **Answer-entropy questioner** (agent v2): a vision model answers each candidate question on
+   the current top 20 photos, and the question whose answers vary most is asked. Ties PlugIR.
+3. **Multi-agent questioner** (Leo): three specialist agents propose questions from
    shared retrieval evidence; PlugIR's KL selection picks one.
-3. **Caption mix and fact fusion**: keep the dialogue, change how it becomes the
+4. **Caption mix and fact fusion**: keep the dialogue, change how it becomes the
    search query. Fact fusion improves Recall@10 at round 10 from 64.4 to 77.2
    (219 targets).
-4. **Round-0 studies** (Arnav): fusing several rewrites of the caption, and a
+5. **Round-0 studies** (Arnav): fusing several rewrites of the caption, and a
    vision-language model (Qwen2.5-VL-7B) re-ranking BLIP's top 30.
 
 | Guide | Purpose |
 |---|---|
 | [EXPERIMENTS.md](EXPERIMENTS.md) | Methods, metrics, outputs and adding experiments |
 | [PLUGIR_COMPARISON.md](PLUGIR_COMPARISON.md) | What matches original PlugIR and what the wrapper changes |
-| [AGENT_EXPERIMENT.md](AGENT_EXPERIMENT.md) | Multi-agent specialist questioner: design and pilot |
+| [AGENT_EXPERIMENT.md](src/agentir/multagent_experiment/AGENT_EXPERIMENT.md) | Multi-agent specialist questioner: design and pilot |
 | [CAPTION_MIX_FACT_FUSION.md](CAPTION_MIX_FACT_FUSION.md) | Caption mix and fact fusion: method, code, how to run, results |
 | [REWRITE_FUSION_VISION_RERANK.md](REWRITE_FUSION_VISION_RERANK.md) | Round 0: fusing caption rewrites and vision re-ranking |
 
@@ -31,6 +33,7 @@ The repository contains:
 |---|---|---|---|
 | Shared retrieval and metrics | [retrieval.py](src/agentir/retrieval.py), [cache.py](src/agentir/cache.py), [evaluation.py](src/agentir/evaluation.py) | [results/baseline/](results/baseline/) | `run_evaluation.py` (saved queries) |
 | Live PlugIR + Qwen baseline | [live.py](src/agentir/live.py), [live_models.py](src/agentir/live_models.py), [plugir_upstream.py](src/agentir/plugir_upstream.py), [third_party/PlugIR](third_party/PlugIR) | [results/conversations/](results/conversations/) | `RUN_LIVE_PLUGIR = True` or [scripts/run_plugir_live.py](scripts/run_plugir_live.py) |
+| Answer-entropy questioner | [probe_agent.py](src/agentir/probe_agent.py), `VisionAnswerer` in [live_models.py](src/agentir/live_models.py) | [results/agent_v2_vlm_probe/](results/agent_v2_vlm_probe/) | `SELECTION = "probe_vlm"` or `scripts/run_plugir_live.py --selection probe_vlm` |
 | Multi-agent questioner | [multagent_experiment/](src/agentir/multagent_experiment/) | not committed yet | `RUN_MULTI_AGENT_PILOT = True` |
 | Caption mix and fact fusion | [fact_fusion.py](fact_fusion.py) (post-hoc), [facts_e2e.py](src/agentir/facts_e2e.py) (live), [scripts/](scripts/) | [results/fact_fusion/](results/fact_fusion/), [results/fact_fusion_confirm/](results/fact_fusion_confirm/) | `SEARCH = "facts"`; see [CAPTION_MIX_FACT_FUSION.md](CAPTION_MIX_FACT_FUSION.md) |
 | Round 0: fusing caption rewrites | [paraphrase_experiment.py](paraphrase_experiment.py), [strategy_experiment.py](strategy_experiment.py), [fusion_experiment.py](fusion_experiment.py) | [results/paraphrase/](results/paraphrase/), [results/rewrite_fusion/](results/rewrite_fusion/) | see [REWRITE_FUSION_VISION_RERANK.md](REWRITE_FUSION_VISION_RERANK.md) |
