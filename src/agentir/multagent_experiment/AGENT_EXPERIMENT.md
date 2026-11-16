@@ -81,8 +81,8 @@ check or forced paraphrase. Saved Q&A and queries allow later inspection for dri
 
 At most five Qwen requests per interaction with critique off:
 three proposal batches, one combined filter, and one rewrite.
-The runner sets `max_calls_per_round=5`, `questions_per_agent=5`,
-`replacement_attempts=0` and `AGENT_MODES=(False,)`. There are no replacement
+The runner sets a ceiling of `max_calls_per_round=6`, `questions_per_agent=5`,
+and `AGENT_MODES=(False,)`. There are no replacement
 loops. Proposal responses are capped at 512 tokens; the combined filter has a
 bounded budget proportional to its proposal count. Invalid/truncated responses
 stop with an interrupted checkpoint instead of a hidden repair loop.
@@ -113,10 +113,11 @@ all generated questions, filters, evidence IDs/captions, shared pool IDs, select
 questions/answers and target ranks. `prompt_pack.json` includes the actual role,
 shared, task, worked-example and neutral-rewrite instructions.
 
-Resumable checkpoints are under `runs/three_agents/<identity>/`. The prompt
-version `three_roles_v5_shared_evidence_specialists` and source hashes distinguish
-this experiment from the earlier per-agent searches. Old results are preserved
-and are not silently reused as new-protocol checkpoints.
+Checkpoints are saved under `runs/three_agents/<run_name>/`, in separate
+directories for each condition. The default run name is `shared_agents_simple_v1`.
+Resume uses the existing folder without checking source, image, or configuration
+fingerprints. Use a new run name when changing inputs, settings, prompts, or code.
+Sampling seeds and the shared model-response caches retain their own keys.
 
 `question_memory` records proposals separately from confirmed facts. Asked and
 rejected questions form avoidance history; normalised exact repeats are blocked.
@@ -135,9 +136,11 @@ Rank improvement and real GPU runtime must be measured in the development run.
 
 ## Phase two and provenance
 
-Optional critique/revision code is retained for phase two but is not enabled by
-this runner. Its additional calls require an explicitly larger budget. Specialist
-caption selection and larger per-cluster shortlists remain unimplemented ideas.
+Critique remains off by default. Use `AGENT_MODES=(False, True)` to compare
+both selectors, or `(True,)` for critique alone. With critique off, minimum KL
+selects a question. With critique on, one neutral review call compares the
+filtered questions and returns an eligible slot and a reason; KL is skipped.
+This adds at most one call per round. The review cannot revise or invent questions.
 
 Vendored PlugIR files remain unchanged and checksum verified. Original text
 encoding, candidate clustering/entropy, KL selection and answer helpers are

@@ -6,7 +6,6 @@ Official per-state rankings and shared retrieval use one neutral reformulation.
 No fusion, spectral clustering, training or image re-encoding.
 """
 from dataclasses import asdict, dataclass
-import itertools
 import json
 from pathlib import Path
 import re
@@ -18,10 +17,10 @@ import torch
 from torch.nn.functional import normalize
 
 from .agent_prompts import PROMPT_VERSION, ROLES, messages_for
-from ..cache import digest, read_json
+from ..cache import read_json
 from ..live import (LiveSettings, generated_query_method, load_candidate_captions,
                    resolve_target_image, save_json, signature)
-from ..plugir_upstream import bind_original_text_encoder, load_generator, provenance
+from ..plugir_upstream import bind_original_text_encoder, load_generator
 from ..retrieval import ranks_for_targets
 
 
@@ -29,33 +28,24 @@ from ..retrieval import ranks_for_targets
 class AgentSettings:
     """Small explicit generation budget; a state is caption plus completed Q&A rounds."""
     seed: int = 1021
-    threshold_low: int = 500
+    threshold_low: int = 500 #Window Size 
     exclude_top_k: int = 10
-    replacement_attempts: int = 1  # Legacy setting; batch generation ignores it and never refills.
     max_calls_per_round: int = 40
-    diagnostic_top_k: int = 10
-    max_targets: int = 2
-    questions_per_agent: int = 1
-    proposal_policy: str = "specialists"
-    grounded_updates: bool = False
+    max_targets: int = 2 # Two for now cuz were looking for cake and giraffe
+    questions_per_agent: int = 5
     exclude_unjudged: bool = False
 
     def validate(self, pool_size, n_states):
         """Keep upstream's ten clusters and KL slice valid and all budgets bounded."""
-        LiveSettings(seed=self.seed, q_n=1, threshold_low=self.threshold_low,
-                     recall_hitting=self.exclude_top_k).validate(pool_size, n_states)
-        if self.replacement_attempts not in (0, 1) or type(self.replacement_attempts) is not int:
-            raise ValueError("Use zero or one proposal replacement attempt.")
+        LiveSettings(seed=self.seed, q_n=self.questions_per_agent, threshold_low=self.threshold_low,
+                     recall_hitting= self.exclude_top_k).validate(pool_size, n_states)
         if type(self.questions_per_agent) is not int or not 1 <= self.questions_per_agent <= 5:
             raise ValueError("Use one to five question slots per agent.")
         if any(type(v) is not int or v < 1 for v in
-               (self.max_calls_per_round, self.diagnostic_top_k, self.max_targets)):
+               (self.max_calls_per_round, self.max_targets)):
             raise ValueError("Agent budgets must be positive integers.")
-        if self.diagnostic_top_k > pool_size:
-            raise ValueError("Diagnostic top K exceeds image pool.")
-        if (self.proposal_policy not in ("specialists", "generalist")
-                or type(self.grounded_updates) is not bool or type(self.exclude_unjudged) is not bool):
-            raise ValueError("Use specialists/generalist policy and a boolean grounded_updates flag.")
+        if type(self.exclude_unjudged) is not bool:
+            raise ValueError("exclude_unjudged must be a boolean.")
 
 
 def question_key(text):
@@ -91,7 +81,7 @@ class AgentChat:
         messages = messages_for(stage, role, payload)
         seed = int(signature({"seed": self.settings.seed, "context": self.sampling_context,
                               "stage": stage, "role": role, "payload": payload})[:8], 16) % (2**31)
-        max_tokens = 384 if stage in ("critique", "revise") else 512
+        max_tokens = 384 if stage == "critique" else 512
         if stage == "propose_batch":
             max_tokens = min(512, max(192, 112 * payload["question_count"]))
         elif stage == "filter_batch":
@@ -143,34 +133,18 @@ class AgentChat:
                     "reason": "Missing model decision; excluded without retry."} for slot in missing]
             result = {**result, "decisions": decisions, "omitted_slots": missing}
             return result
-        if stage == "answer_fact":
-            if (type(result.get("usable")) is not bool
-                    or not isinstance(result.get("fact"), str)
-                    or not isinstance(result.get("reason"), str) or not result["reason"].strip()
-                    or len(result["fact"]) > 300
-                    or (result["usable"] and (not result["fact"].strip() or "?" in result["fact"]))
-                    or (not result["usable"] and result["fact"] != "")):
-                raise ValueError("Invalid answer relevance/fact result.")
+        if stage == "critique":
+            slot = result.get("slot")
+            reason = result.get("reason")
+            if (type(slot) is not int or not 0 <= slot < len(payload["proposals"])
+                    or not isinstance(reason, str) or not reason.strip()):
+                raise ValueError("Critique must choose one eligible proposal slot and give a reason.")
             return result
-        required_text = {
-            "reformulate": ("query", "coverage_issue"),
-            "query_check": ("reason",),
-            "filter": ("status", "reason"),
-            "critique": ("verdict", "reason", "suggested_question"),
-            "revise": ("action", "question", "response_to_critique"),
-        }[stage]
+        required_text = ("query", "coverage_issue")
         if any(not isinstance(result.get(key), str) or not result[key].strip() for key in required_text):
             raise ValueError(f"Missing required text fields in {role}/{stage}.")
         if stage == "reformulate" and not isinstance(result.get("emphasis"), str):
             raise ValueError("Reformulation emphasis metadata must be a string, possibly empty.")
-        withdrawal = stage == "revise" and result.get("action") == "withdraw"
-        if withdrawal and result.get("question") != "abstain":
-            raise ValueError("Withdrawal must use question='abstain'.")
-        # A withdrawal contributes no question/evidence to selection. Preserve its
-        # raw omitted field; actual proposals and revisions still require a list.
-        evidence_ids = result.get("evidence_ids", [] if withdrawal else None)
-        if stage in ("critique", "revise") and not isinstance(evidence_ids, list):
-            raise ValueError("Structured proposals/reviews must include an evidence_ids list.")
         return result
 
 
@@ -189,7 +163,7 @@ class RetrievalContext:
             "device": retriever.device, "threshold_low": settings.threshold_low,
             "img_embs": retriever.images, "kmeans": kmeans,
             "captions": [{"caption": c} for c in self.catalogue]}
-        self.original_answer, _, self.source_audit = load_generator(self.namespace)
+        self.original_answer, _, _ = load_generator(self.namespace)
         bind_original_text_encoder(self.namespace, retriever)
         original_features = self.namespace["get_text_features"]
         self.features = {}
@@ -230,20 +204,15 @@ class RetrievalContext:
         for index in reversed(top.tolist()):
             matches.setdefault(self.catalogue[index][0], index)
         candidates = [{"id": matches[caption], "caption": caption} for caption in selected]
-        top_ids = torch.argsort(scores, descending=True, stable=True)[:self.settings.diagnostic_top_k].tolist()
-        return {"captions": candidates, "top_ids": top_ids, "pool_ids": list(reversed(top.tolist())), "window_size": window,
+        return {"captions": candidates, "pool_ids": list(reversed(top.tolist())), "window_size": window,
                 "query": query}
 
     def select(self, neutral, proposals, interaction):
-        """Choose minimum KL on one common neutral-query slice, using original select_question."""
+        """Choose minimum KL on one common neutral-query slice, with PlugIR's KL formula."""
         questions = [p["question"] for p in proposals]
         if not questions:
             return None, []
         scores = self.scores(neutral).to(self.retriever.device)
-        selected = self.namespace["select_question"](caption_recon=neutral, questions=questions,
-            cossim_prev=scores, k=self.settings.exclude_top_k, img_embs=self.retriever.images,
-            threshold=self.settings.threshold_low, round=interaction + 1)
-        # Observation-only record of the exact same original KL calculation.
         window = int(self.settings.threshold_low - interaction * self.settings.threshold_low / 10.)
         indices = scores.argsort()[-window:-self.settings.exclude_top_k]
         p = torch.softmax(scores[indices], dim=0)
@@ -253,7 +222,9 @@ class RetrievalContext:
             q = torch.softmax(temporary[indices], dim=0)
             log.append({"question": proposal["question"], "owner": proposal["owner"],
                         "kl": float((p * (p.log() - q.log())).sum())})
-        return selected, log
+        # Match the original helper's float32 scores and argsort tie handling.
+        winner = torch.tensor([row["kl"] for row in log], dtype=torch.float32).argsort()[0].item()
+        return questions[winner], log
 
 
 def rewrite_query(chat, record, role):
@@ -281,51 +252,6 @@ def precheck_proposal(record, proposal, candidates):
     return None
 
 
-def anchored_query(initial_caption, dialogue):
-    """Retain original text verbatim and rebuild from accepted fact records, never prior rewrites."""
-    facts = list(dict.fromkeys(qa["accepted_fact"].strip() for qa in dialogue
-                              if qa.get("accepted_fact", "").strip()))
-    return initial_caption + (". " + " ".join(facts) if facts else "")
-
-
-def grounded_answer_update(chat, record, question, answer):
-    """Quarantine non-answers or failed fact audits; keep raw answers for review without retries."""
-    assessment = chat.complete("answer_fact", "full", {
-        "record": record, "question": question, "answer": answer})
-    qa = {"question": question, "answer": answer.strip(), "accepted_fact": "",
-          "answer_quality": {"usable": assessment["usable"], "reason": assessment["reason"],
-                             "proposed_fact": assessment["fact"], "fact_check": None}}
-    if assessment["usable"]:
-        qa["accepted_fact"] = assessment["fact"].strip()
-        query = anchored_query(record["initial_caption"], record["dialogue"] + [qa])
-        # The checker must judge the new fact from raw Q&A, not trust the extractor's label.
-        check_record = {"initial_caption": record["initial_caption"],
-                        "dialogue": record["dialogue"] + [{"question": question, "answer": answer.strip()}]}
-        check = chat.complete("query_check", "full", {"record": check_record, "query": query})
-        if type(check.get("faithful")) is not bool:
-            raise ValueError("Fact checker must return a boolean faithful decision.")
-        qa["answer_quality"]["fact_check"] = check
-        if not check["faithful"]:
-            qa["accepted_fact"] = ""
-            qa["answer_quality"]["usable"] = False
-            qa["answer_quality"]["reason"] = "Fact audit rejected: " + check["reason"]
-    next_dialogue = record["dialogue"] + [qa]
-    return next_dialogue, anchored_query(record["initial_caption"], next_dialogue)
-
-
-def gate_proposal(chat, record, proposal, candidates):
-    """Keep the individual gate for the optional phase-two revision stage."""
-    early = precheck_proposal(record, proposal, candidates)
-    if early is not None:
-        return early
-    ids = proposal["evidence_ids"]
-    result = chat.complete("filter", "full", {"record": record, "proposal": proposal,
-        "candidates": [c for c in candidates if c["id"] in ids]})
-    if result.get("status") not in ("unknown", "already_known", "unsupported", "ambiguous"):
-        raise ValueError("Unknown question-filter status.")
-    return result
-
-
 def unique_proposals(proposals):
     """Retain one exact normalized question and record all proposing roles without extra votes."""
     found = {}
@@ -339,12 +265,12 @@ def unique_proposals(proposals):
 
 
 def question_round(chat, context, record, neutral, interaction, *, critique, prior_attempts=()):
-    """Generate one question batch per role, batch-filter, optionally revise, then common KL.
+    """Generate one question batch per role, batch-filter, then select by critique or minimum KL.
 
     No target identity, pixels, target ranks, saved human answers or future states
     enter this function. Returns all candidate/critique evidence for later audits.
     """
-    branches, batches, attempts, eligible, pending = {}, {}, [], [], []
+    batches, attempts, eligible, pending = {}, [], [], []
     omitted_slots = []
     # Only previously rejected questions are blocked. A useful unselected question
     # may still be useful next round; it has not been answered or confirmed.
@@ -352,27 +278,21 @@ def question_round(chat, context, record, neutral, interaction, *, critique, pri
                if isinstance(p.get("question"), str)}
     seen = {}
     roles = list(ROLES)
-    if critique and chat.settings.proposal_policy == "generalist":
-        raise ValueError("The generalist control is defined only without critique.")
     # One search, one clustering pass and identical caption evidence per round.
     shared = context.candidates(neutral, interaction, "shared", record)
     for role in roles:
-        query = neutral
-        branch = {**shared}
-        branches[role] = branch
-        prompt_role = role if chat.settings.proposal_policy == "specialists" else "full"
-        batches[role] = chat.complete("propose_batch", prompt_role, {"record": record, "query": query,
-            "agent_role": role if chat.settings.proposal_policy == "specialists" else "generalist",
+        batches[role] = chat.complete("propose_batch", role, {"record": record, "query": neutral,
+            "agent_role": role,
             "batch_id": roles.index(role),
-            "candidates": branch["captions"], "question_count": chat.settings.questions_per_agent,
+            "candidates": shared["captions"], "question_count": chat.settings.questions_per_agent,
             "attempted_proposals": list(prior_attempts)})
     # Finish all independent searches before any question-pool filtering/review.
     for role in roles:
-        branch, batch = branches[role], batches[role]
+        batch = batches[role]
         for slot, raw in enumerate(batch["proposals"]):
             proposal = {**raw, "owner": role, "slot": slot}
             key = question_key(proposal["question"])
-            gate = precheck_proposal(record, proposal, branch["captions"])
+            gate = precheck_proposal(record, proposal, shared["captions"])
             if gate is None and key in blocked:
                 gate = {"status": "previously_rejected", "reason": blocked[key]["reason"]}
             duplicate = seen.get(key) if gate is None else None
@@ -402,40 +322,20 @@ def question_round(chat, context, record, neutral, interaction, *, critique, pri
                 item["filter"]["model_omitted"] = slot in omitted_slots
             if decision["status"] == "unknown":
                 eligible.append(item["proposal"])
-    before = unique_proposals(eligible)
-    pre_selected, pre_kl = context.select(neutral, before, interaction)
-    reviews, final = [], before
+    final = unique_proposals(eligible)
+    decision = None
     if critique:
-        final = []
-        for proposal in before:
-            owner = proposal["owner"]
-            reviewer = roles[(roles.index(owner) - 1) % len(roles)]
-            evidence = branches[owner]["captions"]
-            payload = {"record": record, "query": branches[owner]["query"],
-                       "proposal": proposal, "candidates": evidence}
-            review = chat.complete("critique", reviewer, payload)
-            if review.get("verdict") not in ("keep", "revise", "reject"):
-                raise ValueError("Invalid peer verdict.")
-            ids = review.get("evidence_ids", [])
-            if not isinstance(ids, list) or any(type(i) is not int or i not in {c["id"] for c in evidence} for i in ids):
-                raise ValueError("Peer cited evidence outside the proposal's candidate set.")
-            response = chat.complete("revise", owner, {**payload, "critique": review})
-            if response.get("action") not in ("retain", "revise", "withdraw"):
-                raise ValueError("Invalid author revision action.")
-            updated = {**proposal, **response, "owner": owner}
-            if response["action"] == "retain" and response.get("question") != proposal["question"]:
-                raise ValueError("Retain must preserve the proposed question exactly.")
-            if response["action"] == "withdraw":
-                gate = {"status": "withdrawn", "reason": response.get("response_to_critique", "")}
-            else:
-                gate = gate_proposal(chat, record, updated, evidence)
-                if gate["status"] == "unknown":
-                    final.append(updated)
-            reviews.append({"owner": owner, "reviewer": reviewer, "before": proposal,
-                "critique": review, "response": response, "after_filter": gate,
-                "question_changed": response.get("question") != proposal["question"]})
-        final = unique_proposals(final)
-    selected, kl = context.select(neutral, final, interaction) if critique else (pre_selected, pre_kl)
+        selected, kl = None, []
+        if final:
+            decision = chat.complete("critique", "full", {
+                "record": record, "query": neutral, "candidates": shared["captions"],
+                "proposals": [{"slot": slot, "question": p["question"],
+                               "evidence_ids": p["evidence_ids"]}
+                              for slot, p in enumerate(final)],
+            })
+            selected = final[decision["slot"]]["question"]
+    else:
+        selected, kl = context.select(neutral, final, interaction)
     selected_key = question_key(selected) if selected is not None else None
     final_keys = {question_key(p["question"]) for p in final}
     memory = []
@@ -447,62 +347,34 @@ def question_round(chat, context, record, neutral, interaction, *, critique, pri
         # suppressed: deduplication does not provide its missing answer.
         effective = seen[key]["filter"] if status == "duplicate" else item["filter"]
         blocked_next = key == selected_key or (key not in final_keys and
-                       (effective["status"] != "unknown" or critique))
+                       effective["status"] != "unknown")
         memory.append({"question": question, "owner": item["owner"], "status": status,
                        "reason": "Already asked; see the shared dialogue for its answer."
                                  if key == selected_key else effective["reason"], "blocked": blocked_next,
                        "selected": key == selected_key})
-    # Optional revised questions must also be remembered if phase two is enabled.
-    for review in reviews:
-        question = review["response"].get("question")
-        if valid_question(question):
-            key = question_key(question)
-            memory.append({"question": question, "owner": review["owner"],
-                           "status": review["after_filter"]["status"],
-                           "reason": review["after_filter"]["reason"],
-                           "blocked": key == selected_key or key not in final_keys,
-                           "selected": key == selected_key})
-    diagnostics = []
-    for left, right in itertools.combinations(roles, 2):
-        a, b = set(branches[left]["top_ids"]), set(branches[right]["top_ids"])
-        if branches[left]["query"] == branches[right]["query"]:
-            query_cosine = 1.0
-        else:
-            query_scores = context.namespace["get_text_features"]([branches[left]["query"], branches[right]["query"]])
-            query_cosine = float(normalize(query_scores, dim=-1)[0] @ normalize(query_scores, dim=-1)[1])
-        diagnostics.append({"left": left, "right": right, "top_k_jaccard": len(a & b) / len(a | b),
-                            "query_cosine": query_cosine,
-                            "identical_query": question_key(branches[left]["query"]) == question_key(branches[right]["query"])})
-    preferences = dict(ROLES) if chat.settings.proposal_policy == "specialists" else {r: ROLES["full"] for r in roles}
-    return {"branches": branches, "shared_retrieval": shared, "role_preferences": preferences,
+    return {"shared_retrieval": shared, "role_preferences": dict(ROLES),
             "filter_omitted_slots": omitted_slots,
-            "proposal_policy": chat.settings.proposal_policy,
-            "attempts": attempts, "before_critique": before,
+            "attempts": attempts, "before_critique": final,
             "question_memory": memory,
-        "reviews": reviews, "final_proposals": final, "pre_critique_selection": pre_selected,
-        "pre_critique_kl": pre_kl, "selected_question": selected, "kl": kl,
-        "selected_question_changed": pre_selected != selected, "diversity": diagnostics}
+            "selector": "critique" if critique else "min_kl",
+            "critique_decision": decision, "final_proposals": final,
+            "selected_question": selected, "kl": kl}
 
 
 def generate_agent_dialogue(retriever, *, initial_caption, target_id, image_path, captions,
                             questioner, answerer, settings, n_states, checkpoint_path,
-                            run_identity, critique=True, _kmeans=None):
+                            critique=True, _kmeans=None):
     """Run/resume independent critique or no-critique histories; ranks never feed decisions."""
     settings.validate(len(retriever.cache.paths), n_states)
-    identity = {"run": run_identity, "caption": initial_caption, "target": retriever.cache.paths[target_id],
-                "image_sha256": digest(image_path), "settings": asdict(settings), "critique": critique,
-                "prompts": PROMPT_VERSION, "upstream": provenance()}
     path = Path(checkpoint_path)
     context = RetrievalContext(retriever, captions, settings, kmeans=_kmeans)
     chat = AgentChat(questioner, settings)
     if path.is_file():
         state = read_json(path)
-        if state["identity"] != identity:
-            raise ValueError("Agent checkpoint identity mismatch.")
     else:
-        state = {"identity": identity, "dialogue": [], "states": [{"round": 0, "query": initial_caption,
+        state = {"target": retriever.cache.paths[target_id], "dialogue": [], "states": [{"round": 0, "query": initial_caption,
             "raw_query": initial_caption, "target_rank": int(ranks_for_targets(retriever.scores([initial_caption]), [target_id])[0])}],
-            "source_audit": context.source_audit, "status": "partial"}
+            "status": "partial"}
         save_json(path, state)
     try:
         for interaction in range(len(state["states"]) - 1, n_states - 1):
@@ -527,15 +399,10 @@ def generate_agent_dialogue(retriever, *, initial_caption, target_id, image_path
                     answerer.park()
                 if not isinstance(answer, str) or not answer.strip():
                     raise ValueError("Answerer returned no answer; do not update confirmed context.")
-                if settings.grounded_updates:
-                    next_dialogue, neutral = grounded_answer_update(chat, record, question, answer)
-                else:
-                    next_dialogue.append({"question": question, "answer": answer.strip()})
-                    neutral = rewrite_query(chat, {"initial_caption": initial_caption, "dialogue": next_dialogue}, "full")
+                next_dialogue.append({"question": question, "answer": answer.strip()})
+                neutral = rewrite_query(chat, {"initial_caption": initial_caption, "dialogue": next_dialogue}, "full")
             raw = ", ".join([initial_caption] + [qa["question"] + " " + qa["answer"] for qa in next_dialogue])
             # Target ranks are added ONLY after selection/answering/reformulation.
-            for branch in audit["branches"].values():
-                branch["target_rank_diagnostic"] = int(ranks_for_targets(retriever.scores([branch["query"]]), [target_id])[0])
             measured = int(ranks_for_targets(retriever.scores([neutral]), [target_id])[0])
             state["dialogue"] = next_dialogue
             state["question_memory"] = [entry for previous in state["states"][1:]
@@ -548,9 +415,8 @@ def generate_agent_dialogue(retriever, *, initial_caption, target_id, image_path
             state.pop("last_error", None)
             state.pop("partial_round_audit", None)
             save_json(path, state)
-            quality = next_dialogue[-1].get("answer_quality") if question is not None else None
-            print(f"Agents policy={settings.proposal_policy}, critique={critique}, state {interaction+1}: "
-                  f"question={question!r}, answer={answer!r}, rank={measured}, quality={quality}, "
+            print(f"Agents critique={critique}, state {interaction+1}: "
+                  f"question={question!r}, answer={answer!r}, rank={measured}, "
                   f"filter_omissions={len(audit['filter_omitted_slots'])}", flush=True)
         state["status"] = "complete"
         save_json(path, state)
@@ -566,55 +432,14 @@ def generate_agent_dialogue(retriever, *, initial_caption, target_id, image_path
         answerer.park()
 
 
-def diagnostic_tables(conversations):
-    """Flatten diversity, critique changes and cost records; target ranks stay observation-only."""
-    diversity, changes, rounds = [], [], []
-    for method, cases in conversations.items():
-        for index, case in enumerate(cases):
-            for state in case["states"][1:]:
-                prefix = {"method": method, "example_index": index, "round": state["round"]}
-                audit = state["audit"]
-                diversity.extend({**prefix, **row} for row in audit["diversity"])
-                for review in audit["reviews"]:
-                    changes.append({**prefix, "owner": review["owner"], "reviewer": review["reviewer"],
-                        "question_before": review["before"]["question"],
-                        "question_after": review["response"].get("question"),
-                        "verdict": review["critique"]["verdict"], "action": review["response"]["action"],
-                        "reason": review["critique"]["reason"], "question_changed": review["question_changed"],
-                        "final_filter": review["after_filter"]["status"]})
-                records = state.get("transport_records", [])
-                fresh = [r for r in records if not r.get("reused", False)]
-                rounds.append({**prefix, "target_rank": state["target_rank"], "llm_calls": state["llm_calls"],
-                    "asked_questions": int(state["question"] is not None),
-                    "unique_proposals_before": len(audit["before_critique"]),
-                    "unique_proposals_after": len(audit["final_proposals"]),
-                    "pre_critique_question": audit["pre_critique_selection"],
-                    "selected_question": audit["selected_question"],
-                    "selected_roles": "|".join(role for role in ROLES if any(
-                        attempt["owner"]==role and state["question"] is not None
-                        and question_key(attempt["proposal"]["question"])==question_key(state["question"])
-                        for attempt in audit["attempts"])),
-                    "proposal_batch_calls": sum(item["stage"]=="propose_batch" for item in state["llm_audit"]),
-                    "filter_batch_calls": sum(item["stage"]=="filter_batch" for item in state["llm_audit"]),
-                    **{f"proposals_{role}": sum(a["owner"]==role for a in audit["attempts"]) for role in ROLES},
-                    **{f"retained_{role}": sum(p["owner"]==role for p in audit["final_proposals"]) for role in ROLES},
-                    "selection_changed": audit["selected_question_changed"],
-                    "new_input_tokens": sum(r.get("input_tokens", 0) for r in fresh),
-                    "new_output_tokens": sum(r.get("output_tokens", 0) for r in fresh),
-                    "new_generation_seconds": sum(r.get("seconds", 0.) for r in fresh),
-                    "reused_calls": sum(bool(r.get("reused", False)) for r in records)})
-    return {"diversity": diversity, "critique_changes": changes, "round_diagnostics": rounds}
-
-
 def prepare_agent_experiment(root, retriever, pairs, *, n_states, settings, device="cuda", offline=False,
         candidate_captions="assets/protocol/visdial_captions.json", image_root="data/images",
         image_archive=None, download_missing=True, max_input_tokens=8192,
-        modes=(False, True)):
+        modes=(False, True), run_name="shared_agents_simple_v1"):
     """Prepare both conditions for run_evaluation.py using identical initial targets and cached images."""
-    import importlib.metadata
     import importlib.util
     from ..evaluation import PreparedExperiment
-    from ..live_models import Qwen3, Blip2Answerer, require_cuda, QWEN_ID, QWEN_REVISION, BLIP2_ID, BLIP2_REVISION
+    from ..live_models import Qwen3, Blip2Answerer, require_cuda
     require_cuda(device)
     settings.validate(len(retriever.cache.paths), n_states)
     if not pairs or len(pairs) > settings.max_targets:
@@ -623,24 +448,17 @@ def prepare_agent_experiment(root, retriever, pairs, *, n_states, settings, devi
         raise ValueError("Agent input token limit must be positive.")
     if not modes or len(set(modes)) != len(modes) or any(type(m) is not bool for m in modes):
         raise ValueError("Modes must contain distinct booleans (False=no critique, True=critique).")
+    if modes and True in modes and settings.max_calls_per_round < 6:
+        raise ValueError("Critique selection requires a budget of at least six calls per round.")
     extras = ("accelerate", "sentencepiece", "fast_pytorch_kmeans", "psutil")
     if any(importlib.util.find_spec(name) is None for name in extras):
         raise RuntimeError('Install live extras in the GPU environment: python -m pip install -e ".[live,test]"')
     root = Path(root)
     catalogue_path = root / candidate_captions
     catalogue = load_candidate_captions(catalogue_path, retriever.cache.paths)
-    identity = {"experiment": "three_specialists_shared_evidence_v2", "prompts": PROMPT_VERSION,
-        "settings": asdict(settings), "upstream": provenance(), "cache": retriever.cache.report,
-        "catalogue_sha256": digest(catalogue_path), "max_input_tokens": max_input_tokens,
-        "qwen": [QWEN_ID, QWEN_REVISION], "answerer": [BLIP2_ID, BLIP2_REVISION],
-        "qwen_max_output_tokens": 1024,
-        "gpu": torch.cuda.get_device_name(torch.device(device)), "cuda": torch.version.cuda,
-        "generation_device": device, "retrieval_device": str(retriever.device),
-        "versions": {name: importlib.metadata.version(name) for name in ("torch", "transformers", "fast-pytorch-kmeans")},
-        "source_sha256": {name: digest(root / name) for name in ("src/agentir/multagent_experiment/multi_agent.py",
-            "src/agentir/multagent_experiment/agent_prompts.py", "src/agentir/live_models.py", "src/agentir/plugir_upstream.py", "src/agentir/retrieval.py")}}
-    folder = root / "runs" / "three_agents" / signature(identity)[:20]
-    save_json(folder / "identity.json", identity)
+    if not re.fullmatch(r"[A-Za-z0-9_-]+", run_name):
+        raise ValueError("run_name must use only letters, digits, underscores or hyphens.")
+    folder = root / "runs" / "three_agents" / run_name
     questioner = Qwen3(folder / "qwen_calls", device=device, offline=offline,
                        max_input_tokens=max_input_tokens, seed=settings.seed, max_output_tokens=1024)
     answerer = Blip2Answerer(folder / "blip2_calls", device=device, offline=offline)
@@ -648,8 +466,7 @@ def prepare_agent_experiment(root, retriever, pairs, *, n_states, settings, devi
     conversations, methods, elapsed = {}, {}, {}
     try:
         for critique in modes:
-            name = ("generalist_no_critique" if settings.proposal_policy == "generalist"
-                    else "agents_critique" if critique else "agents_no_critique")
+            name = "agents_critique" if critique else "agents_no_critique"
             started = time.perf_counter()
             conversations[name] = []
             for raw, _ in pairs:
@@ -660,35 +477,24 @@ def prepare_agent_experiment(root, retriever, pairs, *, n_states, settings, devi
                 conversations[name].append(generate_agent_dialogue(retriever,
                     initial_caption=raw["dialog"][0], target_id=target_ids[raw["img"]], image_path=image,
                     captions=catalogue, questioner=questioner, answerer=answerer, settings=settings,
-                    n_states=n_states, checkpoint_path=folder / name / (signature(raw["img"])[:20] + ".json"),
-                    run_identity=signature(identity), critique=critique))
+                    n_states=n_states, checkpoint_path=folder / ("critique_selector" if critique else name) / (Path(raw["img"]).stem + ".json"),
+                    critique=critique))
             methods[name] = generated_query_method(conversations[name])
             elapsed[name] = time.perf_counter() - started
     finally:
         questioner.park()
         answerer.park()
     from .agent_prompts import EXAMPLES, NEUTRAL_EXAMPLE, QA_GROUNDING_EXAMPLE, SHARED, TASKS
-    tables = diagnostic_tables(conversations)
-    # CSVs are also saved beside resumable checkpoints for easy inspection.
-    import csv
-    for name, rows in tables.items():
-        if rows:
-            with (folder / (name + ".csv")).open("w", newline="", encoding="utf-8") as stream:
-                writer = csv.DictWriter(stream, fieldnames=list(rows[0]))
-                writer.writeheader()
-                writer.writerows(rows)
     return PreparedExperiment(methods=methods,
-        metadata={"identity": identity, "checkpoint_folder": str(folder),
+        metadata={"run_name": run_name, "settings": asdict(settings), "checkpoint_folder": str(folder),
                   "condition_wall_seconds": elapsed,
-                  "official_ranking": ("verbatim original caption plus accepted fact ledger; no fusion"
-                                       if settings.grounded_updates else
-                                       "neutral reformulation of original caption plus shared asked QA; no fusion"),
+                  "official_ranking": "neutral reformulation of original caption plus shared Q&A; no fusion",
                   "retrieval_evidence": "one neutral query, shared candidate pool and ten original representatives per round",
-                  "limitations": "New agent prompts/filter/orchestration; original clustering and KL helpers. "
+                  "limitations": "New agent prompts/filter/orchestration; original clustering and PlugIR's KL formula. "
                       "Rewrites can drift; the standard rewrite has no separate fidelity check. Exact duplicate detection only. "
                       "Conditions share initial proposals at the same context, then histories can diverge. "
                       "Model quality, speed and GPU fit need a real pilot."},
-        artifacts={"agent_dialogues.json": conversations, "diagnostics.json": tables,
+        artifacts={"agent_dialogues.json": conversations,
                    "prompt_pack.json": {"version": PROMPT_VERSION, "roles": ROLES,
                                         "examples": EXAMPLES, "neutral_example": NEUTRAL_EXAMPLE,
                                         "qa_grounding_example": QA_GROUNDING_EXAMPLE,
