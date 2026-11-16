@@ -1,0 +1,61 @@
+sample,method,recall@1,recall@10,recall@100
+sample of 200,paraphrase | interleave,46.0,75.5,96.0
+sample of 200,paraphrase | interleave (orig x2),46.0,75.5,96.5
+sample of 200,paraphrase | z-max,45.5,78.0,96.0
+sample of 200,paraphrase | z-min,44.5,72.0,96.0
+sample of 200,paraphrase | mean embedding (orig x2),45.5,75.5,97.0
+sample of 200,paraphrase | rrf (orig x2),47.0,74.5,97.0
+sample of 200,paraphrase | mean embedding (orig x3),46.5,75.5,97.0
+sample of 200,paraphrase | rrf (orig x3),47.0,74.5,96.5
+sample of 200,paraphrase | original,46.0,74.5,95.5
+sample of 200,paraphrase | best of all queries (oracle*),52.0,80.0,97.0
+sample of 200,detail | interleave,46.0,73.5,95.5
+sample of 200,detail | interleave (orig x2),46.0,73.5,95.5
+sample of 200,detail | z-max,42.5,72.0,95.5
+sample of 200,detail | z-min,35.5,68.5,93.0
+sample of 200,detail | mean embedding (orig x2),47.0,75.5,95.5
+sample of 200,detail | rrf (orig x2),44.0,74.0,95.5
+sample of 200,detail | mean embedding (orig x3),47.0,77.0,95.5
+sample of 200,detail | rrf (orig x3),44.5,74.5,96.0
+sample of 200,detail | original,46.0,74.5,95.5
+sample of 200,detail | best of all queries (oracle*),54.5,82.5,98.0
+sample of 200,refocus | interleave,46.0,75.5,95.0
+sample of 200,refocus | interleave (orig x2),46.0,75.5,95.0
+sample of 200,refocus | z-max,44.5,73.5,94.5
+sample of 200,refocus | z-min,38.0,71.5,94.0
+sample of 200,refocus | mean embedding (orig x2),44.0,75.5,95.5
+sample of 200,refocus | rrf (orig x2),45.5,75.0,96.5
+sample of 200,refocus | mean embedding (orig x3),44.5,77.0,96.5
+sample of 200,refocus | rrf (orig x3),45.5,75.5,96.0
+sample of 200,refocus | original,46.0,74.5,95.5
+sample of 200,refocus | best of all queries (oracle*),53.5,81.0,97.0
+sample of 200,decompose | interleave,46.0,67.0,90.5
+sample of 200,decompose | interleave (orig x2),46.0,71.0,92.5
+sample of 200,decompose | z-max,32.0,65.5,91.5
+sample of 200,decompose | z-min,18.0,48.5,76.5
+sample of 200,decompose | mean embedding (orig x2),41.0,72.5,94.5
+sample of 200,decompose | rrf (orig x2),32.0,70.0,95.5
+sample of 200,decompose | mean embedding (orig x3),42.5,74.5,94.5
+sample of 200,decompose | rrf (orig x3),34.0,71.0,95.5
+sample of 200,decompose | original,46.0,74.5,95.5
+sample of 200,decompose | best of all queries (oracle*),52.0,80.5,96.5
+sample of 200,ALL | interleave,46.0,73.5,95.5
+sample of 200,ALL | interleave (orig x2),46.0,74.5,94.5
+sample of 200,ALL | z-max,35.5,65.5,92.0
+sample of 200,ALL | z-min,18.5,49.5,79.0
+sample of 200,ALL | mean embedding (orig x2),45.5,75.0,95.5
+sample of 200,ALL | rrf (orig x2),41.0,75.0,95.5
+sample of 200,ALL | mean embedding (orig x3),46.0,75.0,95.5
+sample of 200,ALL | rrf (orig x3),42.0,74.5,95.5
+sample of 200,ALL | original,46.0,74.5,95.5
+sample of 200,ALL | best of all queries (oracle*),59.0,86.5,98.5
+all 2064 (paraphrase only),paraphrase | interleave,41.86046511627907,70.59108527131782,93.4108527131783
+all 2064 (paraphrase only),paraphrase | interleave (orig x2),41.86046511627907,70.78488372093024,93.7984496124031
+all 2064 (paraphrase only),paraphrase | z-max,40.35852713178294,70.83333333333333,93.3624031007752
+all 2064 (paraphrase only),paraphrase | z-min,38.71124031007752,69.62209302325581,93.02325581395348
+all 2064 (paraphrase only),paraphrase | mean embedding (orig x2),40.79457364341085,71.07558139534883,93.7015503875969
+all 2064 (paraphrase only),paraphrase | rrf (orig x2),41.036821705426355,70.78488372093024,93.65310077519379
+all 2064 (paraphrase only),paraphrase | mean embedding (orig x3),41.23062015503876,71.31782945736434,93.75
+all 2064 (paraphrase only),paraphrase | rrf (orig x3),41.52131782945737,70.73643410852713,93.65310077519379
+all 2064 (paraphrase only),paraphrase | original,41.86046511627907,71.12403100775194,93.84689922480621
+all 2064 (paraphrase only),paraphrase | best of all queries (oracle*),48.15891472868217,77.37403100775194,95.68798449612403
