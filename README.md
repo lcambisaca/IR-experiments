@@ -1,11 +1,19 @@
 # AgentIR
 
-Image-retrieval experiments using our saved **50,000-image BLIP cache**. Our main
-comparison is **original PlugIR + Qwen** versus **our independent multi-agent
-system**. Each generates its own conversation and query history; both use the
-same retrieval/answering models, image pool and evaluator. Agent methods need
-not use PlugIR's clustering or question-selection logic. The live Qwen baseline
-is implemented; its full GPU pilot is pending.
+Interactive text-to-image retrieval experiments built on **PlugIR**. A user starts
+with a caption, a questioner asks about the target image, a simulated user answers,
+and the dialogue is turned into a search over **50,000 images** (BLIP
+`blip-itm-large-coco`). Every method uses the same models (Qwen3-4B-Instruct-2507
+questioner/rewriter, BLIP-2 flan-t5-xl answerer), image pool and evaluator.
+
+The repository contains:
+
+1. **Live PlugIR + Qwen baseline**: the original PlugIR loop run live with Qwen3-4B.
+2. **Multi-agent questioner** (Leo): three specialist agents propose questions from
+   shared retrieval evidence; PlugIR's KL selection picks one.
+3. **Caption mix and fact fusion**: keep the dialogue, change how it becomes the
+   search query. Fact fusion improves Recall@10 at round 10 from 64.4 to 77.2
+   (219 targets).
 
 | Guide | Purpose |
 |---|---|
@@ -13,6 +21,19 @@ is implemented; its full GPU pilot is pending.
 | [PLUGIR_COMPARISON.md](PLUGIR_COMPARISON.md) | What matches original PlugIR and what the wrapper changes |
 | [AGENT_EXPERIMENT.md](AGENT_EXPERIMENT.md) | Multi-agent specialist questioner: design and pilot |
 | [CAPTION_MIX_FACT_FUSION.md](CAPTION_MIX_FACT_FUSION.md) | Caption mix and fact fusion: method, code, how to run, results |
+
+## Repository map
+
+| Paper part | Code | Results | Run |
+|---|---|---|---|
+| Shared retrieval and metrics | [retrieval.py](src/agentir/retrieval.py), [cache.py](src/agentir/cache.py), [evaluation.py](src/agentir/evaluation.py) | [results/baseline/](results/baseline/) | `run_evaluation.py` (saved queries) |
+| Live PlugIR + Qwen baseline | [live.py](src/agentir/live.py), [live_models.py](src/agentir/live_models.py), [plugir_upstream.py](src/agentir/plugir_upstream.py), [third_party/PlugIR](third_party/PlugIR) | [results/conversations/](results/conversations/) | `RUN_LIVE_PLUGIR = True` or [scripts/run_plugir_live.py](scripts/run_plugir_live.py) |
+| Multi-agent questioner | [multagent_experiment/](src/agentir/multagent_experiment/) | not committed yet | `RUN_MULTI_AGENT_PILOT = True` |
+| Caption mix and fact fusion | [fact_fusion.py](fact_fusion.py) (post-hoc), [facts_e2e.py](src/agentir/facts_e2e.py) (live), [scripts/](scripts/) | [results/fact_fusion/](results/fact_fusion/), [results/fact_fusion_confirm/](results/fact_fusion_confirm/) | `SEARCH = "facts"`; see [CAPTION_MIX_FACT_FUSION.md](CAPTION_MIX_FACT_FUSION.md) |
+| Tests (CPU, scripted models) | [tests/](tests/) | | `python -m pytest` |
+
+`assets/protocol/` holds target lists, the 50k image manifest and PlugIR's candidate
+captions; `assets/colab_reference/` is the original Colab output used by a regression test.
 
 ## 1. Install the project
 
@@ -186,11 +207,3 @@ through Drive with the appropriate access.
 [source repository](https://github.com/Saehyung-Lee/PlugIR). Pinned original source,
 checksums and MIT notice are in [third_party/PlugIR](third_party/PlugIR).
 The candidate-caption catalogue is copied from that pinned protocol.
-# Three-agent experiment
-
-The optional three-agent question pipeline is now available through the same
-`run_evaluation.py` template. See [AGENT_EXPERIMENT.md](AGENT_EXPERIMENT.md) for
-the one-target GPU pilot, reviewed prompts, critique/no-critique comparison,
-per-round rankings and diversity/critique logs. `RUN_THREE_AGENTS=False` preserves
-the existing saved-baseline defaults. Spectral clustering and rank fusion remain
-future comparisons.
