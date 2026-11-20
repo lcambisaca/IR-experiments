@@ -140,7 +140,7 @@ def main():
     print(f"Saved references: {', '.join(references) or 'disabled'}")
     retriever = BlipRetriever(cache, device=device, batch_size=TEXT_BATCH_SIZE,
                               threads=CPU_THREADS, local_files_only=OFFLINE)
-    methods, prepared_experiments = collect_experiments(root, retriever, pairs, n_states=n_states)
+    methods, prepared_experiments = collect_experiments(root, retriever, pairs, n_states=n_states) # This is what runs our experiemnts
     print(f"Enabled comparison methods: {', '.join(methods) or 'saved references only'}")
     result = evaluate_experiments(
         retriever, pairs, methods, rounds=n_states, ks=K_VALUES, references=references,
