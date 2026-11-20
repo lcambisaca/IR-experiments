@@ -147,3 +147,16 @@ searches are controlled by `INCLUDE_SAVED_REFERENCES` and `SAVED_REFERENCES`.
 Pilot targets are a development check, not a benchmark. See
 [AGENT_EXPERIMENT.md](src/agentir/multagent_experiment/AGENT_EXPERIMENT.md) for prompts,
 budgets, resume and audit outputs.
+
+## Shared rewrite protocol
+
+Multi-agent and live PlugIR now use the same unchanged upstream reconstruction
+prompt and identical-query paraphrase fallback, with the same pinned Qwen model.
+Both BLIP-2 answer inputs include the current description followed by the selected
+question. Custom agent rewrite instructions are removed. Existing answer and
+rewrite quality limitations remain; this change aligns the downstream procedure
+rather than fixing it. The earlier cake/giraffe pilot used the previous protocol.
+
+Multi-agent checkpoints/call caches now live beneath the
+`plugir_original_rewrite_v1` policy directory. Legacy checkpoints are not silently
+resumed. Use a fresh run name when changing other settings or prompts.

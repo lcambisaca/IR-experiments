@@ -3,7 +3,7 @@
 The next development experiment uses one neutral query, one retrieved candidate
 pool and the same ten representative captions for three question generators.
 Their specialities affect question generation, not which confirmed facts survive
-or which search produces the official rank. Critique is off for this test.
+or which search produces the official rank. `AGENT_MODES` selects minimum-KL and/or critique selection.
 
 ## Selected cases and rounds
 
@@ -14,11 +14,10 @@ or which search produces the official rank. Critique is off for this test.
 | A group of people posing in front of a cake | unlabeled2017/000000364869.jpg | 9 |
 | A giraffe is standing in an open field | unlabeled2017/000000562109.jpg | 89 |
 
-`N_STATES=6` records the initial caption plus five interaction rounds per case.
-`TARGET_IMAGES` selects identities explicitly, avoiding a contiguous slice that
-would accidentally include other targets. Missing or duplicate names fail before
-model preparation. Set `TARGET_IMAGES=None` to restore contiguous selection with
-`START_TARGET` and `N_TARGETS` for other experiments.
+`N_STATES` in `run_evaluation.py` controls both live methods; 11 means the caption
+plus ten interaction rounds. `USE_PILOT_TARGETS=True` selects these two identities.
+With `USE_PILOT_TARGETS=False`, `START_TARGET` and `N_TARGETS` select a shared batch
+(32 targets by default). The multi-agent allowance follows the selected batch.
 
 These are deliberately selected development cases, not an unbiased benchmark.
 Cake starts inside the top ten; it can show rank/BRI changes but initial Recall@10
@@ -35,9 +34,9 @@ Original caption + confirmed, actually asked Q&A
 → each generates up to FIVE questions in ONE response
 → omit malformed, unsupported-ID, previously asked/rejected and exact duplicate questions
 → one combined neutral filter checks all remaining proposals
-→ original minimum-KL selection chooses ONE question against the neutral query
-→ obtain ONE BLIP-2 answer
-→ append actual Q&A, create one neutral rewrite and audit its faithfulness
+→ minimum-KL or Qwen critique selects ONE eligible question
+→ obtain ONE BLIP-2 answer using current description + selected question
+→ append actual Q&A and use the unchanged PlugIR reconstruction and paraphrase fallback
 → measure the official target rank against the full 50k database.
 
 The original shrinking candidate-window schedule is retained: 500, 450, 400,
@@ -71,29 +70,40 @@ request extended reasoning. Cited captions are retained in the audit and can be
 looked up without asking the model to restate them. The combined filter uses
 globally unique slots, short reasons, and receives no author-role labels.
 
-Reformulation happens once after a shared answer. It rebuilds from the original
-caption and actual Q&A, preserving counts, negations, uncertainty, photographic
-properties and who does what, as requested by the prompt. The standard pilot
-uses that rewrite directly, with format validation but no separate model fidelity
-check or forced paraphrase. Saved Q&A and queries allow later inspection for drift.
+Reformulation now uses checksum-verified original PlugIR `reconstruct_dialog`.
+Both pipelines format the input as the original caption followed by actual
+question/answer strings, using the original prompt, exemplar, temperature zero,
+512-token output request and seed. If the result exactly equals the previous
+search description, both invoke the original `paraphrase` helper (temperature 0.7,
+top_p 0.8, 512 tokens). This is stochastic, so matching procedures do not guarantee
+identical text for different histories or model-call slots.
+
+The custom multi-agent `reformulate` prompt and its JSON/format checks are removed.
+The original rewrite procedure has no answer-responsiveness or fidelity gate;
+this known limitation is deliberately retained to compare question generation.
+BLIP-2 receives the current description plus the selected question in both paths.
+No stronger visual answerer or critique-index recovery is added in this change.
+Earlier pilot results used a custom agent rewrite and question-only answer input;
+they must not be described as results from this aligned protocol.
 
 ## Runtime bounds
 
-At most five Qwen requests per interaction with critique off:
-three proposal batches, one combined filter, and one rewrite.
-The runner sets a ceiling of `max_calls_per_round=6`, `questions_per_agent=5`,
-and `AGENT_MODES=(False,)`. There are no replacement
-loops. Proposal responses are capped at 512 tokens; the combined filter has a
-bounded budget proportional to its proposal count. Invalid/truncated responses
-stop with an interrupted checkpoint instead of a hidden repair loop.
+With critique off, a normal answered round uses three proposal calls, one filter,
+and one original reconstruction call. Critique adds one selector call. The
+unchanged-query fallback can add one paraphrase call beyond the ordinary
+`max_calls_per_round` ceiling. All calls are counted and saved; original PlugIR
+rewrite retry behavior remains unchanged. If no question is eligible, the round
+makes no answer or rewrite call. Proposal/filter/critique output still uses its
+structured JSON validation and stops on invalid output.
 
 The agent transport explicitly allows up to 1024 output tokens, accommodating
 the combined filter's maximum 960-token request. Individual proposal requests
 remain capped at 512; the original live PlugIR transport keeps its default
 512-token ceiling. These limits are ceilings, not mandatory output lengths.
 
-For two cases and five interactions, this is at most 50 Qwen requests and ten
-BLIP-2 answers. Request count is not a runtime guarantee: encoding candidate
+For two cases and five answered interactions per condition, the usual totals are
+50 Qwen requests without critique or 60 with critique, plus up to ten paraphrase
+calls per condition, and ten BLIP-2 answers per condition. Request count is not a runtime guarantee: encoding candidate
 captions for entropy, model transfers and longer histories also take time.
 Cases run sequentially, using the same model instances in preparation.
 
@@ -111,12 +121,13 @@ human/supplied dialogues remain comparison references and never enter generation
 `prepared/three_agents/agent_dialogues.json` contains original/shared descriptions,
 all generated questions, filters, evidence IDs/captions, shared pool IDs, selected
 questions/answers and target ranks. `prompt_pack.json` includes the actual role,
-shared, task, worked-example and neutral-rewrite instructions.
+shared, task and worked-example instructions plus the pinned upstream rewrite provenance.
 
-Checkpoints are saved under `runs/three_agents/<run_name>/`, in separate
+Checkpoints are saved under `runs/three_agents/<run_name>/plugir_original_rewrite_v1/`, in separate
 directories for each condition. The default run name is `shared_agents_simple_v1`.
-Resume uses the existing folder without checking source, image, or configuration
-fingerprints. Use a new run name when changing inputs, settings, prompts, or code.
+The new policy directory separates these runs from the earlier custom rewrite.
+Resume rejects checkpoints without the matching rewrite-policy marker, but does not
+otherwise check source, image, or configuration fingerprints. Use a new run name when changing inputs, settings, prompts, or code.
 Sampling seeds and the shared model-response caches retain their own keys.
 
 `question_memory` records proposals separately from confirmed facts. Asked and

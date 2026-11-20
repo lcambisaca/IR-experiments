@@ -4,7 +4,7 @@ These adapt PlugIR's evidence/description/dialogue structure for a local batch
 experiment. Examples are synthetic instructions, not training or target facts.
 """
 
-PROMPT_VERSION = "three_roles_v8_critique_selector"
+PROMPT_VERSION = "three_roles_v9_plugir_rewrite"
 # Stable IDs retain compatibility with existing audit/report readers.
 ROLES = {
     "full": "ROLE: generalist. Consider any useful unresolved distinction. Seek variety across your questions, following the shared grounding rules.",
@@ -64,13 +64,6 @@ Bad: Is the person in a kitchen? Kitchen is already confirmed.
 """,
 }
 
-NEUTRAL_EXAMPLE = """Original: Two dogs stand beside a bicycle; neither wears a collar.
-Asked: What colour is the bicycle? Answer: Blue.
-Query: Two dogs, neither wearing a collar, stand beside a blue bicycle.
-Counts, negation and who does what must all remain present.
-"""
-
-
 QA_GROUNDING_EXAMPLE = """Short-answer grounding examples for this task:
 Original: A giraffe stands in an open field.
 Q: Are there trees in the background? A: yes.
@@ -87,7 +80,6 @@ Decoration remains unresolved: that answer did not answer the question.
 TASKS = {
     "propose_batch": 'Generate the requested batch using all supplied captions together. Follow your ROLE. Return {"proposals":[{"question":str,"evidence_ids":[int]}]}. Cite only supplied IDs; no explanations or predicted answers. Each example above is one proposal object to put in the list. Return at most question_count entries.',
     "filter_batch": 'Audit ALL supplied proposals together. Return {"decisions":[{"slot":int,"status":"unknown"|"already_known"|"unsupported"|"ambiguous","reason":str}]}, exactly one decision per supplied slot. Check the authoritative description and every confirmed answer FIRST: answered questions are already_known regardless of candidate evidence. unknown means unresolved, relevant and grounded without unsupported premises. Check each proposal only against its cited candidate IDs; uncited captions cannot supply its evidence. Missing details are not contradictions. Never answer using a candidate caption. Keep each reason to at most ten words.',
-    "reformulate": 'Rewrite the authoritative record as ONE neutral, declarative caption-style search description. Preserve ALL confirmed objects, counts, attributes, relationships, negation, uncertainty and who does what. Use the original caption and actual Q&A, never the previous rewrite as authority. Add no candidate-derived facts or unsupported negative claims. Return {"query":str,"emphasis":str,"coverage_issue":str}; emphasis may be empty and coverage_issue is "none" if faithful. Do not ask a question.',
     "critique": 'Compare the eligible questions and choose exactly one. Use the original description and actual dialogue to check what is still unknown. Prefer a clear question about a visible detail with plausible answers that distinguish the cited candidates. Missing caption details do not show absence. Avoid unsupported assumptions, vague distinctions, and questions a viewer is unlikely to answer. Do not generate or rewrite a question. Return {"slot":int,"reason":str}, using a supplied slot and a brief reason.',
 }
 
@@ -97,10 +89,10 @@ def messages_for(stage, role, payload):
     import json
     if role not in ROLES or stage not in TASKS:
         raise ValueError("Unknown agent role or stage.")
-    neutral = stage in ("reformulate", "filter_batch", "critique")
+    neutral = stage in ("filter_batch", "critique")
     instruction = "Act as a neutral evidence auditor and reconstructor." if neutral else ROLES[role]
-    example = NEUTRAL_EXAMPLE if stage == "reformulate" else "" if neutral else EXAMPLES[role]
-    if stage in ("reformulate", "filter_batch", "critique"):
+    example = "" if neutral else EXAMPLES[role]
+    if stage in ("filter_batch", "critique"):
         example += "\n" + QA_GROUNDING_EXAMPLE
     return [{"role":"system", "content":SHARED + "\n" + instruction + "\n" + example + "\nCURRENT TASK: " + TASKS[stage]},
             {"role":"user", "content":json.dumps({"stage":stage,"reference_data":payload},ensure_ascii=False)}]

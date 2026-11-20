@@ -32,6 +32,13 @@ class AgentTransport:
 
     def create(self, **kwargs):
         """Answer each actual stage schema, rejecting hidden evaluation information."""
+        system = kwargs['messages'][0]['content']
+        if system.startswith('Your role is to reconstruct') or system.startswith('Your role is to paraphrase'):
+            stage = 'reconstruct_dialog' if system.startswith('Your role is to reconstruct') else 'paraphrase'
+            content = f"a room with confirmed detail {len(kwargs['messages'][-1]['content'])}"
+            self.active = True
+            self.records.append({'stage': stage, 'payload': deepcopy(kwargs), 'result': content})
+            return {'choices': [{'message': {'content': content}, 'finish_reason': 'stop'}]}
         packet = json.loads(kwargs['messages'][1]['content'])
         stage, data = packet['stage'], packet['reference_data']
         serialized = json.dumps(data)
@@ -50,12 +57,7 @@ class AgentTransport:
             result = self.cache[cache_key]
         else:
             self.new_calls += 1
-            if stage == 'reformulate':
-                r = data['record']
-                result = {'query': r['initial_caption'] + ' ' + role + ' ' +
-                          ' '.join(qa['answer'] for qa in r['dialogue']),
-                          'emphasis': role, 'coverage_issue': 'none'}
-            elif stage == 'propose_batch':
+            if stage == 'propose_batch':
                 result = {'proposals': [
                     {'question': f'What is the {role} detail {slot} round {self.interaction}?',
                      'evidence_ids': [data['candidates'][0]['id']]}
@@ -116,7 +118,7 @@ def test_two_conditions_share_initial_proposals_and_answer_once(agent_case, tmp_
     assert b['selector'] == 'min_kl' and b['kl']
     assert d['selector'] == 'critique' and d['kl'] == []
     assert d['selected_question'] == d['final_proposals'][d['critique_decision']['slot']]['question']
-    assert [r['stage'] for r in qd.records][:6] == ['propose_batch'] * 3 + ['filter_batch', 'critique', 'reformulate']
+    assert [r['stage'] for r in qd.records][:6] == ['propose_batch'] * 3 + ['filter_batch', 'critique', 'reconstruct_dialog']
     assert ab.model.calls == ad.model.calls == 2
     assert all(len(s['audit']['final_proposals']) <= 3 * agent_case['settings'].questions_per_agent for s in debated['states'][1:])
     assert debated['states'][0]['query'] == 'a room'
@@ -188,21 +190,6 @@ def test_invalid_model_outputs_fail_closed(agent_case, tmp_path):
     assert saved['status'] == 'interrupted' and not saved['dialogue']
 
 
-@pytest.mark.parametrize('emphasis', ['', 'none', None, 3])
-def test_reformulation_emphasis_is_optional_text_not_query_content(emphasis):
-    """Accept an empty emphasis label, while rejecting invalid metadata types."""
-    from types import SimpleNamespace
-    result = {'query': 'A person wears a jacket.', 'coverage_issue': 'none', 'emphasis': emphasis}
-    transport = SimpleNamespace(create=lambda **kwargs: {
-        'choices': [{'message': {'content': json.dumps(result)}, 'finish_reason': 'stop'}]})
-    chat = AgentChat(transport, AgentSettings())
-    if isinstance(emphasis, str):
-        assert chat.complete('reformulate', 'attributes', {}) == result
-    else:
-        with pytest.raises(ValueError, match='emphasis metadata'):
-            chat.complete('reformulate', 'attributes', {})
-
-
 @pytest.mark.parametrize("slot", [-1, 1, True, "0", None])
 def test_critique_cannot_select_an_unlisted_slot(slot):
     from types import SimpleNamespace
@@ -211,18 +198,6 @@ def test_critique_cannot_select_an_unlisted_slot(slot):
         {'message': {'content': json.dumps(response)}, 'finish_reason': 'stop'}]}), AgentSettings())
     with pytest.raises(ValueError, match='eligible proposal slot'):
         chat.complete('critique', 'full', {'proposals': [{'slot': 0}]})
-
-
-def test_question_cannot_be_used_as_retrieval_description():
-    """Catch the observed live failure even when a language audit would approve it."""
-    class QuestionInsteadOfDescription:
-        def complete(self, stage, role, payload):
-            """The invalid rewrite must fail before invoking another model audit."""
-            assert stage == 'reformulate'
-            return {'query': 'What colour is the jacket?'}
-    with pytest.raises(ValueError, match='declarative'):
-        rewrite_query(QuestionInsteadOfDescription(),
-                      {'initial_caption': 'A person wears a jacket.', 'dialogue': []}, 'attributes')
 
 
 def test_common_kl_is_exact_original_helper(agent_case):
@@ -258,9 +233,9 @@ def test_call_budget_fails_before_additional_model_execution():
     q = AgentTransport()
     chat = AgentChat(q, AgentSettings(max_calls_per_round=1))
     chat.begin({'initial_caption':'room','dialogue':[]},0)
-    chat.complete('reformulate','full', {'record':{'initial_caption':'room','dialogue':[]}})
+    chat.complete('critique','full', {'proposals':[{'slot':0}]})
     with pytest.raises(RuntimeError,match='budget'):
-        chat.complete('reformulate','full', {'record':{'initial_caption':'room','dialogue':[]}})
+        chat.complete('critique','full', {'proposals':[{'slot':0}]})
     assert q.new_calls == 1
 
 
@@ -291,6 +266,8 @@ def test_batch_duplicates_are_omitted_without_replacements(agent_case, tmp_path)
     from dataclasses import replace
     class RepeatingTransport(AgentTransport):
         def create(self, **kwargs):
+            if kwargs['messages'][0]['content'].startswith('Your role is to '):
+                return super().create(**kwargs)
             packet = json.loads(kwargs['messages'][1]['content'])
             response = super().create(**kwargs)
             if packet['stage']=='propose_batch':
@@ -332,7 +309,7 @@ def test_five_round_shared_evidence_uses_five_calls_and_one_answer_per_round(age
         assert shared['query']==previous['query']
         assert len(audit['final_proposals'])==15 and current['llm_calls']==5
         stages=[entry['stage'] for entry in current['llm_audit']]
-        assert stages==['propose_batch']*3+['filter_batch','reformulate']
+        assert stages==['propose_batch']*3+['filter_batch','reconstruct_dialog']
         decisions=next(entry for entry in current['llm_audit'] if entry['stage']=='filter_batch')
         assert [p['slot'] for p in decisions['payload']['proposals']]==list(range(15))
         assert all('owner' not in p for p in decisions['payload']['proposals'])
@@ -344,6 +321,8 @@ def test_memory_blocks_asked_and_rejected_but_keeps_unasked_options(agent_case, 
     from dataclasses import replace
     class FixedPool(AgentTransport):
         def create(self, **kwargs):
+            if kwargs['messages'][0]['content'].startswith('Your role is to '):
+                return super().create(**kwargs)
             packet = json.loads(kwargs['messages'][1]['content'])
             response = super().create(**kwargs)
             result = json.loads(response['choices'][0]['message']['content'])
@@ -447,8 +426,8 @@ def test_specialist_prompts_share_grounding_and_demonstrate_different_questions(
     assert all(COMMON_EXAMPLE in example for example in EXAMPLES.values())
     assert 'colour' in EXAMPLES['attributes'] and 'table near' in EXAMPLES['relations']
     for role in ROLES:
-        assert 'authoritative' in messages_for('reformulate',role,{})[0]['content']
-        assert ROLES[role] not in messages_for('reformulate',role,{})[0]['content']
+        assert 'authoritative' in messages_for('filter_batch',role,{})[0]['content']
+        assert ROLES[role] not in messages_for('filter_batch',role,{})[0]['content']
         assert ROLES[role] in messages_for('propose_batch',role,{})[0]['content']
 
 
@@ -522,13 +501,13 @@ def test_prepared_experiment_runs_both_modes_and_exports_dialogues(agent_case, t
     assert (exported/'rank_comparison.csv').is_file()
 
 
-def test_agent_answer_prompt_contains_only_selected_question(agent_case, tmp_path):
-    """Catch caption-prefixed VQA inputs through the actual upstream prompt wrapper."""
+def test_agent_answer_prompt_matches_plugir_description_plus_question(agent_case, tmp_path):
+    """The shared answerer sees the same prompt construction in both pipelines."""
     state, _, answerer = run_case(agent_case, tmp_path/'answer_prompt.json',
                                   critique=False, n_states=3)
     assert answerer.processor.prompts == [
-        'Question: ' + item['question'] + ' Answer:'
-        for item in state['states'][1:]
+        'Question: ' + previous['query'] + '. ' + current['question'] + ' Answer:'
+        for previous, current in zip(state['states'], state['states'][1:])
     ]
 
 
@@ -538,10 +517,59 @@ def test_short_answer_grounding_examples_reach_neutral_stages():
     This is a prompt contract check, not proof of pretrained model judgement.
     """
     from agentir.multagent_experiment.agent_prompts import QA_GROUNDING_EXAMPLE
-    for stage in ('reformulate', 'critique', 'filter_batch'):
+    for stage in ('critique', 'filter_batch'):
         prompt = messages_for(stage, 'full', {})[0]['content']
         assert QA_GROUNDING_EXAMPLE in prompt
         assert 'Interpret each answer together with its question' in prompt
     assert 'If the answer were no' in QA_GROUNDING_EXAMPLE
     assert 'only repeated the original caption' in QA_GROUNDING_EXAMPLE
     assert 'does not confirm their count or species' in QA_GROUNDING_EXAMPLE
+
+
+@pytest.mark.parametrize("fallback", [False, True])
+def test_agent_rewrite_matches_original_plugir_requests(agent_case, fallback):
+    """Compare exact original messages, sampling options, formatting, and fallback."""
+    class Capture:
+        def __init__(self):
+            self.requests = []
+        def create(self, **kwargs):
+            self.requests.append(deepcopy(kwargs))
+            is_rewrite = kwargs['messages'][0]['content'].startswith('Your role is to reconstruct')
+            content = ('previous query' if fallback else 'new description') if is_rewrite else 'paraphrased description'
+            return {'choices': [{'message': {'content': content}}]}
+
+    context = RetrievalContext(agent_case['retriever'], agent_case['captions'],
+                               agent_case['settings'], kmeans=RoundRobinKMeans())
+    record = {'initial_caption': 'a room', 'dialogue': [
+        {'question': 'What colour is the wall?', 'answer': 'blue'},
+        {'question': 'Is there a chair?', 'answer': 'yes'},
+    ]}
+    transport = Capture()
+    chat = AgentChat(transport, AgentSettings(max_calls_per_round=6))
+    chat.calls = 5
+    actual = rewrite_query(chat, record, 'previous query', context.namespace)
+    requests = deepcopy(transport.requests)
+    assert chat.calls == 6 + int(fallback)
+    assert [a['stage'] for a in chat.audit] == ['reconstruct_dialog'] + (['paraphrase'] if fallback else [])
+    transport.requests.clear()
+    # These are the unchanged functions called by the original live PlugIR loop.
+    expected = context.namespace['reconstruct_dialog']([
+        'a room', 'What colour is the wall? blue', 'Is there a chair? yes',
+    ])
+    if expected == 'previous query':
+        expected = context.namespace['paraphrase'](expected)
+    assert actual == expected
+    assert requests == transport.requests
+    assert requests[0]['temperature'] == 0 and requests[0]['max_tokens'] == 512
+    assert requests[0]['seed'] == chat.settings.seed
+    assert requests[0]['messages'][-1]['content'] == (
+        '[Caption]: a room [Dialogue]: What colour is the wall? blue, Is there a chair? yes  [New Caption]: ')
+    if fallback:
+        assert requests[1]['temperature'] == .7 and requests[1]['top_p'] == .8
+
+
+def test_legacy_rewrite_checkpoint_is_not_reused(agent_case, tmp_path):
+    path = tmp_path / 'legacy.json'
+    path.write_text(json.dumps({'states': [{'query': 'old rewrite'}], 'dialogue': []}))
+    with pytest.raises(ValueError, match='different rewrite policy'):
+        run_case(agent_case, path)

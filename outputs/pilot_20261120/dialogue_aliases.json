@@ -1,0 +1,44 @@
+[
+  {
+    "alias": "dialogues/ma_min_kl_cake.json",
+    "source": "raw/IR-experiments-pilot/runs/three_agents/shared_agents_simple_v1/agents_no_critique/000000364869.json",
+    "sha256": "b0fe36e63d852aee2ead93e17e8dc92bca06e81326c87f595795a37fe65e092f",
+    "method": "agents_no_critique",
+    "target": "unlabeled2017/000000364869.jpg"
+  },
+  {
+    "alias": "dialogues/ma_min_kl_giraffe.json",
+    "source": "raw/IR-experiments-pilot/runs/three_agents/shared_agents_simple_v1/agents_no_critique/000000562109.json",
+    "sha256": "61b5648d256682cf2ae0f0d177ad575a7381d48ed6af1deb55c46b47bfe67a70",
+    "method": "agents_no_critique",
+    "target": "unlabeled2017/000000562109.jpg"
+  },
+  {
+    "alias": "dialogues/ma_critique_cake.json",
+    "source": "raw/IR-experiments-pilot/runs/three_agents/shared_agents_simple_v1/critique_selector/000000364869.json",
+    "sha256": "bb0592906e2b26b4b28d2c4057913c764352f4dcd60dc4dcda11b2cb13c0c663",
+    "method": "agents_critique",
+    "target": "unlabeled2017/000000364869.jpg"
+  },
+  {
+    "alias": "dialogues/ma_critique_giraffe.json",
+    "source": "raw/IR-experiments-pilot/runs/three_agents/shared_agents_simple_v1/critique_selector/000000562109.json",
+    "sha256": "5ab5a4851ee21a3c029dc75e3c6ea6b43fcd3f9d72a1c5a7af6d8d507902b434",
+    "method": "agents_critique",
+    "target": "unlabeled2017/000000562109.jpg"
+  },
+  {
+    "alias": "dialogues/plugir_giraffe.json",
+    "source": "raw/IR-experiments-pilot/runs/live_upstream/aaec02ad94051834aeaf/dialogues/a2863806f3cc7068585cc3bcac95d67be4f8923d11da55ccbe84d356488e23d0.json",
+    "sha256": "a788e4215bf7a198cd264f8efd514311173e3c839135e5409e2aea9cd68394fe",
+    "method": "live_plugir_qwen",
+    "target": "unlabeled2017/000000562109.jpg"
+  },
+  {
+    "alias": "dialogues/plugir_cake.json",
+    "source": "raw/IR-experiments-pilot/runs/live_upstream/aaec02ad94051834aeaf/dialogues/ee95c5a658c74dafaeef938fd96ebf7f10759262d7767aa9933b362456e9fd86.json",
+    "sha256": "a567ea1b7e7fe574d3ed5b3240ad48e476f1c5555678afefab12264da22035d4",
+    "method": "live_plugir_qwen",
+    "target": "unlabeled2017/000000364869.jpg"
+  }
+]

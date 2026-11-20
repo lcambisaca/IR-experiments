@@ -11,6 +11,7 @@ from pathlib import Path
 import re
 import time
 from typing import Optional
+from types import SimpleNamespace
 
 from PIL import Image
 import torch
@@ -20,8 +21,11 @@ from .agent_prompts import PROMPT_VERSION, ROLES, messages_for
 from ..cache import read_json
 from ..live import (LiveSettings, generated_query_method, load_candidate_captions,
                    resolve_target_image, save_json, signature)
-from ..plugir_upstream import bind_original_text_encoder, load_generator
+from ..plugir_upstream import bind_original_text_encoder, load_generator, provenance
 from ..retrieval import ranks_for_targets
+
+
+REWRITE_POLICY = "plugir_original_rewrite_v1"
 
 
 @dataclass(frozen=True)
@@ -140,12 +144,7 @@ class AgentChat:
                     or not isinstance(reason, str) or not reason.strip()):
                 raise ValueError("Critique must choose one eligible proposal slot and give a reason.")
             return result
-        required_text = ("query", "coverage_issue")
-        if any(not isinstance(result.get(key), str) or not result[key].strip() for key in required_text):
-            raise ValueError(f"Missing required text fields in {role}/{stage}.")
-        if stage == "reformulate" and not isinstance(result.get("emphasis"), str):
-            raise ValueError("Reformulation emphasis metadata must be a string, possibly empty.")
-        return result
+        raise ValueError(f"Unsupported agent stage: {stage}")
 
 
 class RetrievalContext:
@@ -227,16 +226,30 @@ class RetrievalContext:
         return questions[winner], log
 
 
-def rewrite_query(chat, record, role):
-    """Generate one search caption and validate its format without a second model call."""
-    payload = {"record": record}
-    result = chat.complete("reformulate", role, payload)
-    query = result.get("query")
-    if not isinstance(query, str) or not query.strip() or len(query) > 3000:
-        raise ValueError("Missing/overlong role query.")
-    if "?" in query:
-        raise ValueError("Role query must be a declarative image description, not a question.")
-    return query.strip()
+def rewrite_query(chat, record, previous_query, namespace):
+    """Use the unchanged PlugIR reconstruction and identical-query paraphrase fallback."""
+    dialogue = [record["initial_caption"]] + [
+        qa["question"] + " " + qa["answer"] for qa in record["dialogue"]
+    ]
+    namespace.update(openai=SimpleNamespace(ChatCompletion=chat.transport),
+                     SEED=chat.settings.seed, time=time)
+
+    def call(stage, value):
+        # PlugIR may make one additional paraphrase call when reconstruction is unchanged.
+        limit = chat.settings.max_calls_per_round + (stage == "paraphrase")
+        if chat.calls >= limit:
+            raise RuntimeError("Agent per-round call budget exhausted; checkpoint retained.")
+        chat.calls += 1
+        audit = {"stage": stage, "role": "full", "payload": {"input": value}, "response": None}
+        chat.audit.append(audit)
+        result = namespace[stage](value)
+        audit["response"] = result
+        return result
+
+    query = call("reconstruct_dialog", dialogue)
+    if query == previous_query:
+        query = call("paraphrase", query)
+    return query
 
 
 def precheck_proposal(record, proposal, candidates):
@@ -371,8 +384,10 @@ def generate_agent_dialogue(retriever, *, initial_caption, target_id, image_path
     chat = AgentChat(questioner, settings)
     if path.is_file():
         state = read_json(path)
+        if state.get("rewrite_policy") != REWRITE_POLICY:
+            raise ValueError("Checkpoint uses a different rewrite policy; use a fresh checkpoint path.")
     else:
-        state = {"target": retriever.cache.paths[target_id], "dialogue": [], "states": [{"round": 0, "query": initial_caption,
+        state = {"rewrite_policy": REWRITE_POLICY, "target": retriever.cache.paths[target_id], "dialogue": [], "states": [{"round": 0, "query": initial_caption,
             "raw_query": initial_caption, "target_rank": int(ranks_for_targets(retriever.scores([initial_caption]), [target_id])[0])}],
             "status": "partial"}
         save_json(path, state)
@@ -393,14 +408,19 @@ def generate_agent_dialogue(retriever, *, initial_caption, target_id, image_path
             if question is not None:
                 questioner.park()
                 try:
-                    # Upstream wraps this input in Question: ... Answer:; pass only the selected question.
-                    answer = answerer.answer_original(context.original_answer, image_path, question)
+                    # Match PlugIR's target-answer input, including the current search description.
+                    answer = answerer.answer_original(
+                        context.original_answer, image_path, neutral + ". " + question,
+                    )
                 finally:
                     answerer.park()
                 if not isinstance(answer, str) or not answer.strip():
                     raise ValueError("Answerer returned no answer; do not update confirmed context.")
                 next_dialogue.append({"question": question, "answer": answer.strip()})
-                neutral = rewrite_query(chat, {"initial_caption": initial_caption, "dialogue": next_dialogue}, "full")
+                neutral = rewrite_query(
+                    chat, {"initial_caption": initial_caption, "dialogue": next_dialogue},
+                    neutral, context.namespace,
+                )
             raw = ", ".join([initial_caption] + [qa["question"] + " " + qa["answer"] for qa in next_dialogue])
             # Target ranks are added ONLY after selection/answering/reformulation.
             measured = int(ranks_for_targets(retriever.scores([neutral]), [target_id])[0])
@@ -458,7 +478,7 @@ def prepare_agent_experiment(root, retriever, pairs, *, n_states, settings, devi
     catalogue = load_candidate_captions(catalogue_path, retriever.cache.paths)
     if not re.fullmatch(r"[A-Za-z0-9_-]+", run_name):
         raise ValueError("run_name must use only letters, digits, underscores or hyphens.")
-    folder = root / "runs" / "three_agents" / run_name
+    folder = root / "runs" / "three_agents" / run_name / REWRITE_POLICY
     questioner = Qwen3(folder / "qwen_calls", device=device, offline=offline,
                        max_input_tokens=max_input_tokens, seed=settings.seed, max_output_tokens=1024)
     answerer = Blip2Answerer(folder / "blip2_calls", device=device, offline=offline)
@@ -484,18 +504,25 @@ def prepare_agent_experiment(root, retriever, pairs, *, n_states, settings, devi
     finally:
         questioner.park()
         answerer.park()
-    from .agent_prompts import EXAMPLES, NEUTRAL_EXAMPLE, QA_GROUNDING_EXAMPLE, SHARED, TASKS
+    from .agent_prompts import EXAMPLES, QA_GROUNDING_EXAMPLE, SHARED, TASKS
     return PreparedExperiment(methods=methods,
         metadata={"run_name": run_name, "settings": asdict(settings), "checkpoint_folder": str(folder),
                   "condition_wall_seconds": elapsed,
+                  "rewrite_policy": REWRITE_POLICY,
+                  "rewrite_source": provenance(),
+                  "answer_input": "current description + '. ' + selected question (same as live PlugIR)",
+                  "rewrite_calls": "Original reconstruction; one extra paraphrase call allowed if unchanged.",
                   "official_ranking": "neutral reformulation of original caption plus shared Q&A; no fusion",
                   "retrieval_evidence": "one neutral query, shared candidate pool and ten original representatives per round",
-                  "limitations": "New agent prompts/filter/orchestration; original clustering and PlugIR's KL formula. "
+                  "limitations": "New question prompts/filter/orchestration; original clustering, KL formula and rewrite procedure. "
                       "Rewrites can drift; the standard rewrite has no separate fidelity check. Exact duplicate detection only. "
                       "Conditions share initial proposals at the same context, then histories can diverge. "
                       "Model quality, speed and GPU fit need a real pilot."},
         artifacts={"agent_dialogues.json": conversations,
                    "prompt_pack.json": {"version": PROMPT_VERSION, "roles": ROLES,
-                                        "examples": EXAMPLES, "neutral_example": NEUTRAL_EXAMPLE,
+                                        "examples": EXAMPLES,
                                         "qa_grounding_example": QA_GROUNDING_EXAMPLE,
-                                        "shared": SHARED, "tasks": TASKS}})
+                                        "shared": SHARED,
+                                        "tasks": TASKS,
+                                        "rewrite": {"policy": REWRITE_POLICY, "source": provenance(),
+                                            "reconstruction": "reconstruct_dialog", "fallback": "paraphrase"}}})

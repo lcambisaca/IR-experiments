@@ -1,0 +1,44 @@
+{
+  "agents_no_critique": [
+    {
+      "target": "unlabeled2017/000000364869.jpg",
+      "status": "complete",
+      "states": 11,
+      "error": null
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "status": "complete",
+      "states": 11,
+      "error": null
+    }
+  ],
+  "agents_critique": [
+    {
+      "target": "unlabeled2017/000000364869.jpg",
+      "status": "interrupted",
+      "states": 6,
+      "error": "Critique must choose one eligible proposal slot and give a reason."
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "status": "complete",
+      "states": 11,
+      "error": null
+    }
+  ],
+  "live_plugir_qwen": [
+    {
+      "target": "unlabeled2017/000000364869.jpg",
+      "status": "complete",
+      "states": 11,
+      "error": null
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "status": "complete",
+      "states": 11,
+      "error": null
+    }
+  ]
+}

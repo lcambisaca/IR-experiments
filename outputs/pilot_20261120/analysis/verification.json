@@ -1,0 +1,1095 @@
+{
+  "query_rank_parity": [
+    {
+      "report": "20261120T184123036436Z_pilot_common_prefix",
+      "states": 6,
+      "matching_query_rank_rows": 36,
+      "summary": {
+        "agents_no_critique": {
+          "examples": 2,
+          "rounds": 6,
+          "BRI": 3.2853569984436035,
+          "initial_mean_rank": 49.0,
+          "final_mean_rank": 60.5,
+          "final": [
+            {
+              "round": 5,
+              "k": 1,
+              "recall_percent": 0.0,
+              "hits_percent": 0.0
+            },
+            {
+              "round": 5,
+              "k": 10,
+              "recall_percent": 0.0,
+              "hits_percent": 50.0
+            },
+            {
+              "round": 5,
+              "k": 100,
+              "recall_percent": 50.0,
+              "hits_percent": 100.0
+            }
+          ],
+          "BRI_reduction_vs_caption_only": null
+        },
+        "agents_critique": {
+          "examples": 2,
+          "rounds": 6,
+          "BRI": 2.916031837463379,
+          "initial_mean_rank": 49.0,
+          "final_mean_rank": 42.5,
+          "final": [
+            {
+              "round": 5,
+              "k": 1,
+              "recall_percent": 50.0,
+              "hits_percent": 50.0
+            },
+            {
+              "round": 5,
+              "k": 10,
+              "recall_percent": 50.0,
+              "hits_percent": 50.0
+            },
+            {
+              "round": 5,
+              "k": 100,
+              "recall_percent": 100.0,
+              "hits_percent": 100.0
+            }
+          ],
+          "BRI_reduction_vs_caption_only": null
+        },
+        "live_plugir_qwen": {
+          "examples": 2,
+          "rounds": 6,
+          "BRI": 3.1508407592773438,
+          "initial_mean_rank": 49.0,
+          "final_mean_rank": 34.5,
+          "final": [
+            {
+              "round": 5,
+              "k": 1,
+              "recall_percent": 0.0,
+              "hits_percent": 0.0
+            },
+            {
+              "round": 5,
+              "k": 10,
+              "recall_percent": 0.0,
+              "hits_percent": 50.0
+            },
+            {
+              "round": 5,
+              "k": 100,
+              "recall_percent": 100.0,
+              "hits_percent": 100.0
+            }
+          ],
+          "BRI_reduction_vs_caption_only": null
+        },
+        "live_raw_same_dialogue": {
+          "examples": 2,
+          "rounds": 6,
+          "BRI": 3.2830288410186768,
+          "initial_mean_rank": 49.0,
+          "final_mean_rank": 145.5,
+          "final": [
+            {
+              "round": 5,
+              "k": 1,
+              "recall_percent": 0.0,
+              "hits_percent": 0.0
+            },
+            {
+              "round": 5,
+              "k": 10,
+              "recall_percent": 0.0,
+              "hits_percent": 50.0
+            },
+            {
+              "round": 5,
+              "k": 100,
+              "recall_percent": 50.0,
+              "hits_percent": 100.0
+            }
+          ],
+          "BRI_reduction_vs_caption_only": null
+        }
+      }
+    },
+    {
+      "report": "20261120T184123036436Z_pilot_completed_methods",
+      "states": 11,
+      "matching_query_rank_rows": 44,
+      "summary": {
+        "agents_no_critique": {
+          "examples": 2,
+          "rounds": 11,
+          "BRI": 3.2576546669006348,
+          "initial_mean_rank": 49.0,
+          "final_mean_rank": 61.0,
+          "final": [
+            {
+              "round": 10,
+              "k": 1,
+              "recall_percent": 0.0,
+              "hits_percent": 0.0
+            },
+            {
+              "round": 10,
+              "k": 10,
+              "recall_percent": 0.0,
+              "hits_percent": 50.0
+            },
+            {
+              "round": 10,
+              "k": 100,
+              "recall_percent": 100.0,
+              "hits_percent": 100.0
+            }
+          ],
+          "BRI_reduction_vs_caption_only": null
+        },
+        "live_plugir_qwen": {
+          "examples": 2,
+          "rounds": 11,
+          "BRI": 3.092526435852051,
+          "initial_mean_rank": 49.0,
+          "final_mean_rank": 95.0,
+          "final": [
+            {
+              "round": 10,
+              "k": 1,
+              "recall_percent": 0.0,
+              "hits_percent": 0.0
+            },
+            {
+              "round": 10,
+              "k": 10,
+              "recall_percent": 0.0,
+              "hits_percent": 50.0
+            },
+            {
+              "round": 10,
+              "k": 100,
+              "recall_percent": 50.0,
+              "hits_percent": 100.0
+            }
+          ],
+          "BRI_reduction_vs_caption_only": null
+        },
+        "live_raw_same_dialogue": {
+          "examples": 2,
+          "rounds": 11,
+          "BRI": 3.2701926231384277,
+          "initial_mean_rank": 49.0,
+          "final_mean_rank": 194.5,
+          "final": [
+            {
+              "round": 10,
+              "k": 1,
+              "recall_percent": 0.0,
+              "hits_percent": 0.0
+            },
+            {
+              "round": 10,
+              "k": 10,
+              "recall_percent": 0.0,
+              "hits_percent": 50.0
+            },
+            {
+              "round": 10,
+              "k": 100,
+              "recall_percent": 50.0,
+              "hits_percent": 100.0
+            }
+          ],
+          "BRI_reduction_vs_caption_only": null
+        }
+      }
+    }
+  ],
+  "first_round_selector_comparison": [
+    {
+      "target": "unlabeled2017/000000364869.jpg",
+      "identical_representatives_window_and_eligible": true,
+      "min_kl": "What type of cake is it?",
+      "critique": "Is the cake decorated with candles?",
+      "kl_ranking": [
+        {
+          "question": "What type of cake is it?",
+          "owner": "attributes",
+          "kl": 8.492609777022153e-05
+        },
+        {
+          "question": "What is the cake being used for?",
+          "owner": "relations",
+          "kl": 0.00010010370169766247
+        },
+        {
+          "question": "What type of cake is present?",
+          "owner": "full",
+          "kl": 0.00015030916256364435
+        },
+        {
+          "question": "Are there candles on the cake?",
+          "owner": "attributes",
+          "kl": 0.00022669023019261658
+        },
+        {
+          "question": "Is the cake decorated with candles?",
+          "owner": "full",
+          "kl": 0.00023987046733964235
+        },
+        {
+          "question": "Is the cake chocolate?",
+          "owner": "attributes",
+          "kl": 0.0002831689198501408
+        },
+        {
+          "question": "Is the setting indoors or outdoors?",
+          "owner": "full",
+          "kl": 0.0004893557052128017
+        },
+        {
+          "question": "Is the cake on a table or outdoors?",
+          "owner": "relations",
+          "kl": 0.0006878034328110516
+        }
+      ],
+      "critique_decision": {
+        "slot": 1,
+        "reason": "The original description and dialogue provide no information about candles, and the question 'Is the cake decorated with candles?' is directly supported by candidate 28475, which explicitly mentions candles. This detail is not present in the initial caption and can distinguish between candidates that include or exclude candles, making it a clear, plausible, and grounded question."
+      }
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "identical_representatives_window_and_eligible": true,
+      "min_kl": "What type of environment surrounds the giraffe?",
+      "critique": "Is there a tree, rock, or bridge in the scene?",
+      "kl_ranking": [
+        {
+          "question": "What type of environment surrounds the giraffe?",
+          "owner": "full",
+          "kl": 5.8217206969857216e-05
+        },
+        {
+          "question": "What is the background landscape like?",
+          "owner": "attributes",
+          "kl": 9.702873649075627e-05
+        },
+        {
+          "question": "What type of grass is in the field?",
+          "owner": "attributes",
+          "kl": 0.00022221123799681664
+        },
+        {
+          "question": "Are the giraffes grazing or standing still?",
+          "owner": "full",
+          "kl": 0.00025867432123050094
+        },
+        {
+          "question": "Is the grass tall or short?",
+          "owner": "relations",
+          "kl": 0.000261966313701123
+        },
+        {
+          "question": "Is the giraffe standing alone or with others?",
+          "owner": "attributes",
+          "kl": 0.0003461854939814657
+        },
+        {
+          "question": "Are there any trees present?",
+          "owner": "attributes",
+          "kl": 0.00040146303945221007
+        },
+        {
+          "question": "Are there other animals present?",
+          "owner": "relations",
+          "kl": 0.00046642441884614527
+        },
+        {
+          "question": "What is adjacent to the giraffe?",
+          "owner": "relations",
+          "kl": 0.0005744535592384636
+        },
+        {
+          "question": "How many giraffes are present?",
+          "owner": "full",
+          "kl": 0.0007089280989021063
+        },
+        {
+          "question": "Is the field surrounded by structures?",
+          "owner": "relations",
+          "kl": 0.0008158637792803347
+        },
+        {
+          "question": "Is there a tree, rock, or bridge in the scene?",
+          "owner": "full",
+          "kl": 0.0013172372709959745
+        }
+      ],
+      "critique_decision": {
+        "slot": 2,
+        "reason": "The original description and dialogue provide no information about the presence of a tree, rock, or bridge. This question directly addresses a visible detail that is explicitly mentioned in some candidates (e.g., 'with green leaves', 'next to a tree', 'with rocks', 'in front of a wooden bridge') and remains unresolved in the record, making it a clear and distinguishable point among the candidates."
+      }
+    }
+  ],
+  "proposal_summary": [
+    {
+      "method": "agents_critique",
+      "target": "unlabeled2017/000000364869.jpg",
+      "proposal_attempts": 63,
+      "statuses": {
+        "unknown": 40,
+        "already_known": 9,
+        "unsupported": 4,
+        "duplicate": 6,
+        "ambiguous": 1,
+        "previously_rejected": 3
+      },
+      "by_role": {
+        "full": {
+          "unknown": 18,
+          "already_known": 4,
+          "unsupported": 2,
+          "previously_rejected": 1
+        },
+        "attributes": {
+          "unknown": 16,
+          "already_known": 4,
+          "unsupported": 2,
+          "duplicate": 1,
+          "previously_rejected": 2
+        },
+        "relations": {
+          "unknown": 6,
+          "already_known": 1,
+          "duplicate": 5,
+          "ambiguous": 1
+        }
+      },
+      "within_round_exact_duplicate_extras": 7,
+      "distinct_questions_repeated_across_rounds": 9,
+      "all_representatives_cited": 7,
+      "no_selected_question_rounds": [],
+      "selected_questions": 5,
+      "candidate_pool_diversity": []
+    },
+    {
+      "method": "agents_critique",
+      "target": "unlabeled2017/000000562109.jpg",
+      "proposal_attempts": 102,
+      "statuses": {
+        "unknown": 37,
+        "already_known": 17,
+        "duplicate": 2,
+        "unsupported": 6,
+        "previously_rejected": 33,
+        "ambiguous": 2,
+        "already_asked": 5
+      },
+      "by_role": {
+        "full": {
+          "unknown": 15,
+          "already_known": 10,
+          "unsupported": 3,
+          "previously_rejected": 18,
+          "already_asked": 4
+        },
+        "attributes": {
+          "unknown": 15,
+          "already_known": 3,
+          "unsupported": 2,
+          "previously_rejected": 12,
+          "ambiguous": 1,
+          "already_asked": 1
+        },
+        "relations": {
+          "unknown": 7,
+          "already_known": 4,
+          "duplicate": 2,
+          "unsupported": 1,
+          "previously_rejected": 3,
+          "ambiguous": 1
+        }
+      },
+      "within_round_exact_duplicate_extras": 10,
+      "distinct_questions_repeated_across_rounds": 14,
+      "all_representatives_cited": 20,
+      "no_selected_question_rounds": [
+        6,
+        9,
+        10
+      ],
+      "selected_questions": 7,
+      "candidate_pool_diversity": []
+    },
+    {
+      "method": "agents_no_critique",
+      "target": "unlabeled2017/000000364869.jpg",
+      "proposal_attempts": 95,
+      "statuses": {
+        "unknown": 22,
+        "already_known": 16,
+        "unsupported": 5,
+        "duplicate": 4,
+        "previously_rejected": 42,
+        "already_asked": 6
+      },
+      "by_role": {
+        "full": {
+          "unknown": 9,
+          "already_known": 9,
+          "unsupported": 2,
+          "previously_rejected": 26,
+          "already_asked": 4
+        },
+        "attributes": {
+          "unknown": 3,
+          "already_known": 3,
+          "unsupported": 2,
+          "previously_rejected": 11,
+          "already_asked": 2,
+          "duplicate": 1
+        },
+        "relations": {
+          "unknown": 10,
+          "already_known": 4,
+          "duplicate": 3,
+          "unsupported": 1,
+          "previously_rejected": 5
+        }
+      },
+      "within_round_exact_duplicate_extras": 13,
+      "distinct_questions_repeated_across_rounds": 17,
+      "all_representatives_cited": 29,
+      "no_selected_question_rounds": [
+        7,
+        8,
+        9,
+        10
+      ],
+      "selected_questions": 6,
+      "candidate_pool_diversity": []
+    },
+    {
+      "method": "agents_no_critique",
+      "target": "unlabeled2017/000000562109.jpg",
+      "proposal_attempts": 112,
+      "statuses": {
+        "unknown": 44,
+        "already_known": 25,
+        "already_asked": 10,
+        "unsupported": 7,
+        "previously_rejected": 24,
+        "ambiguous": 2
+      },
+      "by_role": {
+        "full": {
+          "unknown": 18,
+          "already_known": 15,
+          "already_asked": 5,
+          "previously_rejected": 10,
+          "unsupported": 2
+        },
+        "attributes": {
+          "unknown": 14,
+          "already_known": 5,
+          "unsupported": 4,
+          "already_asked": 5,
+          "previously_rejected": 10
+        },
+        "relations": {
+          "unknown": 12,
+          "already_known": 5,
+          "unsupported": 1,
+          "ambiguous": 2,
+          "previously_rejected": 4
+        }
+      },
+      "within_round_exact_duplicate_extras": 2,
+      "distinct_questions_repeated_across_rounds": 19,
+      "all_representatives_cited": 25,
+      "no_selected_question_rounds": [
+        9,
+        10
+      ],
+      "selected_questions": 8,
+      "candidate_pool_diversity": []
+    },
+    {
+      "method": "live_plugir_qwen",
+      "target": "unlabeled2017/000000364869.jpg",
+      "proposal_attempts": 0,
+      "statuses": {},
+      "by_role": {},
+      "within_round_exact_duplicate_extras": 0,
+      "distinct_questions_repeated_across_rounds": 0,
+      "all_representatives_cited": 0,
+      "no_selected_question_rounds": [],
+      "selected_questions": 10,
+      "candidate_pool_diversity": [
+        {
+          "round": 1,
+          "count": 5,
+          "unique": 5
+        },
+        {
+          "round": 2,
+          "count": 5,
+          "unique": 4
+        },
+        {
+          "round": 3,
+          "count": 5,
+          "unique": 1
+        },
+        {
+          "round": 4,
+          "count": 5,
+          "unique": 2
+        },
+        {
+          "round": 5,
+          "count": 5,
+          "unique": 2
+        },
+        {
+          "round": 6,
+          "count": 5,
+          "unique": 3
+        },
+        {
+          "round": 7,
+          "count": 5,
+          "unique": 3
+        },
+        {
+          "round": 8,
+          "count": 5,
+          "unique": 1
+        },
+        {
+          "round": 9,
+          "count": 5,
+          "unique": 3
+        },
+        {
+          "round": 10,
+          "count": 5,
+          "unique": 3
+        }
+      ]
+    },
+    {
+      "method": "live_plugir_qwen",
+      "target": "unlabeled2017/000000562109.jpg",
+      "proposal_attempts": 0,
+      "statuses": {},
+      "by_role": {},
+      "within_round_exact_duplicate_extras": 0,
+      "distinct_questions_repeated_across_rounds": 0,
+      "all_representatives_cited": 0,
+      "no_selected_question_rounds": [],
+      "selected_questions": 10,
+      "candidate_pool_diversity": [
+        {
+          "round": 1,
+          "count": 5,
+          "unique": 5
+        },
+        {
+          "round": 2,
+          "count": 5,
+          "unique": 2
+        },
+        {
+          "round": 3,
+          "count": 5,
+          "unique": 1
+        },
+        {
+          "round": 4,
+          "count": 5,
+          "unique": 1
+        },
+        {
+          "round": 5,
+          "count": 5,
+          "unique": 4
+        },
+        {
+          "round": 6,
+          "count": 5,
+          "unique": 1
+        },
+        {
+          "round": 7,
+          "count": 5,
+          "unique": 4
+        },
+        {
+          "round": 8,
+          "count": 5,
+          "unique": 3
+        },
+        {
+          "round": 9,
+          "count": 5,
+          "unique": 4
+        },
+        {
+          "round": 10,
+          "count": 5,
+          "unique": 1
+        }
+      ]
+    }
+  ],
+  "live_finish_reasons": {
+    "filter_questions": {
+      "length": 90,
+      "stop": 102
+    },
+    "generate_questions_referring": {
+      "length": 184
+    },
+    "reconstruct_dialog": {
+      "stop": 20
+    },
+    "generate_questions": {
+      "stop": 8
+    },
+    "paraphrase": {
+      "stop": 6
+    }
+  },
+  "live_late_fence_filter_calls": [
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 6,
+      "call_index": 1,
+      "question": "What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "Uncertain",
+      "uncertain_substring_gate": true,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 6,
+      "call_index": 3,
+      "question": "What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "Uncertain",
+      "uncertain_substring_gate": true,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 6,
+      "call_index": 5,
+      "question": "What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "Uncertain",
+      "uncertain_substring_gate": true,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 6,
+      "call_index": 7,
+      "question": "What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "Uncertain",
+      "uncertain_substring_gate": true,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 6,
+      "call_index": 9,
+      "question": "What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "Uncertain",
+      "uncertain_substring_gate": true,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 7,
+      "call_index": 1,
+      "question": "What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The fence surrounding the giraffe in the open field",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 7,
+      "call_index": 3,
+      "question": "What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The fence surrounding the giraffe in the open field",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 7,
+      "call_index": 5,
+      "question": "What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The fence surrounding the giraffe in the open field",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 7,
+      "call_index": 11,
+      "question": "What is the color of the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The color of the fence surrounding the giraffe in",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 7,
+      "call_index": 15,
+      "question": "What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The fence surrounding the giraffe in the open field",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 7,
+      "call_index": 17,
+      "question": "What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The fence surrounding the giraffe in the open field",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 7,
+      "call_index": 19,
+      "question": "What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The fence surrounding the giraffe in the open field",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 7,
+      "call_index": 21,
+      "question": "**Question:** What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The fence surrounding the giraffe in the open field",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 7,
+      "call_index": 23,
+      "question": "**Question:** What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The fence surrounding the giraffe in the open field",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 7,
+      "call_index": 25,
+      "question": "**Question:** What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The fence surrounding the giraffe in the open field",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 7,
+      "call_index": 27,
+      "question": "**Question:** What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The fence surrounding the giraffe in the open field",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 7,
+      "call_index": 29,
+      "question": "**Question:** What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The fence surrounding the giraffe in the open field",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 7,
+      "call_index": 31,
+      "question": "**Question:** What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The fence surrounding the giraffe in the open field",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 8,
+      "call_index": 1,
+      "question": "What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The fence surrounding the giraffe in the open field",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 8,
+      "call_index": 3,
+      "question": "What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The fence surrounding the giraffe in the open field",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 8,
+      "call_index": 5,
+      "question": "What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The fence surrounding the giraffe in the open field",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 8,
+      "call_index": 9,
+      "question": "What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The fence surrounding the giraffe in the open field",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 8,
+      "call_index": 11,
+      "question": "What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The fence surrounding the giraffe in the open field",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 8,
+      "call_index": 13,
+      "question": "What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The fence surrounding the giraffe in the open field",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 8,
+      "call_index": 15,
+      "question": "What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The fence surrounding the giraffe in the open field",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 8,
+      "call_index": 17,
+      "question": "What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The fence surrounding the giraffe in the open field",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 8,
+      "call_index": 19,
+      "question": "What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The fence surrounding the giraffe in the open field",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 8,
+      "call_index": 21,
+      "question": "**Question:** What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The fence surrounding the giraffe in the open field",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 8,
+      "call_index": 23,
+      "question": "**Question:** What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The fence surrounding the giraffe in the open field",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 8,
+      "call_index": 25,
+      "question": "**Question:** What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The fence surrounding the giraffe in the open field",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 8,
+      "call_index": 27,
+      "question": "**Question:** What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The fence surrounding the giraffe in the open field",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 8,
+      "call_index": 29,
+      "question": "**Question:** What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The fence surrounding the giraffe in the open field",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 8,
+      "call_index": 31,
+      "question": "**Question:** What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The fence surrounding the giraffe in the open field",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 9,
+      "call_index": 1,
+      "question": "What is the color of the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The color of the fence surrounding the giraffe in",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 9,
+      "call_index": 5,
+      "question": "What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The fence surrounding the giraffe in the open field",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 9,
+      "call_index": 9,
+      "question": "What is the color of the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The color of the fence surrounding the giraffe in",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 9,
+      "call_index": 11,
+      "question": "What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The fence surrounding the giraffe in the open field",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 9,
+      "call_index": 13,
+      "question": "What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The fence surrounding the giraffe in the open field",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 9,
+      "call_index": 15,
+      "question": "**Question:** What is the color of the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The color of the fence surrounding the giraffe in",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 9,
+      "call_index": 17,
+      "question": "**Question:** What is the color of the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The color of the fence surrounding the giraffe in",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 9,
+      "call_index": 19,
+      "question": "**Question:** What is the color of the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The color of the fence surrounding the giraffe in",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 9,
+      "call_index": 21,
+      "question": "**Question:** What is the color of the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The color of the fence surrounding the giraffe in",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 9,
+      "call_index": 23,
+      "question": "**Question:** What is the color of the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The color of the fence surrounding the giraffe in",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 9,
+      "call_index": 25,
+      "question": "**Question:** What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The fence surrounding the giraffe in the open field",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 9,
+      "call_index": 27,
+      "question": "**Question:** What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The fence surrounding the giraffe in the open field",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 9,
+      "call_index": 29,
+      "question": "**Question:** What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The fence surrounding the giraffe in the open field",
+      "uncertain_substring_gate": false,
+      "reused": false
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "round": 9,
+      "call_index": 31,
+      "question": "**Question:** What color is the fence surrounding the giraffe in the open field of the zoo?",
+      "response": "The fence surrounding the giraffe in the open field",
+      "uncertain_substring_gate": false,
+      "reused": false
+    }
+  ]
+}
