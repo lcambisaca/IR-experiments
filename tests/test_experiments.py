@@ -142,3 +142,49 @@ def test_single_state_works_and_bad_registration_is_rejected(pairs):
         evaluate_experiments(FakeRetriever(), pairs, {"raw_dialogue": lambda context, model: "a"}, ks=[1])
     with pytest.raises(ValueError, match="Duplicate evaluation targets"):
         evaluate_experiments(FakeRetriever(), [pairs[0], pairs[0]], rounds=1, ks=[1])
+
+
+@pytest.mark.parametrize("references", [(), ("raw_dialogue",),
+                                      ("caption_only", "raw_dialogue", "supplied_plugir")])
+def test_optional_saved_references_only_run_selected_searches(pairs, tmp_path, references):
+    """Skipping references must skip their scoring and still export live metrics."""
+    retriever = FakeRetriever()
+    scored = []
+    original_scores = retriever.scores
+
+    def track_scores(texts):
+        scored.extend(texts)
+        return original_scores(texts)
+
+    retriever.scores = track_scores
+
+    def live_search(context, model):
+        return SearchOutput(torch.tensor([1., .9, .8, .7]), "cosine", "live query")
+
+    result = evaluate_experiments(retriever, pairs, {"live": live_search},
+                                  rounds=3, ks=[1, 2], references=references)
+    assert list(result["summary"]) == [*references, "live"]
+    assert result["protocol"]["saved_references"] == list(references)
+    assert len(scored) == len(references) * len(pairs) * 3
+    assert {row["method"] for row in result["per_example"]} == {*references, "live"}
+    for row in result["per_example"]:
+        assert {name for name in ("caption_only", "raw_dialogue", "supplied_plugir")
+                if f"rank_improvement_vs_{name}" in row} == set(references)
+    if "caption_only" not in references:
+        assert result["summary"]["live"]["BRI_reduction_vs_caption_only"] is None
+    destination = save_experiment_results(result, tmp_path / "optional_references")
+    import csv
+    with (destination / "rank_comparison.csv").open(newline="") as stream:
+        columns = next(csv.reader(stream))
+    assert columns == ["round", "example_index", "target", *references, "live"]
+
+
+def test_empty_or_invalid_reference_selection_fails(pairs):
+    with pytest.raises(ValueError, match="at least one"):
+        evaluate_experiments(FakeRetriever(), pairs, references=())
+    for references in (("unknown",), ("raw_dialogue", "raw_dialogue")):
+        with pytest.raises(ValueError, match="distinct saved references"):
+            evaluate_experiments(FakeRetriever(), pairs, references=references)
+    with pytest.raises(ValueError, match="unique nonempty"):
+        evaluate_experiments(FakeRetriever(), pairs,
+                             {"raw_dialogue": lambda context, model: "a"}, references=(), ks=[1])

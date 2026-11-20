@@ -419,9 +419,9 @@ def test_invalid_original_settings_fail_before_models():
         LiveSettings(threshold_low=10).validate(50000)
 
 
-@pytest.mark.parametrize('mode', ['saved', 'live', 'prepared'])
+@pytest.mark.parametrize('mode', ['saved', 'live'])
 def test_shared_runner_includes_enabled_methods(case, tmp_path, monkeypatch, mode):
-    """Exercise click-Run orchestration, JSON/CSV exports and future method preparation."""
+    """Exercise saved/live runner modes and their JSON/CSV exports."""
     import agentir.live_models as live_models
     from agentir.evaluation import PreparedExperiment
     runner_path = Path(__file__).resolve().parents[1] / 'run_evaluation.py'
@@ -466,28 +466,18 @@ def test_shared_runner_includes_enabled_methods(case, tmp_path, monkeypatch, mod
     for name, value in {'__file__': str(root / 'run_evaluation.py'), 'N_TARGETS': 1, 'N_STATES': 3,
                         'K_VALUES': [1, 10], 'CANDIDATE_CAPTIONS': 'captions.json',
                         'LIVE': case['settings'], 'RUN_LIVE_PLUGIR': mode == 'live',
-                        'RUN_MULTI_AGENT_PILOT': False, 'START_TARGET': 0}.items():
+                        'RUN_MULTI_AGENT': False, 'USE_PILOT_TARGETS': False, 'START_TARGET': 0,
+                        'INCLUDE_SAVED_REFERENCES': True,
+                        'SAVED_REFERENCES': ('caption_only', 'raw_dialogue', 'supplied_plugir')}.items():
         monkeypatch.setattr(runner, name, value)
-    def identity(context, model):
-        """Provide a simple ordinary experiment that must match saved raw dialogue."""
-        return context.current_query
-    def prepare_custom(root, model, selected, *, n_states, offline):
-        """Check the future setup contract and attach a small generated artifact."""
-        assert selected == pairs and n_states == 3
-        return PreparedExperiment({'prepared_identity': identity}, artifacts={'setup.json': {'ok': True}})
-    monkeypatch.setattr(runner, 'EXPERIMENTS', {'identity': identity})
-    monkeypatch.setattr(runner, 'PREPARED_EXPERIMENTS', {'future': prepare_custom} if mode == 'prepared' else {})
     runner.main()
     folder = next((root / 'runs/experiments').iterdir())
     report = json.loads((folder / 'report.json').read_text())
-    expected = {'caption_only', 'raw_dialogue', 'supplied_plugir', 'identity'}
+    expected = {'caption_only', 'raw_dialogue', 'supplied_plugir'}
     if mode == 'live':
         expected.update({'live_plugir_qwen', 'live_raw_same_dialogue'})
         assert (folder / 'prepared/qwen_live/generated_dialogues.json').is_file()
         assert 'HUMAN_SECRET' not in json.dumps(qwen.records)
-    if mode == 'prepared':
-        expected.add('prepared_identity')
-        assert (folder / 'prepared/future/setup.json').is_file()
     assert set(report['summary']) == expected
     assert all((folder / name).is_file() for name in
                ('per_round.csv', 'rank_comparison.csv', 'per_example.csv', 'final_metrics.csv', 'runner_snapshot.py'))

@@ -443,7 +443,7 @@ def prepare_agent_experiment(root, retriever, pairs, *, n_states, settings, devi
     require_cuda(device)
     settings.validate(len(retriever.cache.paths), n_states)
     if not pairs or len(pairs) > settings.max_targets:
-        raise ValueError(f"Agent pilot allows at most {settings.max_targets} targets; edit settings explicitly to scale.")
+        raise ValueError(f"Agent settings allow at most {settings.max_targets} targets; edit settings explicitly to scale.")
     if type(max_input_tokens) is not int or max_input_tokens < 1:
         raise ValueError("Agent input token limit must be positive.")
     if not modes or len(set(modes)) != len(modes) or any(type(m) is not bool for m in modes):

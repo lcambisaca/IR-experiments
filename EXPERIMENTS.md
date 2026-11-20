@@ -125,13 +125,25 @@ seeds and costs in addition to the runner snapshot.
 
 The [comparison](PLUGIR_COMPARISON.md) explains source fidelity and runtime
 differences.
-# Multi-agent questioner pilot
+# Multi-agent questioner: normal and pilot targets
 
-Set `RUN_MULTI_AGENT_PILOT = True` in [run_evaluation.py](run_evaluation.py) (CUDA
-required). This runs the two hand-picked development targets in
-[setup.py](src/agentir/multagent_experiment/setup.py) (cake 364869, giraffe 562109)
-for five rounds (`N_STATES = 6`) with critique off (`AGENT_MODES = (False,)`), and
-adds the method `agents_no_critique` to the common rank/Recall/Hits/BRI comparison.
-Official rankings use the neutral shared description; agent searches only supply
-question evidence. These targets are a development check, not a benchmark. See
-[AGENT_EXPERIMENT.md](src/agentir/multagent_experiment/AGENT_EXPERIMENT.md) for prompts, budgets, resume and audit outputs.
+In [run_evaluation.py](run_evaluation.py), set `RUN_MULTI_AGENT = True` to enable
+multi-agent generation (CUDA required). Target selection is separate:
+
+- `USE_PILOT_TARGETS = False`: use `START_TARGET` and `N_TARGETS` (32 by default).
+  Set `N_TARGETS = None` to use all remaining matched pairs.
+- `USE_PILOT_TARGETS = True`: use the cake and giraffe development targets from
+  [setup.py](src/agentir/multagent_experiment/setup.py); ignore `START_TARGET` and `N_TARGETS`.
+
+Both modes use `N_STATES` from `run_evaluation.py` (11 means the caption plus ten
+interactions). When `RUN_LIVE_PLUGIR = True` too, both methods receive exactly the
+same selected pairs, initial captions, retriever, and number of states. Generation
+runs sequentially. The multi-agent target allowance follows the selected batch;
+explicit settings passed directly to `prepare_three_agents` retain their own limit.
+
+`AGENT_MODES` in `setup.py` chooses critique off/on. Official rankings use the neutral
+shared description; specialist searches supply question evidence. Saved reference
+searches are controlled by `INCLUDE_SAVED_REFERENCES` and `SAVED_REFERENCES`.
+Pilot targets are a development check, not a benchmark. See
+[AGENT_EXPERIMENT.md](src/agentir/multagent_experiment/AGENT_EXPERIMENT.md) for prompts,
+budgets, resume and audit outputs.

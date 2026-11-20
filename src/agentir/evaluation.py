@@ -169,8 +169,9 @@ def benchmark(retriever, pairs, methods, rounds, ks):
     return {"per_round": metrics, "per_example": examples, "summary": summary}
 
 
-def evaluate_experiments(retriever, pairs, experiments=None, *, rounds=3, ks=(1, 10, 50)):
-    """Compare registered experiments with caption, raw-dialogue, and PlugIR references.
+def evaluate_experiments(retriever, pairs, experiments=None, *, rounds=3, ks=(1, 10, 50),
+                         references=("caption_only", "raw_dialogue", "supplied_plugir")):
+    """Evaluate experiments with optional saved references; references=() skips them.
     Each callback receives (context, retriever) and returns text or SearchOutput.
     Only this evaluator uses target labels to measure ranks after scoring; those
     ranks never feed back into callbacks. Return per-example rank changes,
@@ -179,13 +180,19 @@ def evaluate_experiments(retriever, pairs, experiments=None, *, rounds=3, ks=(1,
     their own conversations first and register callbacks for those query states.
     """
     experiments = dict(experiments or {})
-    references = ("caption_only", "raw_dialogue", "supplied_plugir")
+    available_references = ("caption_only", "raw_dialogue", "supplied_plugir")
+    references = tuple(references)
+    if (any(name not in available_references for name in references)
+            or len(set(references)) != len(references)):
+        raise ValueError("Choose distinct saved references: caption_only, raw_dialogue, supplied_plugir.")
+    if not references and not experiments:
+        raise ValueError("Enable at least one experiment or saved reference.")
     if not pairs or not 1 <= rounds <= 11:
         raise ValueError("Provide matched examples and 1..11 query states.")
     ks = sorted(set(ks))
     if not ks or any(not isinstance(k, int) or not 1 <= k <= len(retriever.cache.paths) for k in ks):
         raise ValueError("K values must be positive integers inside the image pool.")
-    reserved_names = {*references, "round", "example_index", "target"}
+    reserved_names = {*available_references, "round", "example_index", "target"}
     if any(not isinstance(name, str) or not name.strip() or name in reserved_names
            or not callable(callback) for name, callback in experiments.items()):
         raise ValueError("Use unique nonempty experiment names, distinct from references, and callable methods.")
@@ -285,12 +292,13 @@ def evaluate_experiments(retriever, pairs, experiments=None, *, rounds=3, ks=(1,
             row[f"hits_change_vs_{reference}_pp"] = row["hits_percent"] - other["hits_percent"]
     for values in summary.values():
         values["BRI_reduction_vs_caption_only"] = (
-            None if values["BRI"] is None else summary["caption_only"]["BRI"] - values["BRI"])
+            None if "caption_only" not in summary or values["BRI"] is None
+            else summary["caption_only"]["BRI"] - values["BRI"])
     return {
         "per_example": per_example, "per_round": per_round, "summary": summary,
         "protocol": {
             "pool": len(retriever.cache.paths), "targets": [raw["img"] for raw, _ in pairs],
-            "rounds": rounds, "k": ks, "methods": methods,
+            "rounds": rounds, "k": ks, "methods": methods, "saved_references": list(references),
             "tie_break": "Descending score, then original manifest index",
             "metric_implementation": provenance(),
             "scope": "References use saved captions/dialogue. Ordinary callbacks receive past raw context; prepared live methods may return their own generated query states instead. Supplied PlugIR is a saved reference with potentially different dialogue.",

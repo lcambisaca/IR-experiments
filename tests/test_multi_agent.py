@@ -415,21 +415,20 @@ def test_disabled_runner_does_not_prepare_models(monkeypatch):
     def forbidden(*args, **kwargs):
         """Fail if disabled generation attempts any model preparation."""
         raise AssertionError('Disabled method attempted model preparation')
-    for name, value in {'RUN_MULTI_AGENT_PILOT': False, 'RUN_LIVE_PLUGIR': False,
-                        'EXPERIMENTS': {}, 'PREPARED_EXPERIMENTS': {},
+    for name, value in {'RUN_MULTI_AGENT': False, 'RUN_LIVE_PLUGIR': False,
                         'prepare_three_agents': forbidden, 'prepare_qwen_live': forbidden}.items():
         monkeypatch.setattr(runner, name, value)
     assert runner.collect_experiments(None, None, []) == ({}, {})
 
 
-def test_pilot_selects_only_cake_and_giraffe_by_identity_for_five_rounds():
+def test_pilot_selects_only_cake_and_giraffe_by_identity():
     from agentir.multagent_experiment import setup
     root = Path(__file__).resolve().parents[1]
     rows = json.loads((root / 'assets/protocol/baseline_matched.json').read_text())
     selected = setup.select_pilot_pairs([(r, r) for r in reversed(rows)])
     assert [left['dialog'][0] for left, _ in selected] == [
         'a group of people posing in front of a cake', 'a giraffe is standing in an open field']
-    assert setup.N_STATES == 6 and setup.AGENT_MODES == (False,)
+    assert len(selected) == 2
     assert setup.AGENTS.questions_per_agent == 5 and setup.AGENTS.max_calls_per_round == 6
 
 
@@ -509,8 +508,9 @@ def test_prepared_experiment_runs_both_modes_and_exports_dialogues(agent_case, t
     monkeypatch.setattr(runner,'BlipRetriever',lambda *args,**kwargs:agent_case['retriever'])
     monkeypatch.setattr(runner,'prepare_three_agents',lambda *args,**kwargs:bundle)
     monkeypatch.setattr(runner,'select_pilot_pairs',lambda selected: selected)
-    for key,value in {'__file__':str(root/'run_evaluation.py'),'N_TARGETS':1,'PILOT_STATES':3,
-        'K_VALUES':[1,10],'RUN_MULTI_AGENT_PILOT':True}.items():
+    for key,value in {'__file__':str(root/'run_evaluation.py'),'N_TARGETS':1,'N_STATES':3,
+        'K_VALUES':[1,10],'RUN_MULTI_AGENT':True,'USE_PILOT_TARGETS':True,
+        'RUN_LIVE_PLUGIR':False,'INCLUDE_SAVED_REFERENCES':False}.items():
         monkeypatch.setattr(runner,key,value)
     runner.main()
     exported = next((root/'runs/experiments').iterdir())

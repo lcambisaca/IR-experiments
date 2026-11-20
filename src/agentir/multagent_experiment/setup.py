@@ -1,13 +1,14 @@
-"""Default pilot configuration and entry point for the shared evaluator."""
+"""Multi-agent configuration and optional pilot targets for the shared evaluator."""
+from dataclasses import replace
 from .multi_agent import AgentSettings, prepare_agent_experiment
 
 TARGET_IMAGES = (
     "unlabeled2017/000000364869.jpg",  # Group posing in front of a cake; CPU initial rank 9.
     "unlabeled2017/000000562109.jpg",  # Giraffe standing in an open field; CPU initial rank 89.
 )
-N_STATES = 6  # Initial caption plus five interactions.
-RUN_LABEL = "specialists_shared_cake_giraffe_5_rounds"
-AGENT_MODES = (False,)
+N_STATES = 11  # Default for direct calls; run_evaluation.py supplies its own N_STATES.
+RUN_LABEL = "specialists_shared_cake_giraffe"
+AGENT_MODES = (False,True)
 AGENT_INPUT_TOKENS = 8192
 AGENTS = AgentSettings(
     seed=1021, threshold_low=500, exclude_top_k=10,
@@ -30,7 +31,7 @@ def select_pilot_pairs(pairs):
 
 
 def prepare_three_agents(root, retriever, pairs, *, n_states=N_STATES, offline=False,
-                         settings=AGENTS, modes=AGENT_MODES, device="cuda",
+                         settings=None, modes=AGENT_MODES, device="cuda",
                          candidate_captions="assets/protocol/visdial_captions.json",
                          image_root="data/images", image_archive=None,
                          download_missing=True, max_input_tokens=AGENT_INPUT_TOKENS,
@@ -41,6 +42,8 @@ def prepare_three_agents(root, retriever, pairs, *, n_states=N_STATES, offline=F
     The caller owns target selection, scoring, and export, so the same cases
     can be evaluated against teammates' methods. Importing starts no models.
     """
+    if settings is None:
+        settings = replace(AGENTS, max_targets=max(AGENTS.max_targets, len(pairs)))
     return prepare_agent_experiment(
         root, retriever, pairs, n_states=n_states, offline=offline,
         settings=settings, modes=modes, device=device,
