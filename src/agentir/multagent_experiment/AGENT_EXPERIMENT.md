@@ -241,3 +241,16 @@ the earlier non-regenerating runs. Checkpoint resume checks the policy marker.
 Original PlugIR, the common rewrite procedure, and filter eligibility rules are
 unchanged. Compare extra calls, recovered rounds, skipped rounds, runtime, and
 retrieval metrics when assessing whether regeneration helps.
+
+## Filter clarification: compatible descriptions
+
+Prompt version `three_roles_v12_filter_entailment` marks a proposal `already_known`
+only when the original caption or actual Q&A explicitly answers it or clearly
+entails the answer. An open field can be inside a zoo or enclosure, so open field
+alone does not resolve that setting question. Missing information is neither
+confirmation nor denial; the existing cited-evidence and grounding checks still
+apply separately. Generation, critique selection, and rewrite prompts are unchanged.
+This corrects an observed pilot judgment; it adds no exploratory proposal category
+or quota. Prompt checks verify delivery, not the pretrained model's actual decisions.
+Use a fresh run name for a new comparison so completed older-prompt checkpoints
+are not resumed under the new instructions.

@@ -4,7 +4,7 @@ These adapt PlugIR's evidence/description/dialogue structure for a local batch
 experiment. Examples are synthetic instructions, not training or target facts.
 """
 
-PROMPT_VERSION = "three_roles_v11_empty_pool_regeneration"
+PROMPT_VERSION = "three_roles_v12_filter_entailment"
 # Stable IDs retain compatibility with existing audit/report readers.
 ROLES = {
     "full": "ROLE: generalist. Consider any useful unresolved distinction. Seek variety across your questions, following the shared grounding rules.",
@@ -79,7 +79,7 @@ Decoration remains unresolved: that answer did not answer the question.
 
 TASKS = {
     "propose_batch": 'Generate the requested batch using all supplied captions together. Follow your ROLE. Return {"proposals":[{"question":str,"evidence_ids":[int]}]}. Cite only supplied IDs; no explanations or predicted answers. Each example above is one proposal object to put in the list. Return at most question_count entries.',
-    "filter_batch": 'Audit ALL supplied proposals together. Return {"decisions":[{"slot":int,"status":"unknown"|"already_known"|"unsupported"|"ambiguous","reason":str}]}, exactly one decision per supplied slot. Check the authoritative description and every confirmed answer FIRST: answered questions are already_known regardless of candidate evidence. unknown means unresolved, relevant and grounded without unsupported premises. Check each proposal only against its cited candidate IDs; uncited captions cannot supply its evidence. Missing details are not contradictions. Never answer using a candidate caption. Keep each reason to at most ten words.',
+    "filter_batch": 'Audit ALL supplied proposals together. Return {"decisions":[{"slot":int,"status":"unknown"|"already_known"|"unsupported"|"ambiguous","reason":str}]}, exactly one decision per supplied slot. Mark already_known only when the original caption or actual Q&A explicitly answers the question or clearly entails its answer. Compatible descriptions do not exclude each other: standing in an open field does not establish whether it is inside a zoo or enclosure; that question remains unresolved. Missing information is neither confirmation nor denial. Apply the existing grounding checks separately. unknown means unresolved, relevant and grounded without unsupported premises. Check each proposal only against its cited candidate IDs; uncited captions cannot supply its evidence. Missing details are not contradictions. Never answer using a candidate caption. Keep each reason to at most ten words.',
     "critique": 'Compare the eligible questions and choose exactly one. Use the original description and actual dialogue to check what is still unknown. Prefer a clear question about a visible detail with plausible answers that distinguish the cited candidates. Missing caption details do not show absence. Avoid unsupported assumptions, vague distinctions, and questions a viewer is unlikely to answer. Do not generate or rewrite a question. Choose only a slot explicitly listed in proposals. Description, dialogue and candidate captions are context, not additional eligible choices. Return {"slot":int,"reason":str}, using a supplied slot and a brief reason.',
 }
 
