@@ -4,7 +4,7 @@ These adapt PlugIR's evidence/description/dialogue structure for a local batch
 experiment. Examples are synthetic instructions, not training or target facts.
 """
 
-PROMPT_VERSION = "three_roles_v9_plugir_rewrite"
+PROMPT_VERSION = "three_roles_v11_empty_pool_regeneration"
 # Stable IDs retain compatibility with existing audit/report readers.
 ROLES = {
     "full": "ROLE: generalist. Consider any useful unresolved distinction. Seek variety across your questions, following the shared grounding rules.",
@@ -80,7 +80,7 @@ Decoration remains unresolved: that answer did not answer the question.
 TASKS = {
     "propose_batch": 'Generate the requested batch using all supplied captions together. Follow your ROLE. Return {"proposals":[{"question":str,"evidence_ids":[int]}]}. Cite only supplied IDs; no explanations or predicted answers. Each example above is one proposal object to put in the list. Return at most question_count entries.',
     "filter_batch": 'Audit ALL supplied proposals together. Return {"decisions":[{"slot":int,"status":"unknown"|"already_known"|"unsupported"|"ambiguous","reason":str}]}, exactly one decision per supplied slot. Check the authoritative description and every confirmed answer FIRST: answered questions are already_known regardless of candidate evidence. unknown means unresolved, relevant and grounded without unsupported premises. Check each proposal only against its cited candidate IDs; uncited captions cannot supply its evidence. Missing details are not contradictions. Never answer using a candidate caption. Keep each reason to at most ten words.',
-    "critique": 'Compare the eligible questions and choose exactly one. Use the original description and actual dialogue to check what is still unknown. Prefer a clear question about a visible detail with plausible answers that distinguish the cited candidates. Missing caption details do not show absence. Avoid unsupported assumptions, vague distinctions, and questions a viewer is unlikely to answer. Do not generate or rewrite a question. Return {"slot":int,"reason":str}, using a supplied slot and a brief reason.',
+    "critique": 'Compare the eligible questions and choose exactly one. Use the original description and actual dialogue to check what is still unknown. Prefer a clear question about a visible detail with plausible answers that distinguish the cited candidates. Missing caption details do not show absence. Avoid unsupported assumptions, vague distinctions, and questions a viewer is unlikely to answer. Do not generate or rewrite a question. Choose only a slot explicitly listed in proposals. Description, dialogue and candidate captions are context, not additional eligible choices. Return {"slot":int,"reason":str}, using a supplied slot and a brief reason.',
 }
 
 
@@ -91,6 +91,17 @@ def messages_for(stage, role, payload):
         raise ValueError("Unknown agent role or stage.")
     neutral = stage in ("filter_batch", "critique")
     instruction = "Act as a neutral evidence auditor and reconstructor." if neutral else ROLES[role]
+    if stage == "propose_batch" and payload.get("generation_attempt", 0) == 1:
+        instruction += (
+            "\nThe first proposal pool had no eligible questions. Generate a fresh batch of up to "
+            "question_count questions using the same evidence. Read attempted_proposals and their "
+            "rejection reasons; do not repeat or rephrase rejected questions. Rejected proposals "
+            "are not confirmed target facts. Apply the same grounding rules and return fewer "
+            "questions or an empty list if no supported question remains."
+        )
+    if stage == "critique" and "selection_retry" in payload:
+        retry = payload["selection_retry"]
+        instruction += "\n" + retry["instruction"] + " Valid slots: " + json.dumps(retry["valid_slots"])
     example = "" if neutral else EXAMPLES[role]
     if stage in ("filter_batch", "critique"):
         example += "\n" + QA_GROUNDING_EXAMPLE

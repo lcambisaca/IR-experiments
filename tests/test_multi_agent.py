@@ -178,7 +178,7 @@ def test_all_redundant_proposals_do_not_force_answer(agent_case, tmp_path):
     assert answer.model.calls == 0 and state['dialogue'] == []
     assert all(s['query'] == 'a room' for s in state['states'])
     for s in state['states'][1:]:
-        assert s['no_question'] and len(s['audit']['attempts']) == 3 * agent_case['settings'].questions_per_agent
+        assert s['no_question'] and len(s['audit']['attempts']) == 2 * 3 * agent_case['settings'].questions_per_agent
         assert s['audit']['critique_decision'] is None
 
 
@@ -573,3 +573,226 @@ def test_legacy_rewrite_checkpoint_is_not_reused(agent_case, tmp_path):
     path.write_text(json.dumps({'states': [{'query': 'old rewrite'}], 'dialogue': []}))
     with pytest.raises(ValueError, match='different rewrite policy'):
         run_case(agent_case, path)
+
+
+class ReviewerSlotTransport(AgentTransport):
+    """Return scripted reviewer slots while leaving proposal and filter behavior unchanged."""
+    def __init__(self, slots, *, fallback=False):
+        super().__init__()
+        self.slots = iter(slots)
+        self.review_requests = []
+        self.fallback = fallback
+
+    def create(self, **kwargs):
+        response = super().create(**kwargs)
+        entry = self.records[-1]
+        if entry['stage'] == 'critique':
+            self.review_requests.append(deepcopy(kwargs))
+            result = {'slot': next(self.slots), 'reason': 'Scripted reviewer selection.'}
+            entry['result'] = deepcopy(result)
+            response['choices'][0]['message']['content'] = json.dumps(result)
+        elif self.fallback and entry['stage'] == 'reconstruct_dialog':
+            entry['result'] = 'a room'
+            response['choices'][0]['message']['content'] = 'a room'
+        return response
+
+
+@pytest.mark.parametrize('invalid_slot', [-1, 99, True, '0', None])
+@pytest.mark.parametrize('fallback', [False, True])
+def test_invalid_critique_slot_retries_once_and_preserves_rewrite_budget(
+        agent_case, tmp_path, invalid_slot, fallback):
+    from dataclasses import replace
+    agent_case['settings'] = replace(agent_case['settings'], max_calls_per_round=6)
+    transport = ReviewerSlotTransport([invalid_slot, 0], fallback=fallback)
+    state, qwen, answerer = run_case(agent_case, tmp_path/'retry.json',
+                                    transport=transport, n_states=2)
+    current = state['states'][1]
+    audit = current['audit']
+    assert state['status'] == 'complete'
+    assert answerer.model.calls == 1 and len(state['dialogue']) == 1
+    assert current['question'] == audit['final_proposals'][0]['question']
+    assert current['skip_reason'] is None
+    assert [a['valid'] for a in audit['critique_attempts']] == [False, True]
+    assert json.loads(audit['critique_attempts'][0]['response'])['slot'] == invalid_slot
+    assert len(qwen.review_requests) == 2
+    retry_request = qwen.review_requests[1]
+    retry_data = json.loads(retry_request['messages'][1]['content'])['reference_data']
+    original_data = json.loads(qwen.review_requests[0]['messages'][1]['content'])['reference_data']
+    for key in ('record', 'query', 'candidates', 'proposals'):
+        assert retry_data[key] == original_data[key]
+    assert retry_data['selection_retry']['valid_slots'] == list(range(len(audit['final_proposals'])))
+    assert 'Your previous selection was invalid.' in retry_request['messages'][0]['content']
+    assert 'Context is for judging the choices, not for supplying another question.' in retry_request['messages'][0]['content']
+    assert current['llm_calls'] == 7 + int(fallback)
+    assert sum(entry['stage']=='paraphrase' for entry in qwen.records) == int(fallback)
+
+
+def test_two_invalid_critique_slots_skip_only_that_interaction(agent_case, tmp_path):
+    from dataclasses import replace
+    agent_case['settings'] = replace(agent_case['settings'], max_calls_per_round=6)
+    transport = ReviewerSlotTransport([99, -1, 0])
+    state, qwen, answerer = run_case(agent_case, tmp_path/'skip_then_continue.json',
+                                    transport=transport, n_states=3)
+    skipped, continued = state['states'][1:]
+    assert state['status'] == 'complete'
+    assert skipped['no_question'] and skipped['skip_reason'] == 'invalid_critique_selection'
+    assert skipped['question'] is None and skipped['answer'] is None
+    assert skipped['query'] == state['states'][0]['query']
+    assert skipped['raw_query'] == state['states'][0]['raw_query']
+    assert skipped['target_rank'] == state['states'][0]['target_rank']
+    assert skipped['audit']['final_proposals']
+    assert skipped['audit']['critique_decision'] is None
+    assert [a['valid'] for a in skipped['audit']['critique_attempts']] == [False, False]
+    assert not any(a['stage'] in ('reconstruct_dialog','paraphrase') for a in skipped['llm_audit'])
+    assert not continued['no_question'] and continued['skip_reason'] is None
+    assert len(continued['audit']['critique_attempts']) == 1
+    assert answerer.model.calls == len(state['dialogue']) == 1
+    assert len(qwen.review_requests) == 3
+    # Reviewer failure does not permanently reject otherwise eligible questions.
+    assert all(not item['blocked'] for item in skipped['audit']['question_memory'])
+
+
+def test_no_eligible_questions_make_no_reviewer_retry(agent_case, tmp_path):
+    state, qwen, answerer = run_case(agent_case, tmp_path/'no_eligible.json',
+                                    transport=AgentTransport(known=True), n_states=2)
+    current = state['states'][1]
+    assert current['skip_reason'] == 'no_eligible_questions'
+    assert current['audit']['critique_attempts'] == []
+    assert not any(r['stage']=='critique' for r in qwen.records)
+    assert answerer.model.calls == 0
+
+
+def test_critique_checkpoint_without_retry_policy_is_not_resumed(agent_case, tmp_path):
+    path = tmp_path/'old_critique.json'
+    run_case(agent_case, path, n_states=2)
+    saved = json.loads(path.read_text())
+    del saved['critique_policy']
+    path.write_text(json.dumps(saved))
+    with pytest.raises(ValueError, match='different critique policy'):
+        run_case(agent_case, path, n_states=3)
+
+
+class RegeneratingTransport(ReviewerSlotTransport):
+    """Reject the initial pool, then provide fresh, repeated, or empty proposals."""
+    def __init__(self, *, reject_both=False, repeat_rejected=False, empty_both=False,
+                 slots=(), fallback=False):
+        super().__init__(slots, fallback=fallback)
+        self.reject_both = reject_both
+        self.repeat_rejected = repeat_rejected
+        self.empty_both = empty_both
+        self.generation_attempt = 0
+
+    def create(self, **kwargs):
+        response = super().create(**kwargs)
+        entry = self.records[-1]
+        if entry['stage'] == 'propose_batch':
+            self.generation_attempt = entry['payload']['generation_attempt']
+            result = deepcopy(entry['result'])
+            if self.empty_both:
+                result['proposals'] = []
+            elif self.generation_attempt and not self.repeat_rejected:
+                for proposal in result['proposals']:
+                    proposal['question'] = proposal['question'][:-1] + ' alternative?'
+        elif entry['stage'] == 'filter_batch':
+            result = deepcopy(entry['result'])
+            for decision in result['decisions']:
+                decision.update(status='unsupported' if self.generation_attempt == 0 or self.reject_both else 'unknown',
+                                reason='Initial evidence does not support this question.'
+                                if self.generation_attempt == 0 else 'Second-pool evidence check.')
+        else:
+            return response
+        entry['result'] = deepcopy(result)
+        response['choices'][0]['message']['content'] = json.dumps(result)
+        return response
+
+
+@pytest.mark.parametrize('critique,retry', [(False, False), (True, False), (True, True)])
+@pytest.mark.parametrize('fallback', [False, True])
+def test_empty_pool_regenerates_once_with_feedback_and_shared_evidence(
+        agent_case, tmp_path, monkeypatch, critique, retry, fallback):
+    from dataclasses import replace
+    agent_case['settings'] = replace(agent_case['settings'], max_calls_per_round=6)
+    retrievals = []
+    original = RetrievalContext.candidates
+    def track(self, *args):
+        retrievals.append(args)
+        return original(self, *args)
+    monkeypatch.setattr(RetrievalContext, 'candidates', track)
+    transport = RegeneratingTransport(slots=[99, 0] if retry else [0], fallback=fallback)
+    state, qwen, answerer = run_case(agent_case, tmp_path/'regenerated.json',
+                                    transport=transport, critique=critique, n_states=2)
+    current = state['states'][1]
+    audit = current['audit']
+    assert state['status'] == 'complete'
+    assert audit['proposal_regeneration_used'] and audit['proposal_regeneration_recovered']
+    assert len(audit['generation_attempts']) == 2 and len(retrievals) == 1
+    assert audit['generation_attempts'][0]['eligible_proposals'] == []
+    assert len(audit['final_proposals']) == 15
+    assert len(audit['attempts']) == 30
+    assert current['question'] in {p['question'] for p in audit['final_proposals']}
+    assert current['skip_reason'] is None
+    assert answerer.model.calls == len(state['dialogue']) == 1
+    assert current['llm_calls'] == 9 + int(critique) + int(retry) + int(fallback)
+    proposals = [r for r in qwen.records if r['stage']=='propose_batch']
+    filters = [r for r in qwen.records if r['stage']=='filter_batch']
+    assert len(proposals) == 6 and len(filters) == 2
+    initial, regenerated = proposals[:3], proposals[3:]
+    for first, second in zip(initial, regenerated):
+        assert first['payload']['candidates'] == second['payload']['candidates']
+        assert first['payload']['query'] == second['payload']['query']
+        assert first['payload']['record'] == second['payload']['record']
+        assert first['payload']['question_count'] == second['payload']['question_count'] == 5
+        assert second['payload']['generation_attempt'] == 1
+        feedback = second['payload']['attempted_proposals']
+        assert len(feedback) == 15 and all(p['reason'] for p in feedback)
+        assert {question_key(p['question']) for p in feedback} == {
+            question_key(item['proposal']['question']) for item in audit['generation_attempts'][0]['attempts']}
+    assert regenerated[0]['payload']['attempted_proposals'] == regenerated[1]['payload']['attempted_proposals']
+    assert regenerated[1]['payload']['attempted_proposals'] == regenerated[2]['payload']['attempted_proposals']
+    for filtered in filters:
+        assert len(filtered['payload']['proposals']) == 15
+    retry_prompt = messages_for('propose_batch', 'full', regenerated[0]['payload'])[0]['content']
+    assert 'The first proposal pool had no eligible questions.' in retry_prompt
+    assert 'do not repeat or rephrase rejected questions' in retry_prompt
+
+
+@pytest.mark.parametrize('mode', ['rejected', 'repeated', 'empty'])
+def test_second_empty_pool_skips_without_third_generation(agent_case, tmp_path, mode):
+    transport = RegeneratingTransport(reject_both=mode=='rejected',
+        repeat_rejected=mode=='repeated', empty_both=mode=='empty')
+    state, qwen, answerer = run_case(agent_case, tmp_path/(mode+'.json'),
+                                    transport=transport, n_states=2)
+    current = state['states'][1]
+    audit = current['audit']
+    assert state['status'] == 'complete'
+    assert audit['proposal_regeneration_used'] and not audit['proposal_regeneration_recovered']
+    assert len(audit['generation_attempts']) == 2
+    assert current['no_question'] and current['skip_reason'] == 'no_eligible_questions'
+    assert current['query'] == state['states'][0]['query']
+    assert current['target_rank'] == state['states'][0]['target_rank']
+    assert state['dialogue'] == [] and answerer.model.calls == 0
+    assert sum(r['stage']=='propose_batch' for r in qwen.records) == 6
+    assert sum(r['stage']=='filter_batch' for r in qwen.records) == {'rejected':2,'repeated':1,'empty':0}[mode]
+    assert not any(r['stage'] in ('critique','reconstruct_dialog','paraphrase') for r in qwen.records)
+    if mode == 'repeated':
+        assert all(item['filter']['status']=='previously_rejected'
+                   for item in audit['generation_attempts'][1]['attempts'])
+
+
+def test_successful_initial_pool_does_not_regenerate(agent_case, tmp_path):
+    state, qwen, _ = run_case(agent_case, tmp_path/'initial_success.json', n_states=2)
+    audit = state['states'][1]['audit']
+    assert len(audit['generation_attempts']) == 1
+    assert not audit['proposal_regeneration_used']
+    assert not audit['proposal_regeneration_recovered']
+    assert sum(r['stage']=='propose_batch' for r in qwen.records) == 3
+
+
+def test_checkpoint_without_regeneration_policy_is_not_resumed(agent_case, tmp_path):
+    path = tmp_path/'old_proposals.json'
+    run_case(agent_case, path, n_states=2)
+    saved = json.loads(path.read_text())
+    del saved['proposal_policy']
+    path.write_text(json.dumps(saved))
+    with pytest.raises(ValueError, match='different proposal policy'):
+        run_case(agent_case, path, n_states=3)

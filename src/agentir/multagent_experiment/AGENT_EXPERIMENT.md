@@ -94,7 +94,9 @@ unchanged-query fallback can add one paraphrase call beyond the ordinary
 `max_calls_per_round` ceiling. All calls are counted and saved; original PlugIR
 rewrite retry behavior remains unchanged. If no question is eligible, the round
 makes no answer or rewrite call. Proposal/filter/critique output still uses its
-structured JSON validation and stops on invalid output.
+structured JSON validation. Invalid critique slots have the one-retry recovery
+below; malformed JSON, truncation and other execution errors still retain their
+existing interrupted-checkpoint behavior.
 
 The agent transport explicitly allows up to 1024 output tokens, accommodating
 the combined filter's maximum 960-token request. Individual proposal requests
@@ -159,3 +161,83 @@ reused. Specialist prompts, combined filtering, memory and orchestration are our
 The caption selector returns strings; duplicate catalogue captions are linked to
 the highest-ranked matching image in the current window, not necessarily the
 internal representative's exact image identity.
+
+## Invalid critique-slot recovery
+
+The reviewer may choose only a slot in the current eligible proposal list.
+Description, past dialogue, and representative captions are context for judging
+those choices, not additional selectable questions. Proposals are not regenerated
+or refiltered during recovery.
+
+If the first selection returns an invalid slot, retry exactly once with the same
+eligible list and context, the previous response, explicit valid slot numbers,
+and the instruction: "Your previous selection was invalid. Choose only from these
+eligible slots. Context is for judging the choices, not for supplying another question."
+A valid retry proceeds normally. Two invalid slot selections produce a completed
+no-question state with `skip_reason="invalid_critique_selection"`; there is no
+answerer call, rewrite, or dialogue update for that interaction. The search query
+and target rank remain unchanged, and later rounds continue. Eligible proposals
+are not marked rejected merely because the reviewer failed.
+
+Both responses, validation errors, valid slots, and retry payloads are retained
+in `llm_audit` and `audit.critique_attempts`. Ordinary lack of eligible proposals
+uses the distinct reason `no_eligible_questions` and makes no reviewer call.
+Only invalid-slot validation triggers this recovery; unrelated runtime failures
+are not swallowed. Single eligible proposals still follow the existing reviewer
+path; no automatic-selection shortcut is introduced in this change.
+
+A recovery call is counted and has one explicit extra allowance beyond the normal
+round ceiling. That allowance also leaves room for the usual reconstruction;
+PlugIR's optional paraphrase still has its own one-call allowance. At the default
+six-call ceiling, a successful retry can therefore use seven total Qwen calls,
+or eight if reconstruction triggers the paraphrase fallback. There is no unbounded
+retry loop or silent alternative selector.
+
+The reviewer policy is `eligible_slot_retry_once_v1`. New critique checkpoints use
+`critique_selector_retry_once/` beneath the existing rewrite-policy directory.
+Resume checks the critique-policy marker, preventing earlier critique histories
+from being silently combined with this recovery behavior. Minimum-KL selection,
+question-generation prompts, filtering, and the original rewrite functions are
+unchanged by this recovery patch.
+
+## One regeneration when filtering leaves no eligible questions
+
+Both multi-agent selection conditions now make at most two proposal/filter passes
+per interaction. The initial pass is unchanged. If it has at least one eligible
+question, selection proceeds immediately without regeneration. Otherwise each
+agent receives the same original description, actual dialogue, neutral query,
+representative captions, and the rejected questions with their reasons. It can
+propose up to `questions_per_agent` new questions (at most five), once. Rejected
+questions are avoidance feedback, never confirmed target facts.
+
+The regenerated pool goes through the same deterministic prechecks, exact-question
+deduplication, evidence-ID checks, and the same model filtering prompt. Repeated
+rejected proposals remain blocked. Retrieval and clustering are not rerun within
+the interaction. If the regenerated pool is also empty, save a no-question state
+with `skip_reason="no_eligible_questions"`; do not call the answerer or rewriter.
+There is no third proposal pass and no forced fallback question. Invalid/truncated
+model outputs retain their existing error behavior rather than triggering extra
+regeneration. Invalid reviewer selections use the separate one-retry policy;
+they do not trigger new proposals.
+
+`audit.generation_attempts` saves both pools, each pass's filter decisions and
+omitted slots, and its eligible proposals. The flattened `audit.attempts` retains
+all proposal records with `attempt` 0 or 1. `proposal_regeneration_used` and
+`proposal_regeneration_recovered` distinguish extra work from successful recovery.
+Rejection feedback and all model responses are also present in `llm_audit`.
+
+When activated, regeneration adds a bounded allowance of four Qwen calls: three
+proposal batches and at most one combined filter. Actual calls are counted, not
+assumed; an empty or deterministically rejected pool needs no model filter call.
+An answered round with two fully filtered pools normally uses nine calls without
+critique or ten with critique. A reviewer retry can add one and an unchanged-query
+paraphrase can add one, giving at most twelve with the default six-call base
+ceiling. These are additional internal calls, not additional target answers.
+Each answered interaction still receives only one BLIP-2 answer.
+
+The proposal policy is `regenerate_empty_pool_once_v1`. A separate directory of
+that name beneath the rewrite-policy directory keeps this experiment apart from
+the earlier non-regenerating runs. Checkpoint resume checks the policy marker.
+Original PlugIR, the common rewrite procedure, and filter eligibility rules are
+unchanged. Compare extra calls, recovered rounds, skipped rounds, runtime, and
+retrieval metrics when assessing whether regeneration helps.

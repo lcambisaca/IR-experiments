@@ -26,6 +26,8 @@ from ..retrieval import ranks_for_targets
 
 
 REWRITE_POLICY = "plugir_original_rewrite_v1"
+CRITIQUE_POLICY = "eligible_slot_retry_once_v1"
+PROPOSAL_POLICY = "regenerate_empty_pool_once_v1"
 
 
 @dataclass(frozen=True)
@@ -63,6 +65,10 @@ def valid_question(text):
             and text.strip().endswith("?") and text.count("?") == 1)
 
 
+class InvalidCritiqueSelection(ValueError):
+    """The reviewer returned a slot outside the supplied eligible choices."""
+
+
 class AgentChat:
     """Use the existing pinned, cached Qwen transport with new structured prompts."""
 
@@ -70,16 +76,32 @@ class AgentChat:
         """Keep the transport separate from target-aware answer generation and metric logging."""
         self.transport, self.settings = transport, settings
         self.audit, self.calls, self.sampling_context = [], 0, ""
+        self.critique_retry_used = False
+        self.proposal_regeneration_used = False
 
     def begin(self, record, interaction):
         """Seed proposals by confirmed context, independent of critique/no-critique condition."""
         self.calls, self.audit = 0, []
+        self.critique_retry_used = False
+        self.proposal_regeneration_used = False
         self.sampling_context = signature({"record": record, "interaction": interaction})
         self.transport.begin_round(interaction, self.sampling_context)
 
+    @property
+    def extra_call_allowance(self):
+        """One reviewer retry and one extra three-agent/filter pass, only when used."""
+        return (int(self.critique_retry_used)
+                + (len(ROLES) + 1) * int(self.proposal_regeneration_used))
+
+    def begin_proposal_regeneration(self):
+        """Reserve at most one additional proposal/filter pass in this interaction."""
+        if self.proposal_regeneration_used:
+            raise RuntimeError("Only one proposal regeneration is allowed per round.")
+        self.proposal_regeneration_used = True
+
     def complete(self, stage, role, payload):
         """Make one bounded JSON call; never silently repair malformed model output."""
-        if self.calls >= self.settings.max_calls_per_round:
+        if self.calls >= self.settings.max_calls_per_round + self.extra_call_allowance:
             raise RuntimeError("Agent per-round call budget exhausted; checkpoint retained.")
         self.calls += 1
         messages = messages_for(stage, role, payload)
@@ -140,11 +162,21 @@ class AgentChat:
         if stage == "critique":
             slot = result.get("slot")
             reason = result.get("reason")
-            if (type(slot) is not int or not 0 <= slot < len(payload["proposals"])
-                    or not isinstance(reason, str) or not reason.strip()):
-                raise ValueError("Critique must choose one eligible proposal slot and give a reason.")
+            valid_slots = [proposal["slot"] for proposal in payload["proposals"]]
+            if type(slot) is not int or slot not in valid_slots:
+                item["validation_error"] = f"Slot {slot!r} is not in eligible slots {valid_slots}."
+                raise InvalidCritiqueSelection("Critique must choose one eligible proposal slot.")
+            if not isinstance(reason, str) or not reason.strip():
+                raise ValueError("Critique must give a nonempty selection reason.")
             return result
         raise ValueError(f"Unsupported agent stage: {stage}")
+
+    def retry_critique(self, payload):
+        """Allow exactly one extra reviewer call, preserving the normal rewrite budget."""
+        if self.critique_retry_used:
+            raise RuntimeError("Only one critique selection retry is allowed per round.")
+        self.critique_retry_used = True
+        return self.complete("critique", "full", payload)
 
 
 class RetrievalContext:
@@ -236,7 +268,8 @@ def rewrite_query(chat, record, previous_query, namespace):
 
     def call(stage, value):
         # PlugIR may make one additional paraphrase call when reconstruction is unchanged.
-        limit = chat.settings.max_calls_per_round + (stage == "paraphrase")
+        limit = (chat.settings.max_calls_per_round + chat.extra_call_allowance
+                 + (stage == "paraphrase"))
         if chat.calls >= limit:
             raise RuntimeError("Agent per-round call budget exhausted; checkpoint retained.")
         chat.calls += 1
@@ -277,12 +310,38 @@ def unique_proposals(proposals):
     return list(found.values())
 
 
-def question_round(chat, context, record, neutral, interaction, *, critique, prior_attempts=()):
-    """Generate one question batch per role, batch-filter, then select by critique or minimum KL.
+def choose_critique_question(chat, payload):
+    """Retry an invalid slot once; retain both responses and skip after two failures."""
+    attempts = []
+    valid_slots = [proposal["slot"] for proposal in payload["proposals"]]
+    retry_instruction = (
+        "Your previous selection was invalid. Choose only from these eligible slots. "
+        "Context is for judging the choices, not for supplying another question."
+    )
+    for attempt in range(2):
+        request = payload if attempt == 0 else {
+            **payload,
+            "selection_retry": {"instruction": retry_instruction,
+                                "valid_slots": valid_slots,
+                                "previous_response": attempts[-1]["response"]},
+        }
+        try:
+            decision = (chat.complete("critique", "full", request) if attempt == 0
+                        else chat.retry_critique(request))
+        except InvalidCritiqueSelection as error:
+            attempts.append({"attempt": attempt + 1, "valid_slots": valid_slots,
+                             "response": chat.audit[-1]["response"],
+                             "valid": False, "error": str(error)})
+        else:
+            attempts.append({"attempt": attempt + 1, "valid_slots": valid_slots,
+                             "response": chat.audit[-1]["response"], "valid": True})
+            return decision, attempts
+    print("Critique returned invalid slots twice; skipping this interaction.", flush=True)
+    return None, attempts
 
-    No target identity, pixels, target ranks, saved human answers or future states
-    enter this function. Returns all candidate/critique evidence for later audits.
-    """
+
+def generate_and_filter_proposals(chat, record, neutral, shared, prior_attempts, *, generation_attempt):
+    """Generate one pool and apply identical prechecks, deduplication, and model filtering."""
     batches, attempts, eligible, pending = {}, [], [], []
     omitted_slots = []
     # Only previously rejected questions are blocked. A useful unselected question
@@ -291,11 +350,9 @@ def question_round(chat, context, record, neutral, interaction, *, critique, pri
                if isinstance(p.get("question"), str)}
     seen = {}
     roles = list(ROLES)
-    # One search, one clustering pass and identical caption evidence per round.
-    shared = context.candidates(neutral, interaction, "shared", record)
     for role in roles:
         batches[role] = chat.complete("propose_batch", role, {"record": record, "query": neutral,
-            "agent_role": role,
+            "agent_role": role, "generation_attempt": generation_attempt,
             "batch_id": roles.index(role),
             "candidates": shared["captions"], "question_count": chat.settings.questions_per_agent,
             "attempted_proposals": list(prior_attempts)})
@@ -311,7 +368,7 @@ def question_round(chat, context, record, neutral, interaction, *, critique, pri
             duplicate = seen.get(key) if gate is None else None
             if duplicate is not None:
                 gate = {"status": "duplicate", "reason": "Question already proposed this round."}
-            item = {"owner": role, "slot": slot, "attempt": 0, "proposal": proposal, "filter": gate}
+            item = {"owner": role, "slot": slot, "attempt": generation_attempt, "proposal": proposal, "filter": gate}
             if duplicate is not None:
                 item["duplicate_of"] = {"owner": duplicate["owner"], "slot": duplicate["slot"]}
             attempts.append(item)
@@ -335,18 +392,57 @@ def question_round(chat, context, record, neutral, interaction, *, critique, pri
                 item["filter"]["model_omitted"] = slot in omitted_slots
             if decision["status"] == "unknown":
                 eligible.append(item["proposal"])
-    final = unique_proposals(eligible)
+    for item in attempts:
+        if item["filter"]["status"] == "duplicate":
+            item["effective_filter"] = dict(seen[question_key(item["proposal"]["question"])]["filter"])
+    return {"attempt": generation_attempt, "attempts": attempts,
+            "eligible_proposals": unique_proposals(eligible),
+            "filter_omitted_slots": omitted_slots}
+
+
+def question_round(chat, context, record, neutral, interaction, *, critique, prior_attempts=()):
+    """Generate/filter proposals, regenerate an empty pool once, then select a question.
+
+    No target identity, pixels, target ranks, saved human answers or future states
+    enter this function. Returns all candidate/critique evidence for later audits.
+    """
+    shared = context.candidates(neutral, interaction, "shared", record)
+    generation_attempts = []
+    feedback = list(prior_attempts)
+    for generation_attempt in range(2):
+        if generation_attempt:
+            chat.begin_proposal_regeneration()
+        pool = generate_and_filter_proposals(
+            chat, record, neutral, shared, feedback, generation_attempt=generation_attempt,
+        )
+        generation_attempts.append(pool)
+        final = pool["eligible_proposals"]
+        if final:
+            break
+        # Explain all first-pool rejections; the next pass still applies the same rules.
+        rejected = {}
+        for item in pool["attempts"]:
+            proposal = item["proposal"]
+            gate = item.get("effective_filter", item["filter"])
+            rejected[question_key(proposal["question"])] = {
+                "question": proposal["question"], "reason": gate["reason"],
+            }
+        feedback = [*prior_attempts, *rejected.values()]
+    attempts = [item for pool in generation_attempts for item in pool["attempts"]]
+    omitted_slots = [slot for pool in generation_attempts for slot in pool["filter_omitted_slots"]]
     decision = None
+    critique_attempts = []
     if critique:
         selected, kl = None, []
         if final:
-            decision = chat.complete("critique", "full", {
+            decision, critique_attempts = choose_critique_question(chat, {
                 "record": record, "query": neutral, "candidates": shared["captions"],
                 "proposals": [{"slot": slot, "question": p["question"],
                                "evidence_ids": p["evidence_ids"]}
                               for slot, p in enumerate(final)],
             })
-            selected = final[decision["slot"]]["question"]
+            if decision is not None:
+                selected = final[decision["slot"]]["question"]
     else:
         selected, kl = context.select(neutral, final, interaction)
     selected_key = question_key(selected) if selected is not None else None
@@ -358,7 +454,7 @@ def question_round(chat, context, record, neutral, interaction, *, critique, pri
         status = item["filter"]["status"]
         # A duplicate of a still-unasked eligible question is not permanently
         # suppressed: deduplication does not provide its missing answer.
-        effective = seen[key]["filter"] if status == "duplicate" else item["filter"]
+        effective = item.get("effective_filter", item["filter"])
         blocked_next = key == selected_key or (key not in final_keys and
                        effective["status"] != "unknown")
         memory.append({"question": question, "owner": item["owner"], "status": status,
@@ -367,10 +463,16 @@ def question_round(chat, context, record, neutral, interaction, *, critique, pri
                        "selected": key == selected_key})
     return {"shared_retrieval": shared, "role_preferences": dict(ROLES),
             "filter_omitted_slots": omitted_slots,
+            "generation_attempts": generation_attempts,
+            "proposal_regeneration_used": len(generation_attempts) == 2,
+            "proposal_regeneration_recovered": len(generation_attempts) == 2 and bool(final),
             "attempts": attempts, "before_critique": final,
             "question_memory": memory,
             "selector": "critique" if critique else "min_kl",
-            "critique_decision": decision, "final_proposals": final,
+            "critique_decision": decision, "critique_attempts": critique_attempts,
+            "skip_reason": ("invalid_critique_selection" if critique_attempts and decision is None
+                            else "no_eligible_questions" if not final else None),
+            "final_proposals": final,
             "selected_question": selected, "kl": kl}
 
 
@@ -386,8 +488,12 @@ def generate_agent_dialogue(retriever, *, initial_caption, target_id, image_path
         state = read_json(path)
         if state.get("rewrite_policy") != REWRITE_POLICY:
             raise ValueError("Checkpoint uses a different rewrite policy; use a fresh checkpoint path.")
+        if state.get("proposal_policy") != PROPOSAL_POLICY:
+            raise ValueError("Checkpoint uses a different proposal policy; use a fresh checkpoint path.")
+        if critique and state.get("critique_policy") != CRITIQUE_POLICY:
+            raise ValueError("Checkpoint uses a different critique policy; use a fresh checkpoint path.")
     else:
-        state = {"rewrite_policy": REWRITE_POLICY, "target": retriever.cache.paths[target_id], "dialogue": [], "states": [{"round": 0, "query": initial_caption,
+        state = {"rewrite_policy": REWRITE_POLICY, "proposal_policy": PROPOSAL_POLICY, "critique_policy": CRITIQUE_POLICY if critique else None, "target": retriever.cache.paths[target_id], "dialogue": [], "states": [{"round": 0, "query": initial_caption,
             "raw_query": initial_caption, "target_rank": int(ranks_for_targets(retriever.scores([initial_caption]), [target_id])[0])}],
             "status": "partial"}
         save_json(path, state)
@@ -429,7 +535,8 @@ def generate_agent_dialogue(retriever, *, initial_caption, target_id, image_path
                 for entry in previous["audit"]["question_memory"]] + audit["question_memory"]
             state["states"].append({"round": interaction + 1, "query": neutral, "raw_query": raw,
                 "target_rank": measured, "question": question, "answer": answer,
-                "no_question": question is None, "audit": audit, "llm_calls": chat.calls,
+                "no_question": question is None, "skip_reason": audit["skip_reason"],
+                "audit": audit, "llm_calls": chat.calls,
                 "llm_audit": chat.audit, "transport_records": questioner.records[transport_start:]})
             state["status"] = "partial"
             state.pop("last_error", None)
@@ -437,7 +544,8 @@ def generate_agent_dialogue(retriever, *, initial_caption, target_id, image_path
             save_json(path, state)
             print(f"Agents critique={critique}, state {interaction+1}: "
                   f"question={question!r}, answer={answer!r}, rank={measured}, "
-                  f"filter_omissions={len(audit['filter_omitted_slots'])}", flush=True)
+                  f"filter_omissions={len(audit['filter_omitted_slots'])}, "
+                  f"skip_reason={audit['skip_reason']}", flush=True)
         state["status"] = "complete"
         save_json(path, state)
         return {**state, "states": state["states"][:n_states],
@@ -478,7 +586,7 @@ def prepare_agent_experiment(root, retriever, pairs, *, n_states, settings, devi
     catalogue = load_candidate_captions(catalogue_path, retriever.cache.paths)
     if not re.fullmatch(r"[A-Za-z0-9_-]+", run_name):
         raise ValueError("run_name must use only letters, digits, underscores or hyphens.")
-    folder = root / "runs" / "three_agents" / run_name / REWRITE_POLICY
+    folder = root / "runs" / "three_agents" / run_name / REWRITE_POLICY / PROPOSAL_POLICY
     questioner = Qwen3(folder / "qwen_calls", device=device, offline=offline,
                        max_input_tokens=max_input_tokens, seed=settings.seed, max_output_tokens=1024)
     answerer = Blip2Answerer(folder / "blip2_calls", device=device, offline=offline)
@@ -497,7 +605,7 @@ def prepare_agent_experiment(root, retriever, pairs, *, n_states, settings, devi
                 conversations[name].append(generate_agent_dialogue(retriever,
                     initial_caption=raw["dialog"][0], target_id=target_ids[raw["img"]], image_path=image,
                     captions=catalogue, questioner=questioner, answerer=answerer, settings=settings,
-                    n_states=n_states, checkpoint_path=folder / ("critique_selector" if critique else name) / (Path(raw["img"]).stem + ".json"),
+                    n_states=n_states, checkpoint_path=folder / ("critique_selector_retry_once" if critique else name) / (Path(raw["img"]).stem + ".json"),
                     critique=critique))
             methods[name] = generated_query_method(conversations[name])
             elapsed[name] = time.perf_counter() - started
@@ -509,6 +617,10 @@ def prepare_agent_experiment(root, retriever, pairs, *, n_states, settings, devi
         metadata={"run_name": run_name, "settings": asdict(settings), "checkpoint_folder": str(folder),
                   "condition_wall_seconds": elapsed,
                   "rewrite_policy": REWRITE_POLICY,
+                  "proposal_policy": PROPOSAL_POLICY,
+                  "proposal_regeneration": "One extra three-agent/filter pass only if no eligible questions remain.",
+                  "critique_selection_policy": CRITIQUE_POLICY,
+                  "critique_retry": "One extra call for an invalid eligible slot; skip after two invalid selections.",
                   "rewrite_source": provenance(),
                   "answer_input": "current description + '. ' + selected question (same as live PlugIR)",
                   "rewrite_calls": "Original reconstruction; one extra paraphrase call allowed if unchanged.",
