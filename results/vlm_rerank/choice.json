@@ -1,0 +1,49 @@
+{
+ "tables": {
+  "3b": {
+   "target": {
+    "accept": 75.0,
+    "partial": 0.0,
+    "reject": 25.0,
+    "n": 300
+   },
+   "near_miss": {
+    "accept": 45.1,
+    "partial": 0.0,
+    "reject": 54.9,
+    "n": 1500
+   },
+   "random": {
+    "accept": 0.1,
+    "partial": 0.0,
+    "reject": 99.9,
+    "n": 1500
+   },
+   "auc_target_vs_near": 0.698,
+   "auc_target_vs_random": 0.998
+  },
+  "7b": {
+   "target": {
+    "accept": 60.5,
+    "partial": 13.2,
+    "reject": 26.3,
+    "n": 38
+   },
+   "near_miss": {
+    "accept": 38.9,
+    "partial": 14.7,
+    "reject": 46.3,
+    "n": 190
+   },
+   "random": {
+    "accept": 0.0,
+    "partial": 0.0,
+    "reject": 100.0,
+    "n": 190
+   },
+   "auc_target_vs_near": 0.671,
+   "auc_target_vs_random": 1.0
+  }
+ },
+ "chosen": "3b"
+}
