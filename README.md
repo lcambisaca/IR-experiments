@@ -26,6 +26,7 @@ The repository contains:
 | [AGENT_EXPERIMENT.md](src/agentir/multagent_experiment/AGENT_EXPERIMENT.md) | Multi-agent specialist questioner: design and pilot |
 | [CAPTION_MIX_FACT_FUSION.md](CAPTION_MIX_FACT_FUSION.md) | Caption mix and fact fusion: method, code, how to run, results |
 | [REWRITE_FUSION_VISION_RERANK.md](REWRITE_FUSION_VISION_RERANK.md) | Round 0: fusing caption rewrites and vision re-ranking |
+| [QWEN_USER_BASELINE.md](QWEN_USER_BASELINE.md) | **New baseline:** Qwen2.5-VL as the simulated user; vision reranking of PlugIR's top 50 at every round |
 
 ## Repository map
 
@@ -38,6 +39,8 @@ The repository contains:
 | Caption mix and fact fusion | [fact_fusion.py](fact_fusion.py) (post-hoc), [facts_e2e.py](src/agentir/facts_e2e.py) (live), [scripts/](scripts/) | [results/fact_fusion/](results/fact_fusion/), [results/fact_fusion_confirm/](results/fact_fusion_confirm/) | `SEARCH = "facts"`; see [CAPTION_MIX_FACT_FUSION.md](CAPTION_MIX_FACT_FUSION.md) |
 | Round 0: fusing caption rewrites | [paraphrase_experiment.py](paraphrase_experiment.py), [strategy_experiment.py](strategy_experiment.py), [fusion_experiment.py](fusion_experiment.py) | [results/paraphrase/](results/paraphrase/), [results/rewrite_fusion/](results/rewrite_fusion/) | see [REWRITE_FUSION_VISION_RERANK.md](REWRITE_FUSION_VISION_RERANK.md) |
 | Round 0: vision re-ranking | [vision_rerank_experiment.py](vision_rerank_experiment.py), [notebook](notebooks/vision_rerank_kaggle.ipynb) | [results/vision_rerank/](results/vision_rerank/) | `python rewrite_vision_numbers.py` prints every reported number |
+| Qwen user baseline | `QwenVLAnswerer` in [live_models.py](src/agentir/live_models.py), [scripts/compare_users.py](scripts/compare_users.py) | [results/conversations/](results/conversations/) | `scripts/run_plugir_live.py --answerer qwen_vl`; see [QWEN_USER_BASELINE.md](QWEN_USER_BASELINE.md) |
+| Vision reranking, every round | [scripts/vlm_judge.py](scripts/vlm_judge.py) | [results/vlm_rerank/](results/vlm_rerank/) | see [QWEN_USER_BASELINE.md](QWEN_USER_BASELINE.md) |
 | Tests (CPU, scripted models) | [tests/](tests/) | | `python -m pytest` |
 
 `assets/protocol/` holds target lists, the 50k image manifest and PlugIR's candidate

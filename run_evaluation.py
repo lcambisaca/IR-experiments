@@ -46,6 +46,7 @@ USE_PILOT_TARGETS = True  # True: cake and giraffe; False: START_TARGET and N_TA
 
 LIVE_DEVICE = "cuda"       # Qwen/BLIP-2 generation GPU; DEVICE above controls BLIP retrieval.
 SEARCH = "rewrite"         # "rewrite" = original PlugIR search; "facts" = fact fusion inside the live loop (facts_e2e.py).
+ANSWERER = "blip2"         # Simulated user: "blip2" = PlugIR's; "qwen_vl" = Qwen2.5-VL-3B (new baseline, see QWEN_USER_BASELINE.md).
 SELECTION = "plugir_kl"    # "plugir_kl" = original PlugIR question choice; "probe_vlm" = answer-entropy agent (probe_agent.py).
 MAX_INPUT_TOKENS = 4096    # Stop rather than silently truncate older Qwen dialogue.
 
@@ -71,7 +72,7 @@ def prepare_qwen_live(root, retriever, pairs, *, n_states, offline):
     return prepare_live_experiment(root, retriever, pairs, n_states=n_states, settings=LIVE,
         device=LIVE_DEVICE, offline=offline, candidate_captions=CANDIDATE_CAPTIONS,
         image_root=IMAGE_ROOT, image_archive=IMAGE_ARCHIVE, download_missing=DOWNLOAD_MISSING_TARGETS,
-        max_input_tokens=MAX_INPUT_TOKENS, search=SEARCH, selection=SELECTION)
+        max_input_tokens=MAX_INPUT_TOKENS, search=SEARCH, selection=SELECTION, answerer=ANSWERER)
 
 
 def collect_experiments(root, retriever, pairs, *, n_states=None):

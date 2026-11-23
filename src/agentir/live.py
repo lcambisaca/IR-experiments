@@ -318,7 +318,7 @@ def generate_live_dialogue(retriever, *, initial_caption, target_id, image_path,
 def prepare_live_experiment(root, retriever, pairs, *, n_states, settings, device="cuda", offline=False,
                             candidate_captions="assets/protocol/visdial_captions.json",
                             image_root="data/images", image_archive=None, download_missing=True,
-                            max_input_tokens=4096, search="rewrite", selection="plugir_kl"):
+                            max_input_tokens=4096, search="rewrite", selection="plugir_kl", answerer="blip2"):
     """Generate original-loop Qwen conversations, then enter the common evaluation.
     Reuse the existing image cache and target selection. Save source/model identity,
     original prompts/responses and each completed round. No saved human answers or
@@ -328,7 +328,7 @@ def prepare_live_experiment(root, retriever, pairs, *, n_states, settings, devic
     import importlib.util
     import platform
     from .evaluation import PreparedExperiment
-    from .live_models import BLIP2_ID, BLIP2_REVISION, QWEN_ID, QWEN_REVISION, Blip2Answerer, Qwen3, require_cuda
+    from .live_models import BLIP2_ID, BLIP2_REVISION, QWEN_ID, QWEN_REVISION, Blip2Answerer, QwenVLAnswerer, Qwen3, require_cuda
 
     require_cuda(device)
     from .probe_agent import SELECTIONS
@@ -356,6 +356,9 @@ def prepare_live_experiment(root, retriever, pairs, *, n_states, settings, devic
                 "max_input_tokens": max_input_tokens, "runtime": runtime,
                 "source_sha256": {name: digest(root / name) for name in
                     ("src/agentir/live.py", "src/agentir/live_models.py", "src/agentir/plugir_upstream.py", "src/agentir/retrieval.py")}}
+    if answerer != "blip2":  # Only non-default answerers change the identity, so old runs keep their folders.
+        identity["answerer"] = list(QwenVLAnswerer.IDENTITY)
+        identity["source_sha256"]["answerer"] = answerer
     if search == "facts":
         identity["search"] = "facts_only"
         identity["source_sha256"]["src/agentir/facts_e2e.py"] = digest(root / "src/agentir/facts_e2e.py")
@@ -368,7 +371,12 @@ def prepare_live_experiment(root, retriever, pairs, *, n_states, settings, devic
     save_json(folder / "identity.json", identity)
     questioner = Qwen3(folder / "qwen_calls", device=device, offline=offline,
                        max_input_tokens=max_input_tokens, seed=settings.seed)
-    answerer = Blip2Answerer(folder / "blip2_calls", device=device, offline=offline)
+    if answerer == "qwen_vl":
+        answerer = QwenVLAnswerer(folder / "answerer_calls", device=device, offline=offline)
+    elif answerer == "blip2":
+        answerer = Blip2Answerer(folder / "blip2_calls", device=device, offline=offline)
+    else:
+        raise ValueError("answerer must be blip2 or qwen_vl")
     vlm = None
     if selection == "probe_vlm":
         from .live_models import VisionAnswerer
