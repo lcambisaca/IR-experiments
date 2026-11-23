@@ -1,0 +1,18 @@
+{
+  "status": "passed",
+  "local_report_links": 43,
+  "source_files_matching_frozen_preflight": 14,
+  "checkpoint_aliases_identical": 6,
+  "target_jpegs_identical": 2,
+  "settings": {
+    "N_STATES": 11,
+    "DEVICE": "cuda",
+    "INCLUDE_SAVED_REFERENCES": false,
+    "RUN_LIVE_PLUGIR": true,
+    "RUN_MULTI_AGENT": true,
+    "USE_PILOT_TARGETS": true,
+    "LIVE_DEVICE": "cuda"
+  },
+  "report_sha256": "a0e131ffbf59a3caf2996291c1d993acd975fbefb886e875effbab60ba89145e",
+  "archive_sha256": "0acf872597784e83bca14d37f587facfd8bfdb95fb895aff94231de7b2d0a802"
+}

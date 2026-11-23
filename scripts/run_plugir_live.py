@@ -23,11 +23,16 @@ parser.add_argument("--search", choices=["rewrite", "facts"], default="rewrite",
                     help="rewrite = original PlugIR; facts = fact fusion inside the live loop")
 parser.add_argument("--selection", choices=["plugir_kl", "probe_vlm"], default="plugir_kl",
                     help="plugir_kl = original PlugIR question choice; probe_vlm = answer-entropy agent")
+parser.add_argument("--answerer", choices=["blip2", "qwen_vl"], default="blip2",
+                    help="simulated user: blip2 = PlugIR's; qwen_vl = Qwen2.5-VL-3B shown the target (new baseline)")
 args = parser.parse_args()
 
 runner.START_TARGET, runner.N_TARGETS, runner.N_STATES = args.start, args.targets, 11
 runner.DEVICE = runner.LIVE_DEVICE = "cuda"
 runner.RUN_LIVE_PLUGIR, runner.OFFLINE = True, True
+runner.RUN_MULTI_AGENT = runner.RUN_MULTI_AGENT_DEBATE = False
+runner.USE_PILOT_TARGETS = False
+runner.INCLUDE_SAVED_REFERENCES = False
 runner.SEARCH, runner.SELECTION = args.search, args.selection
 agent = "" if args.selection == "plugir_kl" else f"{args.selection}_"
 runner.RUN_LABEL = f"plugir_live_{agent}{args.search}_{args.start + 1}_{args.start + args.targets}"

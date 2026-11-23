@@ -1,0 +1,6 @@
+{
+  "all_original_files_unchanged": true,
+  "verified_files": 63,
+  "commit": "82ed6186d4c5b98d32dff4e949e32d45804b023f",
+  "git_status": " M EXPERIMENTS.md\n M README.md\n M run_evaluation.py\n M scripts/run_plugir_live.py\n M src/agentir/multagent_experiment/multi_agent.py\n M src/agentir/multagent_experiment/setup.py\n M tests/test_live.py\n M tests/test_multi_agent.py\n M tests/test_runner_targets.py\n?? TRANSFER_MANIFEST.json\n?? local_changes.patch\n?? src/agentir/multagent_experiment/debate.py\n?? tests/test_debate.py\n"
+}

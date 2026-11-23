@@ -1,0 +1,19 @@
+{
+  "source_csvs": {
+    "outputs/pilot_20261120/raw/IR-experiments-pilot/runs/experiments/20261120T184123036436Z_pilot_completed_methods/per_round.csv": "d22c6a7d52f10b367425912455204ef979c6ea1075feaed0b634a830f9c508ba",
+    "outputs/pilot_20261120/raw/IR-experiments-pilot/runs/experiments/20261120T184123036436Z_pilot_common_prefix/per_round.csv": "c274ad519474b64b51f3f65272877a2685d02b9906f8aa85501117c523e17b25"
+  },
+  "matplotlib": "3.10.0",
+  "targets": 2,
+  "pool": 50000,
+  "critique_states": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "plotted_rows": 117,
+  "missing_values": "No critique points after state 5; no imputation or forward fill."
+}

@@ -1,0 +1,162 @@
+nohup: ignoring input
+Downloading one target image: unlabeled2017/000000364869.jpg
+Downloading one target image: unlabeled2017/000000562109.jpg
+Loading pinned BLIP text retriever on cuda; first use downloads weights.
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+Loading Qwen/Qwen3-4B-Instruct-2507; first use downloads several GB.
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s]Loading checkpoint shards:  33%|███▎      | 1/3 [00:00<00:00,  5.61it/s]Loading checkpoint shards:  67%|██████▋   | 2/3 [00:00<00:00,  5.76it/s]Loading checkpoint shards: 100%|██████████| 3/3 [00:00<00:00,  8.51it/s]
+Loading Salesforce/blip2-flan-t5-xl; first use downloads several GB.
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:  50%|█████     | 1/2 [00:47<00:47, 47.67s/it]Loading checkpoint shards: 100%|██████████| 2/2 [01:18<00:00, 37.65s/it]Loading checkpoint shards: 100%|██████████| 2/2 [01:18<00:00, 39.15s/it]
+{
+  "status": "passed_no_generation",
+  "commit": "0855fb8b55236098565c466567d96419e551825d",
+  "settings": {
+    "RUN_LIVE_PLUGIR": true,
+    "RUN_MULTI_AGENT": true,
+    "USE_PILOT_TARGETS": true,
+    "N_STATES": 11,
+    "INCLUDE_SAVED_REFERENCES": false,
+    "DEVICE": "cuda",
+    "LIVE_DEVICE": "cuda"
+  },
+  "runner_settings": {
+    "SEED": 42,
+    "MAX_INPUT_TOKENS": 4096,
+    "SEARCH": "rewrite",
+    "SELECTION": "plugir_kl",
+    "OFFLINE": false,
+    "K_VALUES": [
+      1,
+      10,
+      100
+    ],
+    "TEXT_BATCH_SIZE": 8,
+    "CPU_THREADS": 4
+  },
+  "live": {
+    "seed": 1021,
+    "q_n": 5,
+    "recall_hitting": 10,
+    "threshold_low": 500,
+    "reconstruct": true,
+    "referring": true,
+    "filtering": true,
+    "select": true
+  },
+  "agents": {
+    "seed": 1021,
+    "threshold_low": 500,
+    "exclude_top_k": 10,
+    "max_calls_per_round": 6,
+    "max_targets": 2,
+    "questions_per_agent": 5,
+    "exclude_unjudged": false
+  },
+  "agent_modes": [
+    false,
+    true
+  ],
+  "agent_input_tokens": 8192,
+  "cache": {
+    "images": 50000,
+    "shape": [
+      50000,
+      256
+    ],
+    "dtype": "torch.float32",
+    "device": "cpu",
+    "norm_min": 0.9999998807907104,
+    "norm_max": 1.0000001192092896,
+    "model": "Salesforce/blip-itm-large-coco",
+    "model_revision": "19502f1e215844f7e48bd48473f86932486d3441",
+    "cache_sha256": "8afcfb6393d71261c18938acd9a4db0f9e74439da8852594b8c983846a12a34f",
+    "manifest_sha256": "8a32638192419131513f2e5a6e5159d191de6789678fb3b1faa18e1ab46b44af",
+    "encoding_versions": {
+      "model": "Salesforce/blip-itm-large-coco",
+      "model_revision": "19502f1e215844f7e48bd48473f86932486d3441",
+      "manifest_sha256": "8a32638192419131513f2e5a6e5159d191de6789678fb3b1faa18e1ab46b44af",
+      "transformers": "4.51.3",
+      "torch": "2.11.0+cu130",
+      "torchvision": "0.26.0+cu130",
+      "pillow": "11.3.0",
+      "adapter_sha256": "80583a516b1d60bef6658f51c4f4e50995566cd93c81b3280bff5d46d72bf667",
+      "mode": "eval"
+    }
+  },
+  "candidate_captions_sha256": "df5fbf1b5ee0856b89b3a96a9094f245cc5db6eb17a1d3fff0604c06109dd5cd",
+  "candidate_captions_count": 50000,
+  "targets": [
+    {
+      "target": "unlabeled2017/000000364869.jpg",
+      "initial_caption": "a group of people posing in front of a cake",
+      "candidate_id": 31281,
+      "jpeg_sha256": "a7425cfc97a00bf87a30fbb26f1b41cd4b76114f401aba2cb2cb2158102b177f",
+      "size": [
+        640,
+        492
+      ],
+      "initial_rank": 9
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "initial_caption": "a giraffe is standing in an open field",
+      "candidate_id": 48282,
+      "jpeg_sha256": "8d445abe263c554fefd86068fe619780dff5db017ce514208ef862bf04c8e1d9",
+      "size": [
+        640,
+        426
+      ],
+      "initial_rank": 89
+    }
+  ],
+  "python": "3.11.18",
+  "gpu": "NVIDIA L4",
+  "cuda": "12.8",
+  "models": {
+    "qwen": [
+      "Qwen/Qwen3-4B-Instruct-2507",
+      "cdbee75f17c01a7cc42f958dc650907174af0554"
+    ],
+    "answerer": [
+      "Salesforce/blip2-flan-t5-xl",
+      "0eb0d3b46c14c1f8c7680bca2693baafdb90bb28"
+    ],
+    "retriever": [
+      "Salesforce/blip-itm-large-coco",
+      "19502f1e215844f7e48bd48473f86932486d3441"
+    ]
+  },
+  "packages": {
+    "torch": "2.11.0+cu128",
+    "torchvision": "0.26.0+cu128",
+    "transformers": "4.51.3",
+    "tokenizers": "0.21.4",
+    "huggingface-hub": "0.30.2",
+    "pillow": "11.3.0",
+    "numpy": "2.2.6",
+    "accelerate": "1.6.0",
+    "sentencepiece": "0.2.1",
+    "fast-pytorch-kmeans": "0.2.2",
+    "psutil": "7.1.0"
+  },
+  "existing_checkpoints": [],
+  "source_sha256": {
+    "run_evaluation.py": "f5d788af12942450837d8f0c00701ea0a57f20b45ea00d4896641bdaded257ad",
+    "src/agentir/__init__.py": "285dd43455586c2b37fb81b8022fdb968fc95995e6840f8fc961c7695e55e016",
+    "src/agentir/cache.py": "70329ca99b35609f085b8000325dfa2137577f230d27cdd863311dfb44d4ca69",
+    "src/agentir/evaluation.py": "804374086308ebc54c9d706c072ce632b1c73b9ad1d1b353cf2b6feef55cd1ca",
+    "src/agentir/facts_e2e.py": "29954215ce566da38014056887a8d1b321ea124bc02948e6de10cb7a1517ef3e",
+    "src/agentir/live.py": "f530f14eaae0c501539c55f0565e6ee83013d38c84c23415c8074a49c6b2cc13",
+    "src/agentir/live_models.py": "eebfc161c2abf39d8acbc3603550b6919a63ba17c753acd8163722d2b64aa6a1",
+    "src/agentir/multagent_experiment/__init__.py": "0264865fc2e0c9cf547fd95ddec53974d730e2c481743f1dd7ca372ac6608284",
+    "src/agentir/multagent_experiment/agent_prompts.py": "2b8779d9ec9644a496112440f592ac136a55e7e5461569bb5dddc7b4aab3d740",
+    "src/agentir/multagent_experiment/multi_agent.py": "2e28894e798e5bc5daf1ad4af70f56385425a907d0fe31efe48f7c0229e5c22d",
+    "src/agentir/multagent_experiment/setup.py": "ddcc244ecbc354c9ac7f1dccea7a91b6ec43ea722704b8453f1746cd3b546bea",
+    "src/agentir/plugir_upstream.py": "6f5f4bb369a7f254b9ab5f88527f0226880d2b7a61268a88f2964fdffb6882fb",
+    "src/agentir/probe_agent.py": "d1114c5129fd7e0788c2413c79052f7c707834316cf837d9c6e8c880ad6b3eba",
+    "src/agentir/retrieval.py": "bd3e4d165446261207399d0240cfad4ee5ae945d5555b8dde64cb25191b82ee7"
+  },
+  "peak_cuda_allocated": 9965966336,
+  "peak_cuda_reserved": 10770972672
+}
+PREFLIGHT_PASSED_NO_GENERATION

@@ -8,7 +8,7 @@ TARGET_IMAGES = (
 )
 N_STATES = 11  # Default for direct calls; run_evaluation.py supplies its own N_STATES.
 RUN_LABEL = "specialists_shared_cake_giraffe"
-AGENT_MODES = (False,True)
+AGENT_MODES = (True,)  # Critique baseline; add False to include minimum-KL separately.
 AGENT_INPUT_TOKENS = 8192
 AGENTS = AgentSettings(
     seed=1021, threshold_low=500, exclude_top_k=10,

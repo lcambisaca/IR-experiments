@@ -1,0 +1,39 @@
+HISTORY_EVENT {"event": "continuation_dispatch", "method": "agents_debate", "target_index": 1, "reason": "Independent history continuation after preserved primary error; runner and scientific source unchanged."}
+Evaluating 1/2064 targets, 11 states, 50,000 candidate images.
+Saved references: disabled
+Loading pinned BLIP text retriever on cuda; first use downloads weights.
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+HISTORY_EVENT {"event": "start", "method": "agents_debate", "target": "unlabeled2017/000000562109.jpg", "utc": "2026-11-23T05:01:33.407869+00:00", "checkpoint": "/home/lrc87/pilot_debate_20261122/IR-experiments/runs/three_agents_debate/shared_agents_debate_v1/1ebdeb777e9bfd15ab3f/dialogues/308d13de8a9629b805f35399ed1b937a103b6278f237e413a85a1da02e1b0653.json", "checkpoint_existed": false}
+Loading Qwen/Qwen3-4B-Instruct-2507; first use downloads several GB.
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s]Loading checkpoint shards:  33%|███▎      | 1/3 [00:00<00:00,  6.73it/s]Loading checkpoint shards:  67%|██████▋   | 2/3 [00:00<00:00,  6.00it/s]Loading checkpoint shards: 100%|██████████| 3/3 [00:00<00:00,  9.03it/s]
+HISTORY_EVENT {"event": "end", "method": "agents_debate", "target": "unlabeled2017/000000562109.jpg", "start_utc": "2026-11-23T05:01:33.407869+00:00", "end_utc": "2026-11-23T05:02:37.602529+00:00", "wall_seconds": 64.19470336600034, "error": "ValueError: Opening observations need valid supplied evidence IDs.", "peak_allocated_bytes": 10133947904, "peak_reserved_bytes": 10169090048, "qwen_records": 1, "qwen_actual": 1, "qwen_replays": 0, "blip2_records": 0, "blip2_actual": 0, "blip2_replays": 0, "input_tokens": 685, "output_tokens": 166, "qwen_generation_seconds": 9.228358225000193}
+Traceback (most recent call last):
+  File "/home/lrc87/pilot_debate_20261122/execute_session.py", line 32, in <module>
+    runner.main()
+  File "/home/lrc87/pilot_debate_20261122/IR-experiments/run_evaluation.py", line 164, in main
+    methods, prepared_experiments = collect_experiments(root, retriever, pairs, n_states=n_states) # This is what runs our experiemnts
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lrc87/pilot_debate_20261122/IR-experiments/run_evaluation.py", line 110, in collect_experiments
+    prepared_experiment = prepare(
+                          ^^^^^^^^
+  File "/home/lrc87/pilot_debate_20261122/IR-experiments/run_evaluation.py", line 92, in prepare_multi_agent_debate
+    return prepare_debate_experiment(root, retriever, pairs, n_states=n_states,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lrc87/pilot_debate_20261122/IR-experiments/src/agentir/multagent_experiment/debate.py", line 241, in prepare_debate_experiment
+    conversations.append(generate_debate_dialogue(retriever,
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lrc87/pilot_debate_20261122/IR-experiments/src/agentir/multagent_experiment/debate.py", line 186, in generate_debate_dialogue
+    return generate_agent_dialogue(*args, settings=settings, critique=False,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lrc87/pilot_debate_20261122/execute_session.py", line 19, in wrapped
+    try:return fn(*args,**kw)
+               ^^^^^^^^^^^^^^
+  File "/home/lrc87/pilot_debate_20261122/IR-experiments/src/agentir/multagent_experiment/multi_agent.py", line 515, in generate_agent_dialogue
+    audit = build_round(chat, context, record, neutral, interaction,
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lrc87/pilot_debate_20261122/IR-experiments/src/agentir/multagent_experiment/debate.py", line 119, in debate_round
+    opening = chat.complete("opening", role, common)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lrc87/pilot_debate_20261122/IR-experiments/src/agentir/multagent_experiment/debate.py", line 101, in complete
+    raise ValueError("Opening observations need valid supplied evidence IDs.")
+ValueError: Opening observations need valid supplied evidence IDs.

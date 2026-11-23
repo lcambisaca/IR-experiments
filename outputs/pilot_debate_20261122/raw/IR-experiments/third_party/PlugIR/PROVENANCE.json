@@ -1,0 +1,19 @@
+{
+  "repository": "https://github.com/Saehyung-Lee/PlugIR",
+  "commit": "ce79c9ff834aabc9de698efb706c6cb9427ecf35",
+  "files": {
+    "generate_dialog.py": {
+      "sha256": "fa61dcd1bf56fe02d249b849d37cdf186bfd76e11b99eb9024965b9b16ec4d7f",
+      "source_url": "https://raw.githubusercontent.com/Saehyung-Lee/PlugIR/ce79c9ff834aabc9de698efb706c6cb9427ecf35/generate_dialog.py"
+    },
+    "eval.py": {
+      "sha256": "2f5ed55dd5fcfb7959d502a8d3b10aa59b77adf6ab94126b77574bfba72263ea",
+      "source_url": "https://raw.githubusercontent.com/Saehyung-Lee/PlugIR/ce79c9ff834aabc9de698efb706c6cb9427ecf35/eval.py"
+    },
+    "LICENSE": {
+      "sha256": "f595342efc96dfb8a1cc920f71b867aabf1a84cf55b719fed74a9e84f64826a9",
+      "source_url": "https://raw.githubusercontent.com/Saehyung-Lee/PlugIR/ce79c9ff834aabc9de698efb706c6cb9427ecf35/LICENSE"
+    }
+  },
+  "policy": "Original files remain byte-for-byte unchanged; wrapper adaptations are in src/agentir/plugir_upstream.py."
+}

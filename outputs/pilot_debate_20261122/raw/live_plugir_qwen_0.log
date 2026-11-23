@@ -1,0 +1,79 @@
+HISTORY_EVENT {"event": "continuation_dispatch", "method": "live_plugir_qwen", "target_index": 0, "reason": "Independent history continuation after preserved primary error; runner and scientific source unchanged."}
+Evaluating 1/2064 targets, 11 states, 50,000 candidate images.
+Saved references: disabled
+Loading pinned BLIP text retriever on cuda; first use downloads weights.
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+Original PlugIR + Qwen: 1 target(s), 11 states. Checkpoints: /home/lrc87/pilot_debate_20261122/IR-experiments/runs/live_upstream/7516ff962f1f39f92cea
+HISTORY_EVENT {"event": "start", "method": "live_plugir_qwen", "target": "unlabeled2017/000000364869.jpg", "utc": "2026-11-23T05:02:45.590301+00:00", "checkpoint": "/home/lrc87/pilot_debate_20261122/IR-experiments/runs/live_upstream/7516ff962f1f39f92cea/dialogues/ee95c5a658c74dafaeef938fd96ebf7f10759262d7767aa9933b362456e9fd86.json", "checkpoint_existed": false}
+Loading Qwen/Qwen3-4B-Instruct-2507; first use downloads several GB.
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s]Loading checkpoint shards: 100%|██████████| 3/3 [00:00<00:00, 57.99it/s]
+/home/lrc87/.venvs/agentir-debate/lib/python3.11/site-packages/transformers/generation/configuration_utils.py:631: UserWarning: `do_sample` is set to `False`. However, `temperature` is set to `0.7` -- this flag is only used in sample-based generation modes. You should set `do_sample=True` or unset `temperature`.
+  warnings.warn(
+/home/lrc87/.venvs/agentir-debate/lib/python3.11/site-packages/transformers/generation/configuration_utils.py:636: UserWarning: `do_sample` is set to `False`. However, `top_p` is set to `0.8` -- this flag is only used in sample-based generation modes. You should set `do_sample=True` or unset `top_p`.
+  warnings.warn(
+/home/lrc87/.venvs/agentir-debate/lib/python3.11/site-packages/transformers/generation/configuration_utils.py:653: UserWarning: `do_sample` is set to `False`. However, `top_k` is set to `20` -- this flag is only used in sample-based generation modes. You should set `do_sample=True` or unset `top_k`.
+  warnings.warn(
+Loading Salesforce/blip2-flan-t5-xl; first use downloads several GB.
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:  50%|█████     | 1/2 [00:49<00:49, 49.71s/it]Loading checkpoint shards: 100%|██████████| 2/2 [01:20<00:00, 38.44s/it]Loading checkpoint shards: 100%|██████████| 2/2 [01:20<00:00, 40.13s/it]
+State 1: What type of cake are they posing in front of? -> a cake
+Query: A crowd of individuals standing in front of a cake.
+Target rank: 16/50000 (saved)
+State 2: What is the occasion associated with the cake they are posing in front of? -> a birthday
+Query: a group of people posing in front of a birthday cake
+Target rank: 21/50000 (saved)
+State 3: What is the gender composition of the group posing in front of the cake? -> a group of people posing in front of a birthday cake
+Query: A crowd of individuals standing in front of a birthday cake.
+Target rank: 23/50000 (saved)
+State 4: What is the age range or demographic of the people in the group posing in front of the cake? -> a crowd of individuals standing in front of a birthday cake
+Query: a group of people posing in front of a birthday cake
+Target rank: 21/50000 (saved)
+State 5: What are the genders of the individuals in the group posing in front of the cake? -> a group of people posing in front of a birthday cake
+Query: A crowd of individuals standing in front of a birthday cake.
+Target rank: 23/50000 (saved)
+State 6: What is the age of the woman cutting the cake in the scene? -> a young woman
+Query: A group of people posing in front of a birthday cake, including a young woman cutting the cake, with a diverse age range and mixed genders, standing in a crowd setting.
+Target rank: 8/50000 (saved)
+State 7: **Question:** What colors are the birthday cake and the clothing of the people posing in front of it? -> a group of people posing in front of a birthday cake
+Query: a group of people posing in front of a birthday cake, featuring a young woman cutting the cake, with vibrant colors on both the cake and the clothing of the individuals
+Target rank: 4/50000 (saved)
+State 8: **Question:** What colors are the birthday cake and the clothing of the people posing in front of it? -> a group of people posing in front of a birthday cake
+Query: a group of people posing in front of a birthday cake, featuring a young woman cutting the cake, with vibrant colors on both the cake and the clothing of the individuals, including bright hues like red, yellow, and blue
+Target rank: 16/50000 (saved)
+State 9: What types of poses or expressions are the people making while posing in front of the birthday cake? -> a group of people posing in front of a birthday cake
+Query: A group of people posing in front of a birthday cake, featuring a young woman cutting the cake, with vibrant colors on both the cake and their clothing, and expressions of celebration and joy.
+Target rank: 8/50000 (saved)
+State 10: **Question:** Which of the retrieval candidates best describes a group of people posing in front of a birthday cake, including the presence of children and a diverse age range? -> a group of people posing in front of a birthday cake
+Query: a group of people of diverse ages, including children, posing joyfully in front of a birthday cake, with a young woman cutting the cake, featuring vibrant colors in both the cake and the clothing of the individuals
+Target rank: 13/50000 (saved)
+HISTORY_EVENT {"event": "end", "method": "live_plugir_qwen", "target": "unlabeled2017/000000364869.jpg", "start_utc": "2026-11-23T05:02:45.590301+00:00", "end_utc": "2026-11-23T05:09:52.151576+00:00", "wall_seconds": 426.56185326800005, "error": null, "peak_allocated_bytes": 10242550272, "peak_reserved_bytes": 10802429952, "qwen_records": 171, "qwen_actual": 171, "qwen_replays": 0, "blip2_records": 10, "blip2_actual": 10, "blip2_replays": 0, "input_tokens": 78807, "output_tokens": 3157, "qwen_generation_seconds": 179.88033088199973}
+Enabled comparison methods: live_plugir_qwen
+live_plugir_qwen: state 0/10, 1 targets complete
+live_plugir_qwen: state 1/10, 1 targets complete
+live_plugir_qwen: state 2/10, 1 targets complete
+live_plugir_qwen: state 3/10, 1 targets complete
+live_plugir_qwen: state 4/10, 1 targets complete
+live_plugir_qwen: state 5/10, 1 targets complete
+live_plugir_qwen: state 6/10, 1 targets complete
+live_plugir_qwen: state 7/10, 1 targets complete
+live_plugir_qwen: state 8/10, 1 targets complete
+live_plugir_qwen: state 9/10, 1 targets complete
+live_plugir_qwen: state 10/10, 1 targets complete
+
+Method                         State    Recall@10      Hits@10
+live_plugir_qwen                   0      100.00%      100.00%
+live_plugir_qwen                   1        0.00%      100.00%
+live_plugir_qwen                   2        0.00%      100.00%
+live_plugir_qwen                   3        0.00%      100.00%
+live_plugir_qwen                   4        0.00%      100.00%
+live_plugir_qwen                   5        0.00%      100.00%
+live_plugir_qwen                   6      100.00%      100.00%
+live_plugir_qwen                   7      100.00%      100.00%
+live_plugir_qwen                   8        0.00%      100.00%
+live_plugir_qwen                   9      100.00%      100.00%
+live_plugir_qwen                  10        0.00%      100.00%
+
+Overall BRI (lower is better):
+  live_plugir_qwen: 1.901621
+
+Saved comparison files to: /home/lrc87/pilot_debate_20261122/IR-experiments/runs/experiments/20261123T050953285296Z
+Open rank_comparison.csv for side-by-side target ranks; report.json includes query history.

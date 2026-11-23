@@ -394,7 +394,7 @@ def test_disabled_runner_does_not_prepare_models(monkeypatch):
     def forbidden(*args, **kwargs):
         """Fail if disabled generation attempts any model preparation."""
         raise AssertionError('Disabled method attempted model preparation')
-    for name, value in {'RUN_MULTI_AGENT': False, 'RUN_LIVE_PLUGIR': False,
+    for name, value in {'RUN_MULTI_AGENT': False, 'RUN_MULTI_AGENT_DEBATE': False, 'RUN_LIVE_PLUGIR': False,
                         'prepare_three_agents': forbidden, 'prepare_qwen_live': forbidden}.items():
         monkeypatch.setattr(runner, name, value)
     assert runner.collect_experiments(None, None, []) == ({}, {})
@@ -489,7 +489,7 @@ def test_prepared_experiment_runs_both_modes_and_exports_dialogues(agent_case, t
     monkeypatch.setattr(runner,'select_pilot_pairs',lambda selected: selected)
     for key,value in {'__file__':str(root/'run_evaluation.py'),'N_TARGETS':1,'N_STATES':3,
         'K_VALUES':[1,10],'RUN_MULTI_AGENT':True,'USE_PILOT_TARGETS':True,
-        'RUN_LIVE_PLUGIR':False,'INCLUDE_SAVED_REFERENCES':False}.items():
+        'RUN_LIVE_PLUGIR':False,'RUN_MULTI_AGENT_DEBATE':False,'INCLUDE_SAVED_REFERENCES':False}.items():
         monkeypatch.setattr(runner,key,value)
     runner.main()
     exported = next((root/'runs/experiments').iterdir())

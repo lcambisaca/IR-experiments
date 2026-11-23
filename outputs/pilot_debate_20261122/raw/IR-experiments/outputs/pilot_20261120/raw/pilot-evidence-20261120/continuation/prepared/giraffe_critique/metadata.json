@@ -1,0 +1,19 @@
+{
+  "run_name": "shared_agents_simple_v1",
+  "settings": {
+    "seed": 1021,
+    "threshold_low": 500,
+    "exclude_top_k": 10,
+    "max_calls_per_round": 6,
+    "max_targets": 2,
+    "questions_per_agent": 5,
+    "exclude_unjudged": false
+  },
+  "checkpoint_folder": "/home/lrc87/IR-experiments-pilot/runs/three_agents/shared_agents_simple_v1",
+  "condition_wall_seconds": {
+    "agents_critique": 623.0943466240005
+  },
+  "official_ranking": "neutral reformulation of original caption plus shared Q&A; no fusion",
+  "retrieval_evidence": "one neutral query, shared candidate pool and ten original representatives per round",
+  "limitations": "New agent prompts/filter/orchestration; original clustering and PlugIR's KL formula. Rewrites can drift; the standard rewrite has no separate fidelity check. Exact duplicate detection only. Conditions share initial proposals at the same context, then histories can diverge. Model quality, speed and GPU fit need a real pilot."
+}

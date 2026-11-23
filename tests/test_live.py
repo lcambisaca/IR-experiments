@@ -466,7 +466,7 @@ def test_shared_runner_includes_enabled_methods(case, tmp_path, monkeypatch, mod
     for name, value in {'__file__': str(root / 'run_evaluation.py'), 'N_TARGETS': 1, 'N_STATES': 3,
                         'K_VALUES': [1, 10], 'CANDIDATE_CAPTIONS': 'captions.json',
                         'LIVE': case['settings'], 'RUN_LIVE_PLUGIR': mode == 'live',
-                        'RUN_MULTI_AGENT': False, 'USE_PILOT_TARGETS': False, 'START_TARGET': 0,
+                        'RUN_MULTI_AGENT': False, 'RUN_MULTI_AGENT_DEBATE': False, 'USE_PILOT_TARGETS': False, 'START_TARGET': 0,
                         'INCLUDE_SAVED_REFERENCES': True,
                         'SAVED_REFERENCES': ('caption_only', 'raw_dialogue', 'supplied_plugir')}.items():
         monkeypatch.setattr(runner, name, value)
@@ -475,7 +475,7 @@ def test_shared_runner_includes_enabled_methods(case, tmp_path, monkeypatch, mod
     report = json.loads((folder / 'report.json').read_text())
     expected = {'caption_only', 'raw_dialogue', 'supplied_plugir'}
     if mode == 'live':
-        expected.update({'live_plugir_qwen', 'live_raw_same_dialogue'})
+        expected.add('live_plugir_qwen')
         assert (folder / 'prepared/qwen_live/generated_dialogues.json').is_file()
         assert 'HUMAN_SECRET' not in json.dumps(qwen.records)
     assert set(report['summary']) == expected

@@ -478,22 +478,27 @@ def question_round(chat, context, record, neutral, interaction, *, critique, pri
 
 def generate_agent_dialogue(retriever, *, initial_caption, target_id, image_path, captions,
                             questioner, answerer, settings, n_states, checkpoint_path,
-                            critique=True, _kmeans=None):
+                            critique=True, _kmeans=None, round_builder=None,
+                            chat_class=AgentChat, method_policy=None):
     """Run/resume independent critique or no-critique histories; ranks never feed decisions."""
     settings.validate(len(retriever.cache.paths), n_states)
     path = Path(checkpoint_path)
     context = RetrievalContext(retriever, captions, settings, kmeans=_kmeans)
-    chat = AgentChat(questioner, settings)
+    chat = chat_class(questioner, settings)
+    build_round = question_round if round_builder is None else round_builder
+    proposal_policy = PROPOSAL_POLICY if round_builder is None else method_policy
     if path.is_file():
         state = read_json(path)
         if state.get("rewrite_policy") != REWRITE_POLICY:
             raise ValueError("Checkpoint uses a different rewrite policy; use a fresh checkpoint path.")
-        if state.get("proposal_policy") != PROPOSAL_POLICY:
+        if state.get("method_policy") != method_policy:
+            raise ValueError("Checkpoint uses a different question-generation method; use a fresh path.")
+        if state.get("proposal_policy") != proposal_policy:
             raise ValueError("Checkpoint uses a different proposal policy; use a fresh checkpoint path.")
         if critique and state.get("critique_policy") != CRITIQUE_POLICY:
             raise ValueError("Checkpoint uses a different critique policy; use a fresh checkpoint path.")
     else:
-        state = {"rewrite_policy": REWRITE_POLICY, "proposal_policy": PROPOSAL_POLICY, "critique_policy": CRITIQUE_POLICY if critique else None, "target": retriever.cache.paths[target_id], "dialogue": [], "states": [{"round": 0, "query": initial_caption,
+        state = {"method_policy": method_policy, "rewrite_policy": REWRITE_POLICY, "proposal_policy": proposal_policy, "critique_policy": CRITIQUE_POLICY if critique else None, "target": retriever.cache.paths[target_id], "dialogue": [], "states": [{"round": 0, "query": initial_caption,
             "raw_query": initial_caption, "target_rank": int(ranks_for_targets(retriever.scores([initial_caption]), [target_id])[0])}],
             "status": "partial"}
         save_json(path, state)
@@ -507,7 +512,7 @@ def generate_agent_dialogue(retriever, *, initial_caption, target_id, image_path
                                   {"question": entry["question"], "reason": entry["reason"]}
                 for previous in state["states"][1:]
                 for entry in previous["audit"]["question_memory"] if entry["blocked"]}.values())
-            audit = question_round(chat, context, record, neutral, interaction,
+            audit = build_round(chat, context, record, neutral, interaction,
                                    critique=critique, prior_attempts=prior_attempts)
             question, answer = audit["selected_question"], None
             next_dialogue = list(state["dialogue"])
@@ -542,7 +547,7 @@ def generate_agent_dialogue(retriever, *, initial_caption, target_id, image_path
             state.pop("last_error", None)
             state.pop("partial_round_audit", None)
             save_json(path, state)
-            print(f"Agents critique={critique}, state {interaction+1}: "
+            print(f"Agents selector={audit['selector']}, state {interaction+1}: "
                   f"question={question!r}, answer={answer!r}, rank={measured}, "
                   f"filter_omissions={len(audit['filter_omitted_slots'])}, "
                   f"skip_reason={audit['skip_reason']}", flush=True)

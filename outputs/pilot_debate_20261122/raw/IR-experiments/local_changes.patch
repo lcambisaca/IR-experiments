@@ -1,0 +1,415 @@
+diff --git a/EXPERIMENTS.md b/EXPERIMENTS.md
+index 906b371..679a312 100644
+--- a/EXPERIMENTS.md
++++ b/EXPERIMENTS.md
+@@ -160,3 +160,78 @@ rather than fixing it. The earlier cake/giraffe pilot used the previous protocol
+ Multi-agent checkpoints/call caches now live beneath the
+ `plugir_original_rewrite_v1` policy directory. Legacy checkpoints are not silently
+ resumed. Use a fresh run name when changing other settings or prompts.
++
++## Three-method question-generation comparison
++
++The current pilot enables these three conditions in `run_evaluation.py`:
++
++```python
++RUN_LIVE_PLUGIR = True
++RUN_MULTI_AGENT = True
++RUN_MULTI_AGENT_DEBATE = True
++USE_PILOT_TARGETS = True
++N_STATES = 11
++INCLUDE_SAVED_REFERENCES = False
++```
++
++`AGENT_MODES = (True,)` in `setup.py` selects only the single-reviewer critique
++baseline; minimum-KL multi-agent selection remains available by adding `False`.
++The evaluated method columns are `live_plugir_qwen`, `agents_critique`, and
++`agents_debate`. PlugIR's raw dialogue is preserved in artifacts without another
++raw-query evaluation pass. Generation is sequential. All methods receive the
++same selected pairs, starting captions, retriever, requested state count, image
++handling, model device, and 8192-token input ceiling. They use the pinned Qwen
++question/rewrite model, the same BLIP-2 answerer and description-plus-question
++answer input, and original PlugIR reconstruction/paraphrase behavior.
++
++Set `USE_PILOT_TARGETS=False` to use `START_TARGET` and `N_TARGETS` (32 by default).
++Each method has its own dialogue history and checkpoints; after the first round,
++different questions and answers can produce different retrieval evidence. These
++are comparisons on the same targets, not artificially shared future histories.
++
++### Debate method
++
++The implementation is separate: `src/agentir/multagent_experiment/debate.py`.
++Each interaction retrieves/clusters once. Generalist, attributes, and relationships
++roles independently open with up to two caption-supported observations, one
++initial question (or abstention), and a limitation. Two synchronous discussion
++rounds follow. In each round, all three roles see the identical transcript from
++previous rounds, not responses produced earlier in their own round. They can
++challenge assumptions, change their minds, and develop new questions.
++
++A neutral coordinator reads the nine contributions and formulates one final
++question, with supporting caption IDs, a short synthesis reason, and any unresolved
++disagreement. It may keep, revise, combine, or replace suggestions. It is not
++restricted to choosing an existing proposal. Candidate possibilities and peer
++claims are never inserted into the confirmed dialogue as facts.
++
++The final question receives the same deterministic prechecks and baseline filter.
++A rejected final question gets exactly one coordinator revision with rejection
++feedback, then the same validation again. A second rejection saves a skipped
++interaction: no target answer, no rewrite, unchanged search query and rank.
++There is no extra specialist discussion or baseline pool-regeneration loop in
++this condition. Malformed/truncated model outputs retain explicit errors and
++interrupted checkpoints rather than silently generating more discussion.
++
++A normal answered debate round uses 12 Qwen calls: three openings, six discussion
++responses, one coordinator, one filter, and one original rewrite. A revision can
++add two calls; the shared paraphrase fallback can add one, for at most 15 at the
++default settings. Deterministic rejection can avoid a model filter call. There
++is only one target-answer call per answered interaction. Report this extra
++internal computation alongside retrieval gains; it is not a matched-cost claim.
++
++`prepared/agent_debate/debate_dialogues.json` saves the full transcript, opening
++observations, both discussion rounds, coordinator attempts and reasons, validation
++results, actual model calls, questions, answers, rewrites, and target ranks.
++`debate_prompt_pack.json` preserves the prompts and upstream rewrite provenance.
++The common evaluator exports ranks, Recall/Hits, BRI, and run metadata as before.
++Debate checkpoints and call caches live under `runs/three_agents_debate/`, isolated
++from baseline and PlugIR runs. Their folder identity includes source hashes,
++settings, pinned model revisions, pool/catalogue identity and prompt version;
++target checkpoint names include the target JPEG hash. Partial rounds can resume
++using the normal per-request Qwen and BLIP-2 caches.
++
++Offline tests cover shared evidence, independent openings, synchronous exchanges,
++novel coordinator questions, final revision/skip, answer/rewrite parity, resumed
++histories, label isolation, and three-method runner exports. GPU fit, actual model
++JSON compliance, answer quality, and retrieval benefit still require the pilot.
+diff --git a/README.md b/README.md
+index 3c8f9e9..f4a96dd 100644
+--- a/README.md
++++ b/README.md
+@@ -35,6 +35,7 @@ The repository contains:
+ | Live PlugIR + Qwen baseline | [live.py](src/agentir/live.py), [live_models.py](src/agentir/live_models.py), [plugir_upstream.py](src/agentir/plugir_upstream.py), [third_party/PlugIR](third_party/PlugIR) | [results/conversations/](results/conversations/) | `RUN_LIVE_PLUGIR = True` or [scripts/run_plugir_live.py](scripts/run_plugir_live.py) |
+ | Answer-entropy questioner | [probe_agent.py](src/agentir/probe_agent.py), `VisionAnswerer` in [live_models.py](src/agentir/live_models.py) | [results/agent_v2_vlm_probe/](results/agent_v2_vlm_probe/) | `SELECTION = "probe_vlm"` or `scripts/run_plugir_live.py --selection probe_vlm` |
+ | Multi-agent questioner | [multagent_experiment/](src/agentir/multagent_experiment/) | not committed yet | `RUN_MULTI_AGENT = True` |
++| Multi-agent debate | [debate.py](src/agentir/multagent_experiment/debate.py) | generated during the pilot | `RUN_MULTI_AGENT_DEBATE = True`; see [three-method comparison](EXPERIMENTS.md#three-method-question-generation-comparison) |
+ | Caption mix and fact fusion | [fact_fusion.py](fact_fusion.py) (post-hoc), [facts_e2e.py](src/agentir/facts_e2e.py) (live), [scripts/](scripts/) | [results/fact_fusion/](results/fact_fusion/), [results/fact_fusion_confirm/](results/fact_fusion_confirm/) | `SEARCH = "facts"`; see [CAPTION_MIX_FACT_FUSION.md](CAPTION_MIX_FACT_FUSION.md) |
+ | Round 0: fusing caption rewrites | [paraphrase_experiment.py](paraphrase_experiment.py), [strategy_experiment.py](strategy_experiment.py), [fusion_experiment.py](fusion_experiment.py) | [results/paraphrase/](results/paraphrase/), [results/rewrite_fusion/](results/rewrite_fusion/) | see [REWRITE_FUSION_VISION_RERANK.md](REWRITE_FUSION_VISION_RERANK.md) |
+ | Round 0: vision re-ranking | [vision_rerank_experiment.py](vision_rerank_experiment.py), [notebook](notebooks/vision_rerank_kaggle.ipynb) | [results/vision_rerank/](results/vision_rerank/) | `python rewrite_vision_numbers.py` prints every reported number |
+diff --git a/run_evaluation.py b/run_evaluation.py
+index b615c74..e44fd62 100644
+--- a/run_evaluation.py
++++ b/run_evaluation.py
+@@ -18,6 +18,7 @@ from agentir.evaluation import (
+ )
+ from agentir.retrieval import BlipRetriever
+ from agentir.live import LiveSettings
++from agentir.multagent_experiment.debate import prepare_debate_experiment
+ from agentir.multagent_experiment.setup import (
+     RUN_LABEL as PILOT_LABEL, prepare_three_agents, select_pilot_pairs,
+ )
+@@ -30,7 +31,7 @@ TEXT_BATCH_SIZE = 8   # Maximum texts per encoding call; methods below run one c
+ CPU_THREADS = 4
+ OFFLINE = False       # True requires BLIP model files already on this machine.
+ SEED = 42
+-RUN_LABEL = "baseline_full_50k"
++RUN_LABEL = "plugir_critique_debate"
+ 
+ N_TARGETS = 32         # Set to 32 for our reference sample, or None for all 2,064.
+ N_STATES = 11           # 1 = caption only; 11 = caption plus ten dialogue turns.
+@@ -41,13 +42,14 @@ INCLUDE_SAVED_REFERENCES = False
+ SAVED_REFERENCES = ("raw_dialogue",)  # Also available: "caption_only", "supplied_plugir".
+ 
+ RUN_LIVE_PLUGIR = True
+-RUN_MULTI_AGENT = True
++RUN_MULTI_AGENT = True  # Independent specialists + one critique reviewer.
++RUN_MULTI_AGENT_DEBATE = True
+ USE_PILOT_TARGETS = True  # True: cake and giraffe; False: START_TARGET and N_TARGETS.
+ 
+ LIVE_DEVICE = "cuda"       # Qwen/BLIP-2 generation GPU; DEVICE above controls BLIP retrieval.
+ SEARCH = "rewrite"         # "rewrite" = original PlugIR search; "facts" = fact fusion inside the live loop (facts_e2e.py).
+ SELECTION = "plugir_kl"    # "plugir_kl" = original PlugIR question choice; "probe_vlm" = answer-entropy agent (probe_agent.py).
+-MAX_INPUT_TOKENS = 4096    # Stop rather than silently truncate older Qwen dialogue.
++MAX_INPUT_TOKENS = 8192    # Stop rather than silently truncate older Qwen dialogue.
+ 
+ CANDIDATE_CAPTIONS = "assets/protocol/visdial_captions.json"  # Public candidate catalogue.
+ IMAGE_ROOT = "data/images" # Target JPEGs 
+@@ -65,13 +67,30 @@ LIVE = LiveSettings(
+ )
+ 
+ 
++def generation_options(offline):
++    """Keep model device, input limit, captions, and target-image handling shared."""
++    return dict(device=LIVE_DEVICE, offline=offline, max_input_tokens=MAX_INPUT_TOKENS,
++        candidate_captions=CANDIDATE_CAPTIONS, image_root=IMAGE_ROOT,
++        image_archive=IMAGE_ARCHIVE, download_missing=DOWNLOAD_MISSING_TARGETS)
++
++
+ def prepare_qwen_live(root, retriever, pairs, *, n_states, offline):
+-    """Generate or resume live conversations for the selected targets."""
++    """Generate live PlugIR; keep raw dialogue in artifacts without an extra scoring pass."""
+     from agentir.live import prepare_live_experiment
+-    return prepare_live_experiment(root, retriever, pairs, n_states=n_states, settings=LIVE,
+-        device=LIVE_DEVICE, offline=offline, candidate_captions=CANDIDATE_CAPTIONS,
+-        image_root=IMAGE_ROOT, image_archive=IMAGE_ARCHIVE, download_missing=DOWNLOAD_MISSING_TARGETS,
+-        max_input_tokens=MAX_INPUT_TOKENS, search=SEARCH, selection=SELECTION)
++    prepared = prepare_live_experiment(root, retriever, pairs, n_states=n_states,
++        settings=LIVE, search=SEARCH, selection=SELECTION, **generation_options(offline))
++    prepared.methods.pop("live_raw_same_dialogue", None)
++    return prepared
++
++
++def prepare_multi_agent_baseline(root, retriever, pairs, *, n_states, offline):
++    return prepare_three_agents(root, retriever, pairs, n_states=n_states,
++                               **generation_options(offline))
++
++
++def prepare_multi_agent_debate(root, retriever, pairs, *, n_states, offline):
++    return prepare_debate_experiment(root, retriever, pairs, n_states=n_states,
++                                     **generation_options(offline))
+ 
+ 
+ def collect_experiments(root, retriever, pairs, *, n_states=None):
+@@ -80,7 +99,9 @@ def collect_experiments(root, retriever, pairs, *, n_states=None):
+     prepared_experiments = {}
+     preparers = {}
+     if RUN_MULTI_AGENT:
+-        preparers["three_agents"] = prepare_three_agents
++        preparers["three_agents"] = prepare_multi_agent_baseline
++    if RUN_MULTI_AGENT_DEBATE:
++        preparers["agent_debate"] = prepare_multi_agent_debate
+ 
+     if RUN_LIVE_PLUGIR:
+         preparers["qwen_live"] = prepare_qwen_live
+@@ -116,8 +137,8 @@ def select_target_pairs(pairs):
+ def main():
+     """Load the cache, evaluate enabled methods, and save metrics and run details."""
+     references = SAVED_REFERENCES if INCLUDE_SAVED_REFERENCES else ()
+-    if not references and not (RUN_LIVE_PLUGIR or RUN_MULTI_AGENT):
+-        raise ValueError("Enable RUN_LIVE_PLUGIR, RUN_MULTI_AGENT, or INCLUDE_SAVED_REFERENCES.")
++    if not references and not (RUN_LIVE_PLUGIR or RUN_MULTI_AGENT or RUN_MULTI_AGENT_DEBATE):
++        raise ValueError("Enable RUN_LIVE_PLUGIR, RUN_MULTI_AGENT, RUN_MULTI_AGENT_DEBATE, or INCLUDE_SAVED_REFERENCES.")
+     random.seed(SEED)
+     torch.manual_seed(SEED)
+     root = Path(__file__).resolve().parent
+@@ -129,7 +150,7 @@ def main():
+                             read_json(paths["supplied_queries"]), cache.paths)
+     available = len(pairs)
+     n_states = N_STATES
+-    device = LIVE_DEVICE if RUN_MULTI_AGENT else DEVICE
++    device = LIVE_DEVICE if RUN_MULTI_AGENT or RUN_MULTI_AGENT_DEBATE else DEVICE
+ 
+     pairs = select_target_pairs(pairs)
+     if type(n_states) is not int or not 1 <= n_states <= 11:
+diff --git a/scripts/run_plugir_live.py b/scripts/run_plugir_live.py
+index c59d825..52a6987 100644
+--- a/scripts/run_plugir_live.py
++++ b/scripts/run_plugir_live.py
+@@ -28,6 +28,9 @@ args = parser.parse_args()
+ runner.START_TARGET, runner.N_TARGETS, runner.N_STATES = args.start, args.targets, 11
+ runner.DEVICE = runner.LIVE_DEVICE = "cuda"
+ runner.RUN_LIVE_PLUGIR, runner.OFFLINE = True, True
++runner.RUN_MULTI_AGENT = runner.RUN_MULTI_AGENT_DEBATE = False
++runner.USE_PILOT_TARGETS = False
++runner.INCLUDE_SAVED_REFERENCES = False
+ runner.SEARCH, runner.SELECTION = args.search, args.selection
+ agent = "" if args.selection == "plugir_kl" else f"{args.selection}_"
+ runner.RUN_LABEL = f"plugir_live_{agent}{args.search}_{args.start + 1}_{args.start + args.targets}"
+diff --git a/src/agentir/multagent_experiment/multi_agent.py b/src/agentir/multagent_experiment/multi_agent.py
+index ec3b98b..2e1d88c 100644
+--- a/src/agentir/multagent_experiment/multi_agent.py
++++ b/src/agentir/multagent_experiment/multi_agent.py
+@@ -478,22 +478,27 @@ def question_round(chat, context, record, neutral, interaction, *, critique, pri
+ 
+ def generate_agent_dialogue(retriever, *, initial_caption, target_id, image_path, captions,
+                             questioner, answerer, settings, n_states, checkpoint_path,
+-                            critique=True, _kmeans=None):
++                            critique=True, _kmeans=None, round_builder=None,
++                            chat_class=AgentChat, method_policy=None):
+     """Run/resume independent critique or no-critique histories; ranks never feed decisions."""
+     settings.validate(len(retriever.cache.paths), n_states)
+     path = Path(checkpoint_path)
+     context = RetrievalContext(retriever, captions, settings, kmeans=_kmeans)
+-    chat = AgentChat(questioner, settings)
++    chat = chat_class(questioner, settings)
++    build_round = question_round if round_builder is None else round_builder
++    proposal_policy = PROPOSAL_POLICY if round_builder is None else method_policy
+     if path.is_file():
+         state = read_json(path)
+         if state.get("rewrite_policy") != REWRITE_POLICY:
+             raise ValueError("Checkpoint uses a different rewrite policy; use a fresh checkpoint path.")
+-        if state.get("proposal_policy") != PROPOSAL_POLICY:
++        if state.get("method_policy") != method_policy:
++            raise ValueError("Checkpoint uses a different question-generation method; use a fresh path.")
++        if state.get("proposal_policy") != proposal_policy:
+             raise ValueError("Checkpoint uses a different proposal policy; use a fresh checkpoint path.")
+         if critique and state.get("critique_policy") != CRITIQUE_POLICY:
+             raise ValueError("Checkpoint uses a different critique policy; use a fresh checkpoint path.")
+     else:
+-        state = {"rewrite_policy": REWRITE_POLICY, "proposal_policy": PROPOSAL_POLICY, "critique_policy": CRITIQUE_POLICY if critique else None, "target": retriever.cache.paths[target_id], "dialogue": [], "states": [{"round": 0, "query": initial_caption,
++        state = {"method_policy": method_policy, "rewrite_policy": REWRITE_POLICY, "proposal_policy": proposal_policy, "critique_policy": CRITIQUE_POLICY if critique else None, "target": retriever.cache.paths[target_id], "dialogue": [], "states": [{"round": 0, "query": initial_caption,
+             "raw_query": initial_caption, "target_rank": int(ranks_for_targets(retriever.scores([initial_caption]), [target_id])[0])}],
+             "status": "partial"}
+         save_json(path, state)
+@@ -507,7 +512,7 @@ def generate_agent_dialogue(retriever, *, initial_caption, target_id, image_path
+                                   {"question": entry["question"], "reason": entry["reason"]}
+                 for previous in state["states"][1:]
+                 for entry in previous["audit"]["question_memory"] if entry["blocked"]}.values())
+-            audit = question_round(chat, context, record, neutral, interaction,
++            audit = build_round(chat, context, record, neutral, interaction,
+                                    critique=critique, prior_attempts=prior_attempts)
+             question, answer = audit["selected_question"], None
+             next_dialogue = list(state["dialogue"])
+@@ -542,7 +547,7 @@ def generate_agent_dialogue(retriever, *, initial_caption, target_id, image_path
+             state.pop("last_error", None)
+             state.pop("partial_round_audit", None)
+             save_json(path, state)
+-            print(f"Agents critique={critique}, state {interaction+1}: "
++            print(f"Agents selector={audit['selector']}, state {interaction+1}: "
+                   f"question={question!r}, answer={answer!r}, rank={measured}, "
+                   f"filter_omissions={len(audit['filter_omitted_slots'])}, "
+                   f"skip_reason={audit['skip_reason']}", flush=True)
+diff --git a/src/agentir/multagent_experiment/setup.py b/src/agentir/multagent_experiment/setup.py
+index b92d095..0fc31bb 100644
+--- a/src/agentir/multagent_experiment/setup.py
++++ b/src/agentir/multagent_experiment/setup.py
+@@ -8,7 +8,7 @@ TARGET_IMAGES = (
+ )
+ N_STATES = 11  # Default for direct calls; run_evaluation.py supplies its own N_STATES.
+ RUN_LABEL = "specialists_shared_cake_giraffe"
+-AGENT_MODES = (False,True)
++AGENT_MODES = (True,)  # Critique baseline; add False to include minimum-KL separately.
+ AGENT_INPUT_TOKENS = 8192
+ AGENTS = AgentSettings(
+     seed=1021, threshold_low=500, exclude_top_k=10,
+diff --git a/tests/test_live.py b/tests/test_live.py
+index 863b8a0..854307d 100644
+--- a/tests/test_live.py
++++ b/tests/test_live.py
+@@ -466,7 +466,7 @@ def test_shared_runner_includes_enabled_methods(case, tmp_path, monkeypatch, mod
+     for name, value in {'__file__': str(root / 'run_evaluation.py'), 'N_TARGETS': 1, 'N_STATES': 3,
+                         'K_VALUES': [1, 10], 'CANDIDATE_CAPTIONS': 'captions.json',
+                         'LIVE': case['settings'], 'RUN_LIVE_PLUGIR': mode == 'live',
+-                        'RUN_MULTI_AGENT': False, 'USE_PILOT_TARGETS': False, 'START_TARGET': 0,
++                        'RUN_MULTI_AGENT': False, 'RUN_MULTI_AGENT_DEBATE': False, 'USE_PILOT_TARGETS': False, 'START_TARGET': 0,
+                         'INCLUDE_SAVED_REFERENCES': True,
+                         'SAVED_REFERENCES': ('caption_only', 'raw_dialogue', 'supplied_plugir')}.items():
+         monkeypatch.setattr(runner, name, value)
+@@ -475,7 +475,7 @@ def test_shared_runner_includes_enabled_methods(case, tmp_path, monkeypatch, mod
+     report = json.loads((folder / 'report.json').read_text())
+     expected = {'caption_only', 'raw_dialogue', 'supplied_plugir'}
+     if mode == 'live':
+-        expected.update({'live_plugir_qwen', 'live_raw_same_dialogue'})
++        expected.add('live_plugir_qwen')
+         assert (folder / 'prepared/qwen_live/generated_dialogues.json').is_file()
+         assert 'HUMAN_SECRET' not in json.dumps(qwen.records)
+     assert set(report['summary']) == expected
+diff --git a/tests/test_multi_agent.py b/tests/test_multi_agent.py
+index cc42fe2..bb21b93 100644
+--- a/tests/test_multi_agent.py
++++ b/tests/test_multi_agent.py
+@@ -394,7 +394,7 @@ def test_disabled_runner_does_not_prepare_models(monkeypatch):
+     def forbidden(*args, **kwargs):
+         """Fail if disabled generation attempts any model preparation."""
+         raise AssertionError('Disabled method attempted model preparation')
+-    for name, value in {'RUN_MULTI_AGENT': False, 'RUN_LIVE_PLUGIR': False,
++    for name, value in {'RUN_MULTI_AGENT': False, 'RUN_MULTI_AGENT_DEBATE': False, 'RUN_LIVE_PLUGIR': False,
+                         'prepare_three_agents': forbidden, 'prepare_qwen_live': forbidden}.items():
+         monkeypatch.setattr(runner, name, value)
+     assert runner.collect_experiments(None, None, []) == ({}, {})
+@@ -489,7 +489,7 @@ def test_prepared_experiment_runs_both_modes_and_exports_dialogues(agent_case, t
+     monkeypatch.setattr(runner,'select_pilot_pairs',lambda selected: selected)
+     for key,value in {'__file__':str(root/'run_evaluation.py'),'N_TARGETS':1,'N_STATES':3,
+         'K_VALUES':[1,10],'RUN_MULTI_AGENT':True,'USE_PILOT_TARGETS':True,
+-        'RUN_LIVE_PLUGIR':False,'INCLUDE_SAVED_REFERENCES':False}.items():
++        'RUN_LIVE_PLUGIR':False,'RUN_MULTI_AGENT_DEBATE':False,'INCLUDE_SAVED_REFERENCES':False}.items():
+         monkeypatch.setattr(runner,key,value)
+     runner.main()
+     exported = next((root/'runs/experiments').iterdir())
+diff --git a/tests/test_runner_targets.py b/tests/test_runner_targets.py
+index 19691d0..d59d7cd 100644
+--- a/tests/test_runner_targets.py
++++ b/tests/test_runner_targets.py
+@@ -24,7 +24,7 @@ def runner():
+     (False, 0, 32, 3), (False, 4, 32, 11), (False, 4, None, 2),
+     (True, 999, 1, 3), (True, 0, 32, 11),
+ ])
+-def test_both_methods_share_selected_targets_and_user_states(
++def test_three_methods_share_selected_targets_and_user_states(
+         runner, monkeypatch, tmp_path, pilot, start, count, states):
+     paths = [f"image_{i}.jpg" for i in range(40)]
+     paths[35], paths[38] = setup.TARGET_IMAGES
+@@ -42,7 +42,7 @@ def test_both_methods_share_selected_targets_and_user_states(
+     calls = []
+ 
+     def preparer(name):
+-        def prepare(root, model, selected, *, n_states, offline):
++        def prepare(root, model, selected, *, n_states, offline, **options):
+             calls.append((name, model, selected, n_states))
+ 
+             def search(context, model):
+@@ -55,12 +55,13 @@ def test_both_methods_share_selected_targets_and_user_states(
+ 
+     for key, value in {
+         "__file__": str(tmp_path / "run_evaluation.py"), "RUN_MULTI_AGENT": True,
+-        "RUN_LIVE_PLUGIR": True, "USE_PILOT_TARGETS": pilot,
++        "RUN_LIVE_PLUGIR": True, "RUN_MULTI_AGENT_DEBATE": True, "USE_PILOT_TARGETS": pilot,
+         "INCLUDE_SAVED_REFERENCES": False, "START_TARGET": start,
+         "N_TARGETS": count, "N_STATES": states, "K_VALUES": [1, 10],
+         "load_cache": lambda *args: cache, "matched_queries": lambda *args: pairs,
+         "BlipRetriever": lambda *args, **kwargs: retriever,
+         "prepare_three_agents": preparer("agents_fixture"),
++        "prepare_debate_experiment": preparer("debate_fixture"),
+         "prepare_qwen_live": preparer("live_fixture"),
+     }.items():
+         monkeypatch.setattr(runner, key, value)
+@@ -68,20 +69,20 @@ def test_both_methods_share_selected_targets_and_user_states(
+     runner.main()
+ 
+     expected = setup.select_pilot_pairs(pairs) if pilot else pairs[start:][:count]
+-    assert [call[0] for call in calls] == ["agents_fixture", "live_fixture"]
+-    assert calls[0][1] is calls[1][1] is retriever
+-    assert calls[0][2] is calls[1][2]
++    assert [call[0] for call in calls] == ["agents_fixture", "debate_fixture", "live_fixture"]
++    assert calls[0][1] is calls[1][1] is calls[2][1] is retriever
++    assert calls[0][2] is calls[1][2] is calls[2][2]
+     assert calls[0][2] == expected
+-    assert calls[0][3] == calls[1][3] == states
++    assert calls[0][3] == calls[1][3] == calls[2][3] == states
+     destination = next((tmp_path / "runs/experiments").iterdir())
+     report = json.loads((destination / "report.json").read_text())
+     assert report["protocol"]["targets"] == [raw["img"] for raw, _ in expected]
+     assert report["protocol"]["rounds"] == states
+     assert report["protocol"]["saved_references"] == []
+-    assert set(report["summary"]) == {"agents_fixture", "live_fixture"}
++    assert set(report["summary"]) == {"agents_fixture", "debate_fixture", "live_fixture"}
+     assert report["run"]["target_selection"] == ("pilot" if pilot else "range")
+     assert report["run"]["selected_target_start"] == (None if pilot else start)
+-    for name in ("three_agents", "qwen_live"):
++    for name in ("three_agents", "agent_debate", "qwen_live"):
+         saved = json.loads((destination / "prepared" / name / "dialogues.json").read_text())
+         assert saved == report["protocol"]["targets"]
+ 
+@@ -113,3 +114,25 @@ def test_normal_target_selection_rejects_invalid_ranges(runner, monkeypatch, sta
+     monkeypatch.setattr(runner, "N_TARGETS", count)
+     with pytest.raises(ValueError):
+         runner.select_target_pairs([({}, {}), ({}, {})])
++
++
++def test_debate_switch_runs_without_other_methods(runner,monkeypatch):
++    calls=[]
++    def prepare(root,model,pairs,*,n_states,**options):
++        calls.append((pairs,n_states,options))
++        return PreparedExperiment({'agents_debate':lambda *args: 'query'})
++    def forbidden(*args,**kwargs):
++        raise AssertionError('Disabled generation must not start.')
++    monkeypatch.setattr(runner,'RUN_MULTI_AGENT',False)
++    monkeypatch.setattr(runner,'RUN_LIVE_PLUGIR',False)
++    monkeypatch.setattr(runner,'RUN_MULTI_AGENT_DEBATE',True)
++    monkeypatch.setattr(runner,'prepare_three_agents',forbidden)
++    monkeypatch.setattr(runner,'prepare_qwen_live',forbidden)
++    monkeypatch.setattr(runner,'prepare_debate_experiment',prepare)
++    pairs=[({}, {})]
++    methods,prepared=runner.collect_experiments('root','retriever',pairs,n_states=4)
++    assert list(methods)==['agents_debate'] and list(prepared)==['agent_debate']
++    assert calls[0][0] is pairs and calls[0][1]==4
++    assert calls[0][2]['candidate_captions']==runner.CANDIDATE_CAPTIONS
++    assert calls[0][2]['device']==runner.LIVE_DEVICE
++    assert calls[0][2]['max_input_tokens']==runner.MAX_INPUT_TOKENS

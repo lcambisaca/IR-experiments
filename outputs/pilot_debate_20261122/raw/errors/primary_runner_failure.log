@@ -1,0 +1,73 @@
+Evaluating 2/2064 targets, 11 states, 50,000 candidate images.
+Saved references: disabled
+Loading pinned BLIP text retriever on cuda; first use downloads weights.
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+Xet Storage is enabled for this repo, but the 'hf_xet' package is not installed. Falling back to regular HTTP download. For better performance, install the package with: `pip install huggingface_hub[hf_xet]` or `pip install hf_xet`
+Target 1/2: unlabeled2017/000000364869.jpg; method=agents_critique
+HISTORY_EVENT {"event": "start", "method": "agents_critique", "target": "unlabeled2017/000000364869.jpg", "utc": "2026-11-23T04:33:19.605317+00:00", "checkpoint": "/home/lrc87/pilot_debate_20261122/IR-experiments/runs/three_agents/shared_agents_simple_v1/plugir_original_rewrite_v1/regenerate_empty_pool_once_v1/critique_selector_retry_once/000000364869.json", "checkpoint_existed": false}
+Loading Qwen/Qwen3-4B-Instruct-2507; first use downloads several GB.
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s]Loading checkpoint shards:  67%|██████▋   | 2/3 [00:00<00:00, 15.40it/s]Loading checkpoint shards: 100%|██████████| 3/3 [00:00<00:00, 22.48it/s]
+/home/lrc87/.venvs/agentir-debate/lib/python3.11/site-packages/transformers/generation/configuration_utils.py:631: UserWarning: `do_sample` is set to `False`. However, `temperature` is set to `0.7` -- this flag is only used in sample-based generation modes. You should set `do_sample=True` or unset `temperature`.
+  warnings.warn(
+/home/lrc87/.venvs/agentir-debate/lib/python3.11/site-packages/transformers/generation/configuration_utils.py:636: UserWarning: `do_sample` is set to `False`. However, `top_p` is set to `0.8` -- this flag is only used in sample-based generation modes. You should set `do_sample=True` or unset `top_p`.
+  warnings.warn(
+/home/lrc87/.venvs/agentir-debate/lib/python3.11/site-packages/transformers/generation/configuration_utils.py:653: UserWarning: `do_sample` is set to `False`. However, `top_k` is set to `20` -- this flag is only used in sample-based generation modes. You should set `do_sample=True` or unset `top_k`.
+  warnings.warn(
+Loading Salesforce/blip2-flan-t5-xl; first use downloads several GB.
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:  50%|█████     | 1/2 [00:25<00:25, 25.47s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:56<00:00, 28.48s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:56<00:00, 28.03s/it]
+Agents selector=critique, state 1: question='Is the cake decorated with candles?', answer='a group of people posing in front of a cake', rank=15, filter_omissions=0, skip_reason=None
+Agents selector=critique, state 2: question='Are any of the people blowing out candles on the cake?', answer='a group of people posing in front of a decorated cake with candles', rank=18, filter_omissions=0, skip_reason=None
+Agents selector=critique, state 3: question='Is the cake a birthday cake?', answer='yes', rank=39, filter_omissions=0, skip_reason=None
+Agents selector=critique, state 4: question='Are any of the people interacting with the cake directly?', answer='a group of people posing in front of a cake', rank=22, filter_omissions=0, skip_reason=None
+Agents selector=critique, state 5: question='What is the relationship between the people and the cake?', answer='a group of people posing in front of a cake', rank=36, filter_omissions=0, skip_reason=None
+Agents selector=critique, state 6: question="What is the cake's decoration?", answer='a group of people posing in front of a cake', rank=29, filter_omissions=0, skip_reason=None
+Agents selector=critique, state 7: question='Are any of the people looking at the cake directly?', answer='a group of people posing in front of a cake', rank=27, filter_omissions=0, skip_reason=None
+Agents selector=critique, state 8: question='What action is the group of people performing?', answer='a group of people posing in front of a birthday cake', rank=30, filter_omissions=0, skip_reason=None
+Agents selector=critique, state 9: question='Are any of the people standing near the cake?', answer='a group of people standing in front of a cake', rank=26, filter_omissions=0, skip_reason=None
+Agents selector=critique, state 10: question='Is the cake on a table or on a surface?', answer='a group of people standing in front of a birthday cake decorated with candles, posing', rank=19, filter_omissions=0, skip_reason=None
+HISTORY_EVENT {"event": "end", "method": "agents_critique", "target": "unlabeled2017/000000364869.jpg", "start_utc": "2026-11-23T04:33:19.605317+00:00", "end_utc": "2026-11-23T04:42:55.941804+00:00", "wall_seconds": 576.3365491600001, "error": null, "peak_allocated_bytes": 10365075456, "peak_reserved_bytes": 10796138496, "qwen_records": 61, "qwen_actual": 61, "qwen_replays": 0, "blip2_records": 10, "blip2_actual": 10, "blip2_replays": 0, "input_tokens": 71523, "output_tokens": 6614, "qwen_generation_seconds": 361.09378263400015}
+Target 2/2: unlabeled2017/000000562109.jpg; method=agents_critique
+HISTORY_EVENT {"event": "start", "method": "agents_critique", "target": "unlabeled2017/000000562109.jpg", "utc": "2026-11-23T04:42:55.944541+00:00", "checkpoint": "/home/lrc87/pilot_debate_20261122/IR-experiments/runs/three_agents/shared_agents_simple_v1/plugir_original_rewrite_v1/regenerate_empty_pool_once_v1/critique_selector_retry_once/000000562109.json", "checkpoint_existed": false}
+Agents selector=critique, state 1: question='Is the field shaded or open?', answer='open', rank=191, filter_omissions=0, skip_reason=None
+Agents selector=critique, state 2: question='Is there a tree nearby?', answer='yes', rank=143, filter_omissions=0, skip_reason=None
+Agents selector=critique, state 3: question='Is the giraffe standing alone or with other giraffes?', answer='a giraffe stands in an open field with a tree nearby', rank=151, filter_omissions=0, skip_reason=None
+Agents selector=critique, state 4: question='Are there other giraffes nearby?', answer='no', rank=165, filter_omissions=0, skip_reason=None
+Agents selector=critique, state 5: question='Is the giraffe standing or moving?', answer='standing', rank=167, filter_omissions=0, skip_reason=None
+Agents selector=critique, state 6: question='Is the giraffe near a fence?', answer='no', rank=124, filter_omissions=0, skip_reason=None
+Agents selector=critique, state 7: question='Is the tree directly visible and in the foreground?', answer='no', rank=78, filter_omissions=0, skip_reason=None
+Agents selector=critique, state 8: question='Are there rocks near the giraffe?', answer='no', rank=102, filter_omissions=0, skip_reason=None
+Agents selector=critique, state 9: question='Is the field dry or green?', answer='a giraffe stands alone in an open field with trees nearby', rank=96, filter_omissions=0, skip_reason=None
+HISTORY_EVENT {"event": "end", "method": "agents_critique", "target": "unlabeled2017/000000562109.jpg", "start_utc": "2026-11-23T04:42:55.944541+00:00", "end_utc": "2026-11-23T04:52:05.357280+00:00", "wall_seconds": 549.4127954179999, "error": "ValueError: Batch filter must return one valid decision per slot.", "peak_allocated_bytes": 10368705024, "peak_reserved_bytes": 10796138496, "qwen_records": 59, "qwen_actual": 59, "qwen_replays": 0, "blip2_records": 9, "blip2_actual": 9, "blip2_replays": 0, "input_tokens": 70848, "output_tokens": 7949, "qwen_generation_seconds": 434.43245399199895}
+Traceback (most recent call last):
+  File "/home/lrc87/pilot_debate_20261122/execute_session.py", line 32, in <module>
+    runner.main()
+  File "/home/lrc87/pilot_debate_20261122/IR-experiments/run_evaluation.py", line 164, in main
+    methods, prepared_experiments = collect_experiments(root, retriever, pairs, n_states=n_states) # This is what runs our experiemnts
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lrc87/pilot_debate_20261122/IR-experiments/run_evaluation.py", line 110, in collect_experiments
+    prepared_experiment = prepare(
+                          ^^^^^^^^
+  File "/home/lrc87/pilot_debate_20261122/IR-experiments/run_evaluation.py", line 87, in prepare_multi_agent_baseline
+    return prepare_three_agents(root, retriever, pairs, n_states=n_states,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lrc87/pilot_debate_20261122/IR-experiments/src/agentir/multagent_experiment/setup.py", line 47, in prepare_three_agents
+    return prepare_agent_experiment(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lrc87/pilot_debate_20261122/IR-experiments/src/agentir/multagent_experiment/multi_agent.py", line 610, in prepare_agent_experiment
+    conversations[name].append(generate_agent_dialogue(retriever,
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lrc87/pilot_debate_20261122/execute_session.py", line 19, in wrapped
+    try:return fn(*args,**kw)
+               ^^^^^^^^^^^^^^
+  File "/home/lrc87/pilot_debate_20261122/IR-experiments/src/agentir/multagent_experiment/multi_agent.py", line 515, in generate_agent_dialogue
+    audit = build_round(chat, context, record, neutral, interaction,
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lrc87/pilot_debate_20261122/IR-experiments/src/agentir/multagent_experiment/multi_agent.py", line 415, in question_round
+    pool = generate_and_filter_proposals(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lrc87/pilot_debate_20261122/IR-experiments/src/agentir/multagent_experiment/multi_agent.py", line 380, in generate_and_filter_proposals
+    filter_result = chat.complete("filter_batch", "full", {"record": record,
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/lrc87/pilot_debate_20261122/IR-experiments/src/agentir/multagent_experiment/multi_agent.py", line 154, in complete
+    raise ValueError("Batch filter must return one valid decision per slot.")
+ValueError: Batch filter must return one valid decision per slot.

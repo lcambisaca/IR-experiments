@@ -1,0 +1,18 @@
+{
+  "source": "analysis/rounds.csv",
+  "source_sha256": "9f7e3aa3b66bc9caa3d8a181a216b0cd1198ad8fe56cb9d49b393513260e4e8b",
+  "matplotlib": "3.10.0",
+  "y_display_limit": 150,
+  "ranks_inverted": true,
+  "plotted_rows": 61,
+  "out_of_range": [
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "method": "live_plugir_qwen",
+      "state": 10,
+      "rank": 155
+    }
+  ],
+  "raw_query_diagnostic": "Not plotted: it reuses PlugIR dialogue rather than generating a separate one.",
+  "missing_values": "Cake critique has states 0\u20135 only; no imputation."
+}

@@ -1,0 +1,85 @@
+{
+  "identity": {
+    "method": "upstream_plugir_qwen_v1",
+    "settings": {
+      "seed": 1021,
+      "q_n": 5,
+      "recall_hitting": 10,
+      "threshold_low": 500,
+      "reconstruct": true,
+      "referring": true,
+      "filtering": true,
+      "select": true
+    },
+    "source": {
+      "commit": "ce79c9ff834aabc9de698efb706c6cb9427ecf35",
+      "generator_sha256": "fa61dcd1bf56fe02d249b849d37cdf186bfd76e11b99eb9024965b9b16ec4d7f",
+      "evaluator_sha256": "2f5ed55dd5fcfb7959d502a8d3b10aa59b77adf6ab94126b77574bfba72263ea",
+      "metrics": "Original get_first_hitting_time, cumulative_hits_per_round and PlugIREval.run BRI block"
+    },
+    "qwen": [
+      "Qwen/Qwen3-4B-Instruct-2507",
+      "cdbee75f17c01a7cc42f958dc650907174af0554"
+    ],
+    "answerer": [
+      "Salesforce/blip2-flan-t5-xl",
+      "0eb0d3b46c14c1f8c7680bca2693baafdb90bb28"
+    ],
+    "cache": {
+      "images": 50000,
+      "shape": [
+        50000,
+        256
+      ],
+      "dtype": "torch.float32",
+      "device": "cpu",
+      "norm_min": 0.9999998807907104,
+      "norm_max": 1.0000001192092896,
+      "model": "Salesforce/blip-itm-large-coco",
+      "model_revision": "19502f1e215844f7e48bd48473f86932486d3441",
+      "cache_sha256": "8afcfb6393d71261c18938acd9a4db0f9e74439da8852594b8c983846a12a34f",
+      "manifest_sha256": "8a32638192419131513f2e5a6e5159d191de6789678fb3b1faa18e1ab46b44af",
+      "encoding_versions": {
+        "model": "Salesforce/blip-itm-large-coco",
+        "model_revision": "19502f1e215844f7e48bd48473f86932486d3441",
+        "manifest_sha256": "8a32638192419131513f2e5a6e5159d191de6789678fb3b1faa18e1ab46b44af",
+        "transformers": "4.51.3",
+        "torch": "2.11.0+cu130",
+        "torchvision": "0.26.0+cu130",
+        "pillow": "11.3.0",
+        "adapter_sha256": "80583a516b1d60bef6658f51c4f4e50995566cd93c81b3280bff5d46d72bf667",
+        "mode": "eval"
+      }
+    },
+    "candidate_captions_sha256": "df5fbf1b5ee0856b89b3a96a9094f245cc5db6eb17a1d3fff0604c06109dd5cd",
+    "max_input_tokens": 4096,
+    "runtime": {
+      "python": "3.11.18",
+      "platform": "Linux-6.8.0-1073-gcp-x86_64-with-glibc2.35",
+      "gpu": "NVIDIA L4",
+      "cuda_build": "12.8",
+      "generation_device": "cuda",
+      "retrieval_device": "cuda",
+      "versions": {
+        "torch": "2.11.0+cu128",
+        "torchvision": "0.26.0+cu128",
+        "transformers": "4.51.3",
+        "accelerate": "1.6.0",
+        "sentencepiece": "0.2.1",
+        "pillow": "11.3.0",
+        "fast-pytorch-kmeans": "0.2.2",
+        "psutil": "7.1.0"
+      }
+    },
+    "source_sha256": {
+      "src/agentir/live.py": "f530f14eaae0c501539c55f0565e6ee83013d38c84c23415c8074a49c6b2cc13",
+      "src/agentir/live_models.py": "eebfc161c2abf39d8acbc3603550b6919a63ba17c753acd8163722d2b64aa6a1",
+      "src/agentir/plugir_upstream.py": "6f5f4bb369a7f254b9ab5f88527f0226880d2b7a61268a88f2964fdffb6882fb",
+      "src/agentir/retrieval.py": "bd3e4d165446261207399d0240cfad4ee5ae945d5555b8dde64cb25191b82ee7"
+    }
+  },
+  "checkpoint_folder": "/home/lrc87/IR-experiments-pilot/runs/live_upstream/aaec02ad94051834aeaf",
+  "n_states": 11,
+  "n_targets": 2,
+  "limitations": "Original algorithm with Qwen replacing GPT; not identical paper numbers. BLIP-2 answers may err. Same-dialogue raw is a reformulation diagnostic."
+}

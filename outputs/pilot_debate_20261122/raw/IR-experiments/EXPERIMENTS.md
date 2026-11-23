@@ -1,0 +1,237 @@
+# Experiments and evaluation
+
+Use [run_evaluation.py](run_evaluation.py) as the main entry point.
+[README.md](README.md) covers installation, cache downloads and GPU settings.
+Our research control is original PlugIR + Qwen. Independent agent methods
+produce their own conversations and search states, then enter the same evaluator
+under separate names. They need not call PlugIR's generation or selection logic;
+keep retrieval/answering models, targets and interaction budgets consistent.
+
+## Methods in the comparison
+
+| Method | Search input |
+|---|---|
+| `caption_only` | Initial caption, unchanged at every state |
+| `raw_dialogue` | Caption plus saved VisDial dialogue so far |
+| `supplied_plugir` | Authors' saved query for that state |
+| `live_plugir_qwen` | Description from newly generated PlugIR/Qwen Q&A; enabled by the live switch |
+| `live_raw_same_dialogue` | Raw text from that same generated conversation |
+
+Saved VisDial and supplied PlugIR can have different conversations/models; they
+are historical references, not controls isolating an agent contribution.
+`live_raw_same_dialogue` diagnoses reformulation, but its questions followed the
+reformulated path, so it is not an independent live questioner.
+
+Compare matched targets, image pools, starting information and interaction
+rounds. Record additional model/search calls. Target rank is measured **after**
+search; never use it to choose a winning query or branch. Label oracle analyses
+as upper bounds. Higher target cosine alone does not guarantee a better rank.
+
+## Add a per-state method
+
+Edit the template and register it in `EXPERIMENTS`:
+
+```python
+def my_first_experiment(context, retriever):
+    """Build this state's query from information available so far."""
+    return context.current_query  # Identity control: should match raw_dialogue.
+
+EXPERIMENTS = {"my_first_experiment": my_first_experiment}
+```
+
+`context` contains the initial caption, past raw `dialogue`, joined `current_query`,
+round/example indices and this method's `previous_query` / `previous_state`.
+It excludes future turns, target labels/ranks and supplied PlugIR text. Example
+indices are sample positions, not image IDs. Do not recover hidden labels through
+external lookups. Keep state 0 unchanged unless a rewrite there is intentional.
+
+| Return value | How to use it |
+|---|---|
+| Description string | Evaluator encodes it with BLIP and scores every image |
+| `vector_output(retriever, vector, query=...)` | Normalizes a custom vector and computes cosine scores |
+| `SearchOutput(scores, "fusion", notes=...)` | Returns fused scores, such as RRF, in manifest order |
+
+Import the helpers from `agentir.evaluation`. Scores must be one finite value
+per image, with higher meaning better. RRF scores are not cosine similarities;
+convert rankings to per-image scores before returning them. For normalized
+embedding batches use `retriever.score_vectors()`; it handles device transfer.
+
+Optional returned `state` persists separately per method/example within a run;
+it is not serialized. Put reproducibility details in JSON-compatible `notes`.
+Load expensive models once and reuse them.
+
+## Add a method that needs preparation
+
+Use `PREPARED_EXPERIMENTS` for generated conversations or reusable agent outputs:
+
+```python
+from agentir.evaluation import PreparedExperiment
+
+def prepare_control(root, retriever, pairs, *, n_states, offline):
+    """Prepare reusable data; this example is an unchanged-caption control."""
+    def search_state(context, model):
+        """Return this method's text at the requested state."""
+        return context.initial_caption
+
+    return PreparedExperiment(
+        methods={"prepared_caption": search_state},
+        metadata={"states": n_states},
+        artifacts={"setup.json": {"targets": len(pairs)}},
+    )
+
+PREPARED_EXPERIMENTS = {"control": prepare_control}
+```
+
+The built-in live switch uses this interface. Preparation receives pairs to
+locate target images for answering; keep those labels out of question generation
+and selection. Generated-state callbacks should return their own history rather
+than consume saved human answers. Method names must be unique; artifacts use
+plain `.json` filenames. Preserve the original baseline when adding experiments.
+
+## Outputs and metrics
+
+Each run creates `runs/experiments/<timestamp>/`:
+
+| Output | Contents |
+|---|---|
+| `rank_comparison.csv` | Target ranks side by side for each example/state |
+| `per_example.csv` | Queries, ranks, scores, top image IDs, notes and paired rank changes |
+| `per_round.csv` | Recall/Hits at each state and K; differences in percentage points |
+| `final_metrics.csv` | Final Recall/Hits and overall BRI |
+| `report.json` | Full results, selected targets, settings and cache/software provenance |
+| `runner_snapshot.py` | Editable runner used for this run |
+| `prepared/<name>/` | Preparation artifacts; live output includes `generated_dialogues.json` |
+
+- **Recall@K:** percentage of targets currently ranked within the top K.
+- **Hits@K:** percentage that reached the top K at least once up to this state.
+- **BRI:** average trapezoidal area of log best-so-far rank across states; lower
+  rewards reaching good ranks earlier. Undefined for a single state.
+- **Rank improvement:** previous/reference rank minus current rank; 20 → 5 is +15.
+
+State 0 is the initial caption. Caption-only repeats it, so its Recall/Hits stay
+constant. At state 0, Recall equals Hits. The evaluator calls the authors' metric
+code; use its CSVs for reported results. Keep development and final-evaluation
+targets separate, and record external method code, model revisions, prompts,
+seeds and costs in addition to the runner snapshot.
+
+## Code reading order
+
+1. [run_evaluation.py](run_evaluation.py): settings and `main()`.
+2. [Original generator](third_party/PlugIR/generate_dialog.py): interaction loop and research functions.
+3. [live.py](src/agentir/live.py): preparation, generated states and checkpoints.
+4. [live_models.py](src/agentir/live_models.py): local Qwen/BLIP-2 connections.
+5. [plugir_upstream.py](src/agentir/plugir_upstream.py): source loading and device adapters.
+6. [evaluation.py](src/agentir/evaluation.py): scoring, metrics and exports.
+
+The [comparison](PLUGIR_COMPARISON.md) explains source fidelity and runtime
+differences.
+# Multi-agent questioner: normal and pilot targets
+
+In [run_evaluation.py](run_evaluation.py), set `RUN_MULTI_AGENT = True` to enable
+multi-agent generation (CUDA required). Target selection is separate:
+
+- `USE_PILOT_TARGETS = False`: use `START_TARGET` and `N_TARGETS` (32 by default).
+  Set `N_TARGETS = None` to use all remaining matched pairs.
+- `USE_PILOT_TARGETS = True`: use the cake and giraffe development targets from
+  [setup.py](src/agentir/multagent_experiment/setup.py); ignore `START_TARGET` and `N_TARGETS`.
+
+Both modes use `N_STATES` from `run_evaluation.py` (11 means the caption plus ten
+interactions). When `RUN_LIVE_PLUGIR = True` too, both methods receive exactly the
+same selected pairs, initial captions, retriever, and number of states. Generation
+runs sequentially. The multi-agent target allowance follows the selected batch;
+explicit settings passed directly to `prepare_three_agents` retain their own limit.
+
+`AGENT_MODES` in `setup.py` chooses critique off/on. Official rankings use the neutral
+shared description; specialist searches supply question evidence. Saved reference
+searches are controlled by `INCLUDE_SAVED_REFERENCES` and `SAVED_REFERENCES`.
+Pilot targets are a development check, not a benchmark. See
+[AGENT_EXPERIMENT.md](src/agentir/multagent_experiment/AGENT_EXPERIMENT.md) for prompts,
+budgets, resume and audit outputs.
+
+## Shared rewrite protocol
+
+Multi-agent and live PlugIR now use the same unchanged upstream reconstruction
+prompt and identical-query paraphrase fallback, with the same pinned Qwen model.
+Both BLIP-2 answer inputs include the current description followed by the selected
+question. Custom agent rewrite instructions are removed. Existing answer and
+rewrite quality limitations remain; this change aligns the downstream procedure
+rather than fixing it. The earlier cake/giraffe pilot used the previous protocol.
+
+Multi-agent checkpoints/call caches now live beneath the
+`plugir_original_rewrite_v1` policy directory. Legacy checkpoints are not silently
+resumed. Use a fresh run name when changing other settings or prompts.
+
+## Three-method question-generation comparison
+
+The current pilot enables these three conditions in `run_evaluation.py`:
+
+```python
+RUN_LIVE_PLUGIR = True
+RUN_MULTI_AGENT = True
+RUN_MULTI_AGENT_DEBATE = True
+USE_PILOT_TARGETS = True
+N_STATES = 11
+INCLUDE_SAVED_REFERENCES = False
+```
+
+`AGENT_MODES = (True,)` in `setup.py` selects only the single-reviewer critique
+baseline; minimum-KL multi-agent selection remains available by adding `False`.
+The evaluated method columns are `live_plugir_qwen`, `agents_critique`, and
+`agents_debate`. PlugIR's raw dialogue is preserved in artifacts without another
+raw-query evaluation pass. Generation is sequential. All methods receive the
+same selected pairs, starting captions, retriever, requested state count, image
+handling, model device, and 8192-token input ceiling. They use the pinned Qwen
+question/rewrite model, the same BLIP-2 answerer and description-plus-question
+answer input, and original PlugIR reconstruction/paraphrase behavior.
+
+Set `USE_PILOT_TARGETS=False` to use `START_TARGET` and `N_TARGETS` (32 by default).
+Each method has its own dialogue history and checkpoints; after the first round,
+different questions and answers can produce different retrieval evidence. These
+are comparisons on the same targets, not artificially shared future histories.
+
+### Debate method
+
+The implementation is separate: `src/agentir/multagent_experiment/debate.py`.
+Each interaction retrieves/clusters once. Generalist, attributes, and relationships
+roles independently open with up to two caption-supported observations, one
+initial question (or abstention), and a limitation. Two synchronous discussion
+rounds follow. In each round, all three roles see the identical transcript from
+previous rounds, not responses produced earlier in their own round. They can
+challenge assumptions, change their minds, and develop new questions.
+
+A neutral coordinator reads the nine contributions and formulates one final
+question, with supporting caption IDs, a short synthesis reason, and any unresolved
+disagreement. It may keep, revise, combine, or replace suggestions. It is not
+restricted to choosing an existing proposal. Candidate possibilities and peer
+claims are never inserted into the confirmed dialogue as facts.
+
+The final question receives the same deterministic prechecks and baseline filter.
+A rejected final question gets exactly one coordinator revision with rejection
+feedback, then the same validation again. A second rejection saves a skipped
+interaction: no target answer, no rewrite, unchanged search query and rank.
+There is no extra specialist discussion or baseline pool-regeneration loop in
+this condition. Malformed/truncated model outputs retain explicit errors and
+interrupted checkpoints rather than silently generating more discussion.
+
+A normal answered debate round uses 12 Qwen calls: three openings, six discussion
+responses, one coordinator, one filter, and one original rewrite. A revision can
+add two calls; the shared paraphrase fallback can add one, for at most 15 at the
+default settings. Deterministic rejection can avoid a model filter call. There
+is only one target-answer call per answered interaction. Report this extra
+internal computation alongside retrieval gains; it is not a matched-cost claim.
+
+`prepared/agent_debate/debate_dialogues.json` saves the full transcript, opening
+observations, both discussion rounds, coordinator attempts and reasons, validation
+results, actual model calls, questions, answers, rewrites, and target ranks.
+`debate_prompt_pack.json` preserves the prompts and upstream rewrite provenance.
+The common evaluator exports ranks, Recall/Hits, BRI, and run metadata as before.
+Debate checkpoints and call caches live under `runs/three_agents_debate/`, isolated
+from baseline and PlugIR runs. Their folder identity includes source hashes,
+settings, pinned model revisions, pool/catalogue identity and prompt version;
+target checkpoint names include the target JPEG hash. Partial rounds can resume
+using the normal per-request Qwen and BLIP-2 caches.
+
+Offline tests cover shared evidence, independent openings, synchronous exchanges,
+novel coordinator questions, final revision/skip, answer/rewrite parity, resumed
+histories, label isolation, and three-method runner exports. GPU fit, actual model
+JSON compliance, answer quality, and retrieval benefit still require the pilot.

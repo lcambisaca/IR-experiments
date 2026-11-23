@@ -1,0 +1,6 @@
+{
+  "commit": "ce79c9ff834aabc9de698efb706c6cb9427ecf35",
+  "generator_sha256": "fa61dcd1bf56fe02d249b849d37cdf186bfd76e11b99eb9024965b9b16ec4d7f",
+  "evaluator_sha256": "2f5ed55dd5fcfb7959d502a8d3b10aa59b77adf6ab94126b77574bfba72263ea",
+  "metrics": "Original get_first_hitting_time, cumulative_hits_per_round and PlugIREval.run BRI block"
+}

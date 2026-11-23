@@ -1,0 +1,75 @@
+{
+  "method_policy": "specialists_two_round_debate_v1",
+  "rewrite_policy": "plugir_original_rewrite_v1",
+  "proposal_policy": "specialists_two_round_debate_v1",
+  "critique_policy": null,
+  "target": "unlabeled2017/000000562109.jpg",
+  "dialogue": [],
+  "states": [
+    {
+      "round": 0,
+      "query": "a giraffe is standing in an open field",
+      "raw_query": "a giraffe is standing in an open field",
+      "target_rank": 89
+    }
+  ],
+  "status": "interrupted",
+  "last_error": "Opening observations need valid supplied evidence IDs.",
+  "partial_round_audit": [
+    {
+      "stage": "opening",
+      "role": "full",
+      "payload": {
+        "record": {
+          "initial_caption": "a giraffe is standing in an open field",
+          "dialogue": []
+        },
+        "query": "a giraffe is standing in an open field",
+        "candidates": [
+          {
+            "id": 26575,
+            "caption": "a giraffe standing in a shady area with green leaves"
+          },
+          {
+            "id": 43487,
+            "caption": "two giraffes graze on grass next to a tree"
+          },
+          {
+            "id": 9158,
+            "caption": "a giraffe standing next to a tree in a zoo"
+          },
+          {
+            "id": 18601,
+            "caption": "three giraffes walking across the open plains"
+          },
+          {
+            "id": 48324,
+            "caption": "giraffe in a zoo with rocks on a dirt path"
+          },
+          {
+            "id": 17090,
+            "caption": "two giraffes walking through a small trail of a dry desert"
+          },
+          {
+            "id": 22645,
+            "caption": "two giraffes in a field of tall grass"
+          },
+          {
+            "id": 42751,
+            "caption": "a large elephant standing in a tall grassy plain"
+          },
+          {
+            "id": 45162,
+            "caption": "a giraffe in an enclosure with a large rock"
+          },
+          {
+            "id": 19606,
+            "caption": "a giraffe standing in front of a wooden bridge"
+          }
+        ],
+        "attempted_proposals": []
+      },
+      "response": "{\"observations\":[\"The presence of multiple giraffes (two or three) vs. a single giraffe is a key difference; candidates 43487, 18601, and 22645 show groups, while others show one giraffe.\",\"Candidate 42751 features an elephant instead of a giraffe, indicating a non-matching species\"], \"question\": \"Which candidate shows a single giraffe standing in an open field with no other animals or structures nearby?\", \"evidence_ids\":[26575,9158,19606], \"limitation\": \"Some captions describe 'open field' vaguely (e.g., 'tall grass', 'plains'), making it hard to confirm exact match without visual details.\"}"
+    }
+  ]
+}
