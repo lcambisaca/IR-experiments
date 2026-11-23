@@ -181,7 +181,7 @@ The evaluated method columns are `live_plugir_qwen`, `agents_critique`, and
 raw-query evaluation pass. Generation is sequential. All methods receive the
 same selected pairs, starting captions, retriever, requested state count, image
 handling, model device, and 8192-token input ceiling. They use the pinned Qwen
-question/rewrite model, the same BLIP-2 answerer and description-plus-question
+question/rewrite model, the same configured answerer and description-plus-question
 answer input, and original PlugIR reconstruction/paraphrase behavior.
 
 Set `USE_PILOT_TARGETS=False` to use `START_TARGET` and `N_TARGETS` (32 by default).
@@ -205,18 +205,27 @@ disagreement. It may keep, revise, combine, or replace suggestions. It is not
 restricted to choosing an existing proposal. Candidate possibilities and peer
 claims are never inserted into the confirmed dialogue as facts.
 
-The final question receives the same deterministic prechecks and baseline filter.
-A rejected final question gets exactly one coordinator revision with rejection
-feedback, then the same validation again. A second rejection saves a skipped
-interaction: no target answer, no rewrite, unchanged search query and rank.
-There is no extra specialist discussion or baseline pool-regeneration loop in
-this condition. Malformed/truncated model outputs retain explicit errors and
-interrupted checkpoints rather than silently generating more discussion.
+The specialists use candidate comparisons to propose a question about an
+unresolved detail in the target photo. The final gate rejects explicit references
+to numbered retrieval images and requests to identify a matching candidate.
+The model filter also checks that the target viewer can answer the question.
+A rejected question gets one coordinator revision. If the coordinator still has
+no eligible question, the final discussion proposals receive the same checks
+in one fallback batch. The first eligible specialist proposal in role order is
+asked. When none qualify, the interaction is skipped with the prior query and rank.
+
+Debate allows one logged JSON or schema correction per interaction. If it cannot
+recover a valid specialist response, it keeps any usable fields from one attempt
+or records an abstention. An unusable coordinator response moves directly to
+the specialist fallback when the format correction is exhausted. The shared
+filter keeps valid verdicts, retries missing slots once, and excludes unjudged
+proposals. With `exclude_unjudged=True`, it excludes missing proposals immediately.
 
 A normal answered debate round uses 12 Qwen calls: three openings, six discussion
 responses, one coordinator, one filter, and one original rewrite. A revision can
-add two calls; the shared paraphrase fallback can add one, for at most 15 at the
-default settings. Deterministic rejection can avoid a model filter call. There
+add two calls. One fallback filter, up to three filter retries, one debate format
+correction, and one paraphrase bring the default upper bound to 20 calls.
+The deterministic gate can avoid a model filter call. There
 is only one target-answer call per answered interaction. Report this extra
 internal computation alongside retrieval gains; it is not a matched-cost claim.
 
@@ -229,7 +238,7 @@ Debate checkpoints and call caches live under `runs/three_agents_debate/`, isola
 from baseline and PlugIR runs. Their folder identity includes source hashes,
 settings, pinned model revisions, pool/catalogue identity and prompt version;
 target checkpoint names include the target JPEG hash. Partial rounds can resume
-using the normal per-request Qwen and BLIP-2 caches.
+using the normal per-request model caches.
 
 Offline tests cover shared evidence, independent openings, synchronous exchanges,
 novel coordinator questions, final revision/skip, answer/rewrite parity, resumed

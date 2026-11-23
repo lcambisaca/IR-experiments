@@ -278,8 +278,8 @@ def target_answerer_spec(name):
 
 class QwenVLAnswerer:
     """Simulated user played by Qwen2.5-VL-3B instead of BLIP-2 (Matan, Nov 19 meeting).
-    Sees only the target photo and PlugIR's question, never the dialogue or captions.
-    Same interface as Blip2Answerer; answers cached per (photo, question).
+    Receives the target photo and the caller's description-plus-question query.
+    Same interface as Blip2Answerer; answers are cached per photo and query.
     """
     MAX_PIXELS = 512 * 28 * 28  # More detail than the agent's candidate-photo view.
     PROMPT = ("You are looking at the photo you have in mind and answering a question about it. "

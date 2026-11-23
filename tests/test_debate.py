@@ -20,7 +20,7 @@ from test_live import RoundRobinKMeans, ScriptedAnswerer
 class DebateTransport(AgentTransport):
     """Script structured discussion, with controllable final filtering and failures."""
     def __init__(self, *, filter_statuses=(), bad_evidence_first=False, fail_stage=None,
-                 malformed=False, fallback=False):
+                 malformed=False, fallback=False, flat_opening=False, candidate_question=None):
         super().__init__()
         self.filter_statuses = iter(filter_statuses)
         self.bad_evidence_first = bad_evidence_first
@@ -28,6 +28,8 @@ class DebateTransport(AgentTransport):
         self.fail_stage = fail_stage
         self.malformed = malformed
         self.fallback = fallback
+        self.flat_opening = flat_opening
+        self.candidate_question = candidate_question
 
     def create(self, **kwargs):
         system = kwargs['messages'][0]['content']
@@ -83,6 +85,10 @@ class DebateTransport(AgentTransport):
                           'evidence_ids':[999999] if self.bad_evidence_first and self.coordinator_calls==1 else ids,
                           'reason':'Combined the evidence while removing a compound assumption.',
                           'unresolved_disagreement':'The relative value of colour and position is uncertain.'}
+            if stage == "opening" and self.flat_opening and not self.records:
+                result["observations"] = ["Candidates differ in visible details."]
+            if stage == "coordinate" and self.candidate_question and self.coordinator_calls == 1:
+                result["question"] = self.candidate_question
             self.cache[key] = result
         self.records.append({'stage':stage,'payload':deepcopy(data),'result':deepcopy(result)})
         text = 'not JSON' if self.malformed else json.dumps(result)
@@ -96,6 +102,21 @@ def run_debate(case, path, *, n_states=3, transport=None):
     state = debate.generate_debate_dialogue(**options, questioner=qwen, answerer=answerer,
                                           checkpoint_path=path, n_states=n_states)
     return state, qwen, answerer
+
+
+@pytest.mark.parametrize("stage", ["opening", "discussion", "coordinate"])
+def test_debate_prompt_examples_match_live_output_schema(stage):
+    role = "coordinator" if stage == "coordinate" else "full"
+    messages = debate.debate_messages(stage, role, {"candidates": [{"id": 97}]})
+    examples = [line for line in messages[0]["content"].splitlines() if line.startswith("{")]
+    assert len(examples) == (2 if stage == "opening" else 1)
+    assert '"id": 97' in messages[1]["content"]
+    for example in examples:
+        result = debate.DebateChat.validate_debate_output(
+            stage, {"candidates": [{"id": 12}, {"id": 28}]}, example, "stop")
+        if result["question"] != "abstain":
+            assert debate.valid_question(result["question"])
+            assert not debate.CANDIDATE_QUESTION.search(result["question"])
 
 
 def test_debate_independent_openings_and_two_synchronous_rounds(agent_case, tmp_path, monkeypatch):
@@ -126,6 +147,7 @@ def test_debate_independent_openings_and_two_synchronous_rounds(agent_case, tmp_
         assert record['payload']['candidates']==audit['shared_retrieval']['captions']
     assert current['question'] not in {item['content']['question'] for item in audit['transcript']}
     assert current['question']==audit['coordinator_attempts'][0]['proposal']['question']
+    assert audit["question_source"] == "coordinator" and audit["fallback_attempts"] == []
     assert current['skip_reason'] is None
     assert answerer.processor.prompts==['Question: a room. '+current['question']+' Answer:']
     rewrite = next(r for r in qwen.records if r['stage']=='reconstruct_dialog')
@@ -149,17 +171,75 @@ def test_rejected_final_question_gets_only_one_revision(agent_case,tmp_path,fall
     assert sum(r['stage']=='discussion' for r in qwen.records)==6
 
 
-def test_second_rejection_skips_without_answer_or_rewrite(agent_case,tmp_path):
+@pytest.mark.parametrize("malformed_coordinator", [False, True])
+def test_debate_fallback_checks_target_answerability(agent_case, tmp_path, malformed_coordinator):
+    class NeedsFallback(DebateTransport):
+        def create(self, **kwargs):
+            response = super().create(**kwargs)
+            entry = self.records[-1]
+            if entry["stage"] == "coordinate" and malformed_coordinator:
+                response["choices"][0]["message"]["content"] = "not JSON"
+            if (entry["stage"] == "discussion" and entry["payload"]["discussion_round"] == 2
+                    and "full discussion" in entry["result"]["question"]):
+                result = {**entry["result"], "question": "Does candidate: 21232 show a lamp?"}
+                response["choices"][0]["message"]["content"] = json.dumps(result)
+            return response
+
+    statuses = [] if malformed_coordinator else ["unsupported", "ambiguous"]
+    state, transport, answerer = run_debate(agent_case, tmp_path / "fallback.json", n_states=2,
+        transport=NeedsFallback(filter_statuses=statuses))
+    current = state["states"][1]
+    audit = current["audit"]
+    assert all(not attempt["accepted"] for attempt in audit["coordinator_attempts"])
+    assert len(audit["coordinator_attempts"]) == (1 if malformed_coordinator else 2)
+    first, second, third = audit["fallback_attempts"]
+    assert first["filter"]["status"] == "unsupported"
+    assert "target photo" in first["filter"]["reason"]
+    assert current["question"] == second["proposal"]["question"]
+    assert audit["question_source"] == "attributes"
+    assert third["filter"]["status"] == "unknown"
+    filters = [call["payload"] for call in transport.records if call["stage"] == "filter_batch"]
+    assert len(filters) == (1 if malformed_coordinator else 3)
+    assert [proposal["slot"] for proposal in filters[-1]["proposals"]] == [1, 2]
+    assert answerer.processor.prompts == ["Question: a room. " + current["question"] + " Answer:"]
+    assert current["llm_calls"] == (13 if malformed_coordinator else 15)
+
+
+def test_rejected_fallback_skips_without_answer_or_rewrite(agent_case,tmp_path):
     state,qwen,answerer=run_debate(agent_case,tmp_path/'skip.json',n_states=2,
-        transport=DebateTransport(filter_statuses=['unsupported','ambiguous']))
+        transport=DebateTransport(filter_statuses=['unsupported','ambiguous','unsupported']))
     current=state['states'][1]
     assert state['status']=='complete' and current['no_question']
     assert current['skip_reason']=='no_valid_debate_question'
     assert current['query']==state['states'][0]['query']
     assert current['target_rank']==state['states'][0]['target_rank']
     assert answerer.model.calls==0 and state['dialogue']==[]
-    assert current['llm_calls']==13
+    assert current['llm_calls']==14
+    assert all(attempt["filter"]["status"] == "unsupported"
+               for attempt in current["audit"]["fallback_attempts"])
     assert not any(r['stage'] in ('reconstruct_dialog','paraphrase') for r in qwen.records)
+
+
+def test_unjudged_debate_question_is_revised_without_reaching_answerer(agent_case, tmp_path):
+    class OmittingFirstFilter(DebateTransport):
+        def create(self, **kwargs):
+            response = super().create(**kwargs)
+            entry = self.records[-1]
+            if entry["stage"] == "filter_batch" and self.coordinator_calls == 1:
+                response["choices"][0]["message"]["content"] = '{"decisions":[]}'
+            return response
+
+    state, transport, answerer = run_debate(agent_case, tmp_path / "omitted.json", n_states=2,
+                                            transport=OmittingFirstFilter())
+    current = state["states"][1]
+    first, second = current["audit"]["coordinator_attempts"]
+    assert current["audit"]["filter_omitted_slots"] == [0]
+    assert not first["accepted"] and second["accepted"]
+    assert "Missing model decision" in first["validation"]["reason"]
+    assert current["llm_calls"] == 15 and answerer.model.calls == 1
+    filters = [call["payload"] for call in transport.records if call["stage"] == "filter_batch"]
+    assert [payload.get("filter_retry", False) for payload in filters] == [False, True, False]
+    assert current["question"] == second["proposal"]["question"]
 
 
 def test_bad_coordinator_evidence_is_revised_before_filtering(agent_case,tmp_path):
@@ -188,13 +268,127 @@ def test_debate_resume_extension_and_failure_recovery(agent_case,tmp_path):
     assert extended['states']==full['states']
 
 
-def test_debate_model_errors_remain_visible(agent_case,tmp_path):
-    path=tmp_path/'malformed.json'
-    with pytest.raises(ValueError,match='Invalid debate JSON'):
-        run_debate(agent_case,path,transport=DebateTransport(malformed=True))
-    saved=json.loads(path.read_text())
-    assert saved['status']=='interrupted' and saved['partial_round_audit'][0]['stage']=='opening'
-    assert saved['dialogue']==[]
+@pytest.mark.parametrize("question", [
+    "Does candidate 21232 show someone cutting a cake?",
+    "Does candidate: 21232 show a lamp?",
+    "Does Candidate #21232 show a lamp?",
+    "What is shown in photo ID: 21232?",
+    "What is shown in photo_id=21232?",
+    "Which of the retrieved photos best matches the description?",
+])
+def test_candidate_directed_question_is_revised_before_answering(agent_case, tmp_path, question):
+    state, transport, answerer = run_debate(agent_case, tmp_path / "target.json", n_states=2,
+        transport=DebateTransport(candidate_question=question))
+    current = state["states"][1]
+    first, second = current["audit"]["coordinator_attempts"]
+    assert first["proposal"]["question"] == question
+    assert not first["accepted"] and second["accepted"]
+    assert "target photo" in first["validation"]["reason"]
+    filtered, = [call for call in transport.records if call["stage"] == "filter_batch"]
+    assert filtered["payload"]["require_target_question"]
+    assert answerer.processor.prompts == ["Question: a room. " + current["question"] + " Answer:"]
+    assert question not in answerer.processor.prompts[0]
+
+
+def test_target_count_question_keeps_its_original_text(agent_case, tmp_path):
+    question = "Are there 3 people in the photo?"
+    state, _, answerer = run_debate(agent_case, tmp_path / "count.json", n_states=2,
+        transport=DebateTransport(candidate_question=question))
+    current = state["states"][1]
+    assert current["question"] == question
+    assert len(current["audit"]["coordinator_attempts"]) == 1
+    assert answerer.processor.prompts == ["Question: a room. " + question + " Answer:"]
+
+
+def test_flat_observation_list_gets_one_logged_correction(agent_case, tmp_path):
+    state, _, answerer = run_debate(agent_case, tmp_path / "format.json", n_states=2,
+        transport=DebateTransport(flat_opening=True))
+    current = state["states"][1]
+    original, retry = current["llm_audit"][:2]
+    assert original["stage"] == retry["stage"] == "opening"
+    assert "its own supplied evidence_ids" in original["validation_error"]
+    assert retry["payload"]["format_retry"]["previous_response"] == original["response"]
+    assert "validation_error" not in retry
+    assert len(current["audit"]["transcript"]) == 9
+    assert current["llm_calls"] == 13 and answerer.model.calls == 1
+
+
+def test_specialist_keeps_valid_question_after_failed_correction(agent_case, tmp_path):
+    class MalformedOpenings(DebateTransport):
+        def create(self, **kwargs):
+            response = super().create(**kwargs)
+            entry = self.records[-1]
+            if entry["stage"] == "opening" and (
+                    entry["payload"].get("format_retry") or "attributes opening" in entry["result"]["question"]):
+                response["choices"][0]["message"]["content"] = "not JSON"
+            return response
+
+    state, transport, answerer = run_debate(agent_case, tmp_path / "recovered.json", n_states=2,
+        transport=MalformedOpenings(flat_opening=True))
+    current = state["states"][1]
+    first_discussion = next(call for call in transport.records if call["stage"] == "discussion")
+    generalist, attributes, _ = first_discussion["payload"]["transcript"]
+    assert generalist["content"]["observations"] == []
+    assert generalist["content"]["question"] == "What is the full opening detail?"
+    assert generalist["content"]["evidence_ids"]
+    assert generalist["content"]["format_recovery"] == "partial"
+    assert attributes["content"]["question"] == "abstain"
+    assert attributes["content"]["format_recovery"] == "abstained"
+    assert sum("format_retry" in item["payload"] for item in current["llm_audit"]) == 1
+    assert current["audit"]["question_source"] == "coordinator"
+    assert answerer.model.calls == 1
+
+
+def test_completely_malformed_debate_skips_and_continues(agent_case, tmp_path):
+    state, _, answerer = run_debate(agent_case, tmp_path / "malformed.json",
+                                    transport=DebateTransport(malformed=True))
+    assert state["status"] == "complete"
+    assert state["dialogue"] == [] and answerer.model.calls == 0
+    assert len(state["states"]) == 3
+    for current in state["states"][1:]:
+        assert current["skip_reason"] == "no_valid_debate_question"
+        assert current["query"] == state["states"][0]["query"]
+        assert current["target_rank"] == state["states"][0]["target_rank"]
+        assert len(current["llm_audit"]) == 11
+        assert all("validation_error" in item for item in current["llm_audit"])
+        assert sum("format_retry" in item["payload"] for item in current["llm_audit"]) == 1
+        assert len(current["audit"]["fallback_attempts"]) == 3
+
+
+def test_debate_bounds_rejection_context_but_blocks_old_questions(agent_case, tmp_path):
+    class RejectedDebate(DebateTransport):
+        first_question = None
+
+        def create(self, **kwargs):
+            response = super().create(**kwargs)
+            entry = self.records[-1]
+            if entry["stage"] == "discussion":
+                result = entry["result"]
+                result["question"] = result["question"].removesuffix("?") + f" in turn {self.interaction}?"
+                response["choices"][0]["message"]["content"] = json.dumps(result)
+            if entry["stage"] == "coordinate" and "revision_feedback" not in entry["payload"]:
+                result = entry["result"]
+                if self.first_question is None:
+                    self.first_question = result["question"]
+                if self.interaction == 3:
+                    result["question"] = self.first_question
+                    response["choices"][0]["message"]["content"] = json.dumps(result)
+            return response
+
+    qwen = RejectedDebate(filter_statuses=["unsupported"] * 20)
+    state, _, answerer = run_debate(agent_case, tmp_path / "history.json", n_states=5, transport=qwen)
+    assert state["status"] == "complete" and answerer.model.calls == 0
+    assert len(state["question_memory"]) == 20
+    current = state["states"][-1]
+    modeled = [call for call in current["llm_audit"]
+               if call["stage"] in ("opening", "discussion", "coordinate")]
+    recent = modeled[0]["payload"]["attempted_proposals"]
+    assert len(recent) == 10
+    assert all(call["payload"]["attempted_proposals"] == recent for call in modeled)
+    assert qwen.first_question not in {item["question"] for item in recent}
+    first = current["audit"]["coordinator_attempts"][0]
+    assert first["proposal"]["question"] == qwen.first_question
+    assert first["validation"]["status"] == "previously_rejected"
 
 
 def test_target_identity_changes_metrics_not_debate(agent_case,tmp_path):

@@ -5,6 +5,7 @@ entropy and KL helpers, but its prompts, filters and orchestration are new.
 Official per-state rankings and shared retrieval use one neutral reformulation.
 No fusion, spectral clustering, training or image re-encoding.
 """
+from collections import Counter
 from dataclasses import asdict, dataclass
 import json
 from pathlib import Path
@@ -26,8 +27,11 @@ from ..retrieval import ranks_for_targets
 
 
 REWRITE_POLICY = "plugir_original_rewrite_v1"
-CRITIQUE_POLICY = "eligible_slot_retry_once_v1"
-PROPOSAL_POLICY = "regenerate_empty_pool_once_v1"
+CRITIQUE_POLICY = "reviewer_retry_once_v2"
+PROPOSAL_POLICY = "multi_agent_history_v6"
+PROMPT_REJECTION_LIMIT = 10
+MAX_FEEDBACK_REASON_LENGTH = 120
+MAX_QUESTION_LENGTH = 240
 
 
 @dataclass(frozen=True)
@@ -61,12 +65,58 @@ def question_key(text):
 
 def valid_question(text):
     """Reject abstentions, overlong text and multiple questions before an LLM filter."""
-    return (isinstance(text, str) and 4 <= len(text.strip()) <= 240
+    return (isinstance(text, str) and 4 <= len(text.strip()) <= MAX_QUESTION_LENGTH
             and text.strip().endswith("?") and text.count("?") == 1)
 
 
-class InvalidCritiqueSelection(ValueError):
+def prompt_rejection_feedback(prior_attempts, record, current_rejections=()):
+    """Show recent distinct rejections and current-pool feedback."""
+    current = tuple(current_rejections)
+    seen = {question_key(qa["question"]) for qa in record["dialogue"]}
+    seen.update(question_key(item["question"]) for item in current)
+    recent = []
+    for item in reversed(prior_attempts):
+        key = question_key(item["question"])
+        if key in seen:
+            continue
+        recent.append(item)
+        seen.add(key)
+        if len(recent) == PROMPT_REJECTION_LIMIT:
+            break
+    return [{"question": item["question"][:MAX_QUESTION_LENGTH],
+             "reason": " ".join(item["reason"].split())[:MAX_FEEDBACK_REASON_LENGTH]}
+            for item in (*reversed(recent), *current)]
+
+
+class InvalidAgentOutput(ValueError):
+    """The model returned invalid structured output."""
+
+
+class InvalidCritiqueSelection(InvalidAgentOutput):
     """The reviewer returned a slot outside the supplied eligible choices."""
+
+
+class IncompleteFilterDecisions(InvalidAgentOutput):
+    """The filter returned valid decisions for only part of the batch."""
+
+    def __init__(self, decisions, missing_slots):
+        super().__init__("Batch filter must return one valid decision per slot. "
+                         f"Missing decisions for slots {missing_slots}.")
+        self.decisions = decisions
+        self.missing_slots = missing_slots
+
+
+def valid_filter_decision(decision):
+    return (isinstance(decision, dict) and type(decision.get("slot")) is int
+            and decision.get("status") in ("unknown", "already_known", "unsupported", "ambiguous")
+            and isinstance(decision.get("reason"), str) and bool(decision["reason"].strip()))
+
+
+def exclude_missing_filter_decisions(result, missing_slots):
+    """Represent omissions as exclusions so every proposal has a pipeline verdict."""
+    exclusions = [{"slot": slot, "status": "ambiguous",
+                   "reason": "Missing model decision; excluded."} for slot in missing_slots]
+    return {**result, "decisions": [*result["decisions"], *exclusions], "omitted_slots": missing_slots}
 
 
 class AgentChat:
@@ -75,6 +125,7 @@ class AgentChat:
     def __init__(self, transport, settings):
         """Keep the transport separate from target-aware answer generation and metric logging."""
         self.transport, self.settings = transport, settings
+        self.filter_retries = 0
         self.audit, self.calls, self.sampling_context = [], 0, ""
         self.critique_retry_used = False
         self.proposal_regeneration_used = False
@@ -82,6 +133,7 @@ class AgentChat:
     def begin(self, record, interaction):
         """Seed proposals by confirmed context, independent of critique/no-critique condition."""
         self.calls, self.audit = 0, []
+        self.filter_retries = 0
         self.critique_retry_used = False
         self.proposal_regeneration_used = False
         self.sampling_context = signature({"record": record, "interaction": interaction})
@@ -89,8 +141,8 @@ class AgentChat:
 
     @property
     def extra_call_allowance(self):
-        """One reviewer retry and one extra three-agent/filter pass, only when used."""
-        return (int(self.critique_retry_used)
+        """Reserve calls for bounded retries and one extra proposal pass when used."""
+        return (self.filter_retries + int(self.critique_retry_used)
                 + (len(ROLES) + 1) * int(self.proposal_regeneration_used))
 
     def begin_proposal_regeneration(self):
@@ -121,13 +173,13 @@ class AgentChat:
         item = {"stage": stage, "role": role, "payload": payload, "response": text}
         self.audit.append(item)
         if choice.get("finish_reason") == "length":
-            raise ValueError("Agent output hit the token cap; increase settings explicitly, not silently.")
+            raise InvalidAgentOutput("Agent output hit the token cap; increase settings explicitly, not silently.")
         try:
             result = json.loads(text)
         except (ValueError, TypeError) as error:
-            raise ValueError(f"Invalid JSON in {role}/{stage}; no automatic repair loop.") from error
+            raise InvalidAgentOutput(f"Invalid JSON in {role}/{stage}; no automatic repair loop.") from error
         if not isinstance(result, dict):
-            raise ValueError("Agent output must be one JSON object.")
+            raise InvalidAgentOutput("Agent output must be one JSON object.")
         if stage == "propose_batch":
             proposals = result.get("proposals")
             if (not isinstance(proposals, list) or len(proposals) > payload["question_count"]
@@ -141,24 +193,29 @@ class AgentChat:
         if stage == "filter_batch":
             decisions = result.get("decisions")
             expected = {p["slot"] for p in payload["proposals"]}
-            if (not isinstance(decisions, list)
-                    or any(not isinstance(d, dict) or type(d.get("slot")) is not int
-                           or d.get("status") not in ("unknown", "already_known", "unsupported", "ambiguous")
-                           or not isinstance(d.get("reason"), str) or not d["reason"].strip()
-                           for d in decisions)
-                    or len({d["slot"] for d in decisions}) != len(decisions)
-                    or not {d["slot"] for d in decisions}.issubset(expected)):
-                raise ValueError("Batch filter must return one valid decision per slot.")
+            if not isinstance(decisions, list):
+                raise InvalidAgentOutput("Batch filter must return one valid decision per slot.")
+            if payload.get("filter_retry") == "unreadable":
+                slots = Counter(d["slot"] for d in decisions
+                                if isinstance(d, dict) and type(d.get("slot")) is int)
+                valid = [d for d in decisions if valid_filter_decision(d)
+                         and d["slot"] in expected and slots[d["slot"]] == 1]
+                if len(valid) != len(decisions):
+                    item["discarded_decisions"] = len(decisions) - len(valid)
+                decisions = valid
+                result = {"decisions": decisions}
+            elif (not all(valid_filter_decision(d) for d in decisions)
+                  or len({d["slot"] for d in decisions}) != len(decisions)
+                  or not {d["slot"] for d in decisions}.issubset(expected)):
+                raise InvalidAgentOutput("Batch filter must return one valid decision per slot.")
             missing = sorted(expected - {d["slot"] for d in decisions})
-            if missing and not self.settings.exclude_unjudged:
-                raise ValueError("Batch filter must return one valid decision per slot.")
             if missing:
-                # Fail closed per omitted question: do not invent a model judgement or retry.
                 item["filter_omissions"] = missing
-                decisions = decisions + [{"slot": slot, "status": "ambiguous",
-                    "reason": "Missing model decision; excluded without retry."} for slot in missing]
-            result = {**result, "decisions": decisions, "omitted_slots": missing}
-            return result
+                if not self.settings.exclude_unjudged and "filter_retry" not in payload:
+                    error = IncompleteFilterDecisions(decisions, missing)
+                    item["validation_error"] = str(error)
+                    raise error
+            return exclude_missing_filter_decisions(result, missing)
         if stage == "critique":
             slot = result.get("slot")
             reason = result.get("reason")
@@ -166,10 +223,40 @@ class AgentChat:
             if type(slot) is not int or slot not in valid_slots:
                 item["validation_error"] = f"Slot {slot!r} is not in eligible slots {valid_slots}."
                 raise InvalidCritiqueSelection("Critique must choose one eligible proposal slot.")
-            if not isinstance(reason, str) or not reason.strip():
-                raise ValueError("Critique must give a nonempty selection reason.")
-            return result
+            if reason is not None and not isinstance(reason, str):
+                raise InvalidAgentOutput("Critique reason must be text when supplied.")
+            if not reason or not reason.strip():
+                item["reason_missing"] = True
+                reason = None
+            return {"slot": slot, "reason": reason}
         raise ValueError(f"Unsupported agent stage: {stage}")
+
+    def filter_proposals(self, payload, *, retry_invalid=False):
+        """Keep valid verdicts and retry only unjudged slots, once per batch."""
+        retry_mode = True
+        try:
+            return self.complete("filter_batch", "full", payload)
+        except IncompleteFilterDecisions as error:
+            initial_decisions = error.decisions
+            missing_slots = error.missing_slots
+        except InvalidAgentOutput as error:
+            if not retry_invalid:
+                raise
+            self.audit[-1]["validation_error"] = str(error)
+            initial_decisions = []
+            missing_slots = [proposal["slot"] for proposal in payload["proposals"]]
+            retry_mode = "unreadable"
+
+        self.filter_retries += 1
+        retry_payload = {**payload, "filter_retry": retry_mode, "proposals": [
+            proposal for proposal in payload["proposals"] if proposal["slot"] in missing_slots
+        ]}
+        try:
+            retry = self.complete("filter_batch", "full", retry_payload)
+        except InvalidAgentOutput as error:
+            self.audit[-1]["validation_error"] = str(error)
+            return exclude_missing_filter_decisions({"decisions": initial_decisions}, missing_slots)
+        return {**retry, "decisions": [*initial_decisions, *retry["decisions"]]}
 
     def retry_critique(self, payload):
         """Allow exactly one extra reviewer call, preserving the normal rewrite budget."""
@@ -311,12 +398,13 @@ def unique_proposals(proposals):
 
 
 def choose_critique_question(chat, payload):
-    """Retry an invalid slot once; retain both responses and skip after two failures."""
+    """Retry an unusable selection once and save both attempts."""
     attempts = []
     valid_slots = [proposal["slot"] for proposal in payload["proposals"]]
     retry_instruction = (
         "Your previous selection was invalid. Choose only from these eligible slots. "
-        "Context is for judging the choices, not for supplying another question."
+        "Context is for judging the choices, not for supplying another question. "
+        "Return one JSON object with slot and reason."
     )
     for attempt in range(2):
         request = payload if attempt == 0 else {
@@ -328,26 +416,29 @@ def choose_critique_question(chat, payload):
         try:
             decision = (chat.complete("critique", "full", request) if attempt == 0
                         else chat.retry_critique(request))
-        except InvalidCritiqueSelection as error:
+        except InvalidAgentOutput as error:
+            chat.audit[-1].setdefault("validation_error", str(error))
             attempts.append({"attempt": attempt + 1, "valid_slots": valid_slots,
                              "response": chat.audit[-1]["response"],
                              "valid": False, "error": str(error)})
         else:
             attempts.append({"attempt": attempt + 1, "valid_slots": valid_slots,
-                             "response": chat.audit[-1]["response"], "valid": True})
+                             "response": chat.audit[-1]["response"], "valid": True,
+                             "reason_missing": decision["reason"] is None})
             return decision, attempts
-    print("Critique returned invalid slots twice; skipping this interaction.", flush=True)
+    print("Critique gave no usable selection after one retry; skipping this interaction.", flush=True)
     return None, attempts
 
 
-def generate_and_filter_proposals(chat, record, neutral, shared, prior_attempts, *, generation_attempt):
+def generate_and_filter_proposals(chat, record, neutral, shared, prior_attempts, *,
+                                  generation_attempt, current_rejections=()):
     """Generate one pool and apply identical prechecks, deduplication, and model filtering."""
     batches, attempts, eligible, pending = {}, [], [], []
     omitted_slots = []
     # Only previously rejected questions are blocked. A useful unselected question
     # may still be useful next round; it has not been answered or confirmed.
-    blocked = {question_key(p["question"]): p for p in prior_attempts
-               if isinstance(p.get("question"), str)}
+    blocked = {question_key(p["question"]): p for p in (*prior_attempts, *current_rejections)}
+    prompt_feedback = prompt_rejection_feedback(prior_attempts, record, current_rejections)
     seen = {}
     roles = list(ROLES)
     for role in roles:
@@ -355,7 +446,7 @@ def generate_and_filter_proposals(chat, record, neutral, shared, prior_attempts,
             "agent_role": role, "generation_attempt": generation_attempt,
             "batch_id": roles.index(role),
             "candidates": shared["captions"], "question_count": chat.settings.questions_per_agent,
-            "attempted_proposals": list(prior_attempts)})
+            "attempted_proposals": prompt_feedback})
     # Finish all independent searches before any question-pool filtering/review.
     for role in roles:
         batch = batches[role]
@@ -377,18 +468,18 @@ def generate_and_filter_proposals(chat, record, neutral, shared, prior_attempts,
                 pending.append(item)
     if pending:
         # Globally unique filter slots prevent role-local slots (0..4) colliding.
-        filter_result = chat.complete("filter_batch", "full", {"record": record,
+        filter_result = chat.filter_proposals({"record": record,
             "proposals": [{"question":item["proposal"]["question"],
                            "evidence_ids":item["proposal"]["evidence_ids"], "slot":slot}
                           for slot,item in enumerate(pending)],
-            "candidates": shared["captions"]})
+            "candidates": shared["captions"]}, retry_invalid=True)
         decisions = filter_result["decisions"]
         omitted_slots = filter_result["omitted_slots"]
         by_slot = {d["slot"]: d for d in decisions}
         for slot, item in enumerate(pending):
             decision = by_slot[slot]
             item["filter"] = {"status": decision["status"], "reason": decision["reason"]}
-            if chat.settings.exclude_unjudged:
+            if chat.settings.exclude_unjudged or slot in omitted_slots:
                 item["filter"]["model_omitted"] = slot in omitted_slots
             if decision["status"] == "unknown":
                 eligible.append(item["proposal"])
@@ -408,26 +499,25 @@ def question_round(chat, context, record, neutral, interaction, *, critique, pri
     """
     shared = context.candidates(neutral, interaction, "shared", record)
     generation_attempts = []
-    feedback = list(prior_attempts)
+    rejected = {}
     for generation_attempt in range(2):
         if generation_attempt:
             chat.begin_proposal_regeneration()
         pool = generate_and_filter_proposals(
-            chat, record, neutral, shared, feedback, generation_attempt=generation_attempt,
+            chat, record, neutral, shared, prior_attempts, generation_attempt=generation_attempt,
+            current_rejections=rejected.values(),
         )
         generation_attempts.append(pool)
         final = pool["eligible_proposals"]
-        if final:
+        if final or generation_attempt:
             break
-        # Explain all first-pool rejections; the next pass still applies the same rules.
-        rejected = {}
+        # Explain all first-pool rejections before generating a fresh batch.
         for item in pool["attempts"]:
             proposal = item["proposal"]
             gate = item.get("effective_filter", item["filter"])
             rejected[question_key(proposal["question"])] = {
                 "question": proposal["question"], "reason": gate["reason"],
             }
-        feedback = [*prior_attempts, *rejected.values()]
     attempts = [item for pool in generation_attempts for item in pool["attempts"]]
     omitted_slots = [slot for pool in generation_attempts for slot in pool["filter_omitted_slots"]]
     decision = None
@@ -508,10 +598,9 @@ def generate_agent_dialogue(retriever, *, initial_caption, target_id, image_path
             neutral = state["states"][-1]["query"]
             chat.begin(record, interaction)
             transport_start = len(questioner.records)
-            prior_attempts = list({question_key(entry["question"]):
-                                  {"question": entry["question"], "reason": entry["reason"]}
-                for previous in state["states"][1:]
-                for entry in previous["audit"]["question_memory"] if entry["blocked"]}.values())
+            prior_attempts = [{"question": entry["question"], "reason": entry["reason"]}
+                              for previous in state["states"][1:]
+                              for entry in previous["audit"]["question_memory"] if entry["blocked"]]
             audit = build_round(chat, context, record, neutral, interaction,
                                    critique=critique, prior_attempts=prior_attempts)
             question, answer = audit["selected_question"], None
@@ -620,15 +709,17 @@ def prepare_agent_experiment(root, retriever, pairs, *, n_states, settings, devi
     finally:
         questioner.park()
         answerer.park()
-    from .agent_prompts import EXAMPLES, QA_GROUNDING_EXAMPLE, SHARED, TASKS
+    from .agent_prompts import EXAMPLES, QA_GROUNDING_EXAMPLE, REVIEW_EXAMPLES, SHARED, TASKS
     return PreparedExperiment(methods=methods,
         metadata={"run_name": run_name, "settings": asdict(settings), "checkpoint_folder": str(folder),
                   "condition_wall_seconds": elapsed, "answerer": answerer_identity,
                   "rewrite_policy": REWRITE_POLICY,
                   "proposal_policy": PROPOSAL_POLICY,
+                  "prompt_rejection_limit": PROMPT_REJECTION_LIMIT,
+                  "filter_retry": "Retry omitted slots or an unreadable batch once, then exclude unjudged proposals.",
                   "proposal_regeneration": "One extra three-agent/filter pass only if no eligible questions remain.",
                   "critique_selection_policy": CRITIQUE_POLICY,
-                  "critique_retry": "One extra call for an invalid eligible slot; skip after two invalid selections.",
+                  "critique_retry": "Retry an unusable selection once; keep an eligible slot without a rationale.",
                   "rewrite_source": provenance(),
                   "answer_input": "current description + '. ' + selected question (same as live PlugIR)",
                   "rewrite_calls": "Original reconstruction; one extra paraphrase call allowed if unchanged.",
@@ -641,6 +732,7 @@ def prepare_agent_experiment(root, retriever, pairs, *, n_states, settings, devi
         artifacts={"agent_dialogues.json": conversations,
                    "prompt_pack.json": {"version": PROMPT_VERSION, "roles": ROLES,
                                         "examples": EXAMPLES,
+                                        "review_examples": REVIEW_EXAMPLES,
                                         "qa_grounding_example": QA_GROUNDING_EXAMPLE,
                                         "shared": SHARED,
                                         "tasks": TASKS,

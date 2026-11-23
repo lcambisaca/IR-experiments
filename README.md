@@ -4,7 +4,10 @@ Interactive text-to-image retrieval experiments built on **PlugIR**. A user star
 with a caption, a questioner asks about the target image, a simulated user answers,
 and the dialogue is turned into a search over **50,000 images** (BLIP
 `blip-itm-large-coco`). Every method uses the same models (Qwen3-4B-Instruct-2507
-questioner/rewriter, BLIP-2 flan-t5-xl answerer), image pool and evaluator.
+questioner/rewriter and Qwen2.5-VL-3B answerer by default in the shared
+comparison), image pool and evaluator. The answerer receives the target photo,
+current search description, and selected question, following the input pattern
+in the [original PlugIR code](https://github.com/Saehyung-Lee/PlugIR/blob/main/generate_dialog.py#L561-L564).
 
 The repository contains:
 

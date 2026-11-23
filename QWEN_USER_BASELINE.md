@@ -24,9 +24,12 @@ goes down. Recall@10 checks only round t's own top 10.
 
 - `QwenVLAnswerer` in [src/agentir/live_models.py](src/agentir/live_models.py)
   - Same interface as `Blip2Answerer`, so the PlugIR loop is untouched.
-  - It sees **only the target photo and PlugIR's question**, never the dialogue or the captions.
+  - It receives the target photo, current search description, and selected question.
+    The description starts as the initial caption and is updated from the dialogue
+    after each answered question. The [original PlugIR code](https://github.com/Saehyung-Lee/PlugIR/blob/main/generate_dialog.py#L561-L564)
+    passes the same inputs to BLIP-2.
   - Decoding is greedy, at most 24 new tokens, with images up to 512×28×28 pixels.
-  - Answers are cached per (photo, question) in `answerer_calls/`.
+  - Answers are cached per (photo, description, question) in `answerer_calls/`.
   - Prompt (`QwenVLAnswerer.PROMPT`): answer in a short phrase with the specific detail asked for
     (a colour, a number, an object, a place). If the photo doesn't show it, say what is visible instead.
 - [src/agentir/live.py](src/agentir/live.py): `prepare_live_experiment(..., answerer="blip2" | "qwen_vl")`.
