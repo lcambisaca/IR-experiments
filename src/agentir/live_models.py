@@ -265,3 +265,74 @@ class VisionAnswerer:
                                                           "model": VLM_ID, "revision": self.revision,
                                                           "answer": answers[key]})
         return [answers[key] for key in keys]
+
+
+def target_answerer_spec(name):
+    """Return the target answerer, cache directory name and protocol identity."""
+    if name == "blip2":
+        return Blip2Answerer, "blip2_calls", [BLIP2_ID, BLIP2_REVISION]
+    if name == "qwen_vl":
+        return QwenVLAnswerer, "answerer_calls", list(QwenVLAnswerer.IDENTITY)
+    raise ValueError("answerer must be blip2 or qwen_vl")
+
+
+class QwenVLAnswerer:
+    """Simulated user played by Qwen2.5-VL-3B instead of BLIP-2 (Matan, Nov 19 meeting).
+    Sees only the target photo and PlugIR's question, never the dialogue or captions.
+    Same interface as Blip2Answerer; answers cached per (photo, question).
+    """
+    MAX_PIXELS = 512 * 28 * 28  # More detail than the agent's candidate-photo view.
+    PROMPT = ("You are looking at the photo you have in mind and answering a question about it. "
+              "Answer in a short phrase with the specific detail asked for (for example a colour, "
+              "a number, an object or a place). If the photo does not show it, say what is visible instead.\n"
+              "Question: {question}")
+    IDENTITY = (VLM_ID, MAX_PIXELS, "qwen_answerer_v1")
+
+    def __init__(self, folder, *, device="cuda", offline=False):
+        self.device = require_cuda(device)
+        self.folder, self.offline = Path(folder), offline
+        self.model = self.processor = None
+        self.records = []
+
+    def _activate(self):
+        if self.model is None:
+            from huggingface_hub import snapshot_download
+            from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
+            print(f"Loading {VLM_ID} as the simulated user.", flush=True)
+            local = snapshot_download(VLM_ID, local_files_only=self.offline)
+            self.processor = AutoProcessor.from_pretrained(local, max_pixels=self.MAX_PIXELS)
+            self.model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
+                local, torch_dtype=torch.bfloat16, low_cpu_mem_usage=True).eval()
+        self.model.to(self.device)
+
+    def park(self):
+        if self.model is not None:
+            self.model.to("cpu")
+            gc.collect()
+            torch.cuda.empty_cache()
+
+    def answer_original(self, original_function, image_path, query):
+        """Ignore BLIP-2's helper; answer PlugIR's question about the target with Qwen2.5-VL (greedy)."""
+        from PIL import Image
+        request = {"image_sha256": digest(image_path), "query": query, "identity": list(self.IDENTITY),
+                   "prompt": self.PROMPT}
+        path = self.folder / (signature(request) + ".json")
+        if path.is_file():
+            record = read_json(path)
+            reused = True
+        else:
+            self._activate()
+            messages = [{"role": "user", "content": [{"type": "image"},
+                         {"type": "text", "text": self.PROMPT.format(question=query)}]}]
+            text = self.processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+            inputs = self.processor(text=[text], images=[Image.open(image_path).convert("RGB")],
+                                    return_tensors="pt").to(self.device)
+            with torch.inference_mode():
+                output = self.model.generate(**inputs, max_new_tokens=24, do_sample=False)
+            answer = self.processor.batch_decode(output[:, inputs["input_ids"].shape[1]:],
+                                                 skip_special_tokens=True)[0].strip().rstrip(".")
+            record = {"request": request, "answer": answer}
+            save_json(path, record)
+            reused = False
+        self.records.append({**record, "reused": reused})
+        return record["answer"]

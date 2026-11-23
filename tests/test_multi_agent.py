@@ -431,14 +431,15 @@ def test_specialist_prompts_share_grounding_and_demonstrate_different_questions(
         assert ROLES[role] in messages_for('propose_batch',role,{})[0]['content']
 
 
-def test_prepared_experiment_runs_both_modes_and_exports_dialogues(agent_case, tmp_path, monkeypatch):
+@pytest.mark.parametrize("answerer_name", ["blip2", "qwen_vl"])
+def test_prepared_experiment_runs_both_modes_and_exports_dialogues(agent_case, tmp_path, monkeypatch, answerer_name):
     """Exercise model wiring, actual prepared callbacks, audit CSVs and common metrics offline."""
     import importlib.metadata
     import agentir.live_models as models
     import sys
     from types import SimpleNamespace
     from agentir.multagent_experiment.multi_agent import prepare_agent_experiment
-    root = tmp_path.parent / 'agent_project'
+    root = tmp_path.parent / ('agent_' + answerer_name)
     root.mkdir()
     paths = ('src/agentir/multagent_experiment/multi_agent.py', 'src/agentir/multagent_experiment/agent_prompts.py', 'src/agentir/live_models.py',
              'src/agentir/plugir_upstream.py', 'src/agentir/retrieval.py')
@@ -452,7 +453,11 @@ def test_prepared_experiment_runs_both_modes_and_exports_dialogues(agent_case, t
     answerer = ScriptedAnswerer(qwen)
     monkeypatch.setattr(models,'require_cuda',lambda device: device)
     monkeypatch.setattr(models,'Qwen3',lambda *args,**kwargs: qwen)
-    monkeypatch.setattr(models,'Blip2Answerer',lambda *args,**kwargs: answerer)
+    def make_answerer(*args, **kwargs):
+        return answerer
+    make_answerer.IDENTITY = models.QwenVLAnswerer.IDENTITY
+    model_name = "QwenVLAnswerer" if answerer_name == "qwen_vl" else "Blip2Answerer"
+    monkeypatch.setattr(models, model_name, make_answerer)
     monkeypatch.setattr(torch.cuda,'get_device_name',lambda *args:'test GPU')
     original_find = importlib.util.find_spec
     extras = ('accelerate','sentencepiece','fast_pytorch_kmeans','psutil')
@@ -465,7 +470,7 @@ def test_prepared_experiment_runs_both_modes_and_exports_dialogues(agent_case, t
     pairs = [({'img':target,'dialog':['a room','HUMAN_SECRET','FUTURE_SECRET']},
               {'img':target,'dialog':['a room','saved one','saved two']})]
     bundle = prepare_agent_experiment(root,agent_case['retriever'],pairs,n_states=3,
-        settings=agent_case['settings'],candidate_captions='catalogue.json')
+        settings=agent_case['settings'],candidate_captions='catalogue.json', answerer=answerer_name)
     assert set(bundle.methods) == {'agents_critique','agents_no_critique'}
     result = evaluate_experiments(agent_case['retriever'],pairs,bundle.methods,rounds=3,ks=[1,10])
     assert 'agents_critique' in result['summary'] and 'agents_no_critique' in result['summary']

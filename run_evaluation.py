@@ -48,6 +48,7 @@ USE_PILOT_TARGETS = True  # True: cake and giraffe; False: START_TARGET and N_TA
 
 LIVE_DEVICE = "cuda"       # Qwen/BLIP-2 generation GPU; DEVICE above controls BLIP retrieval.
 SEARCH = "rewrite"         # "rewrite" = original PlugIR search; "facts" = fact fusion inside the live loop (facts_e2e.py).
+ANSWERER = "qwen_vl"         # Simulated user: "blip2" = PlugIR's; "qwen_vl" = Qwen2.5-VL-3B (new baseline, see QWEN_USER_BASELINE.md).
 SELECTION = "plugir_kl"    # "plugir_kl" = original PlugIR question choice; "probe_vlm" = answer-entropy agent (probe_agent.py).
 MAX_INPUT_TOKENS = 8192    # Stop rather than silently truncate older Qwen dialogue.
 
@@ -69,7 +70,7 @@ LIVE = LiveSettings(
 
 def generation_options(offline):
     """Keep model device, input limit, captions, and target-image handling shared."""
-    return dict(device=LIVE_DEVICE, offline=offline, max_input_tokens=MAX_INPUT_TOKENS,
+    return dict(device=LIVE_DEVICE, offline=offline, answerer=ANSWERER, max_input_tokens=MAX_INPUT_TOKENS,
         candidate_captions=CANDIDATE_CAPTIONS, image_root=IMAGE_ROOT,
         image_archive=IMAGE_ARCHIVE, download_missing=DOWNLOAD_MISSING_TARGETS)
 
@@ -77,8 +78,8 @@ def generation_options(offline):
 def prepare_qwen_live(root, retriever, pairs, *, n_states, offline):
     """Generate live PlugIR; keep raw dialogue in artifacts without an extra scoring pass."""
     from agentir.live import prepare_live_experiment
-    prepared = prepare_live_experiment(root, retriever, pairs, n_states=n_states,
-        settings=LIVE, search=SEARCH, selection=SELECTION, **generation_options(offline))
+    prepared = prepare_live_experiment(root, retriever, pairs, n_states=n_states, settings=LIVE,
+        search=SEARCH, selection=SELECTION, **generation_options(offline))
     prepared.methods.pop("live_raw_same_dialogue", None)
     return prepared
 
@@ -91,7 +92,6 @@ def prepare_multi_agent_baseline(root, retriever, pairs, *, n_states, offline):
 def prepare_multi_agent_debate(root, retriever, pairs, *, n_states, offline):
     return prepare_debate_experiment(root, retriever, pairs, n_states=n_states,
                                      **generation_options(offline))
-
 
 def collect_experiments(root, retriever, pairs, *, n_states=None):
     """Prepare enabled experiments and collect their search functions and outputs."""
@@ -176,6 +176,7 @@ def main():
         "input_sha256": {name: digest(paths[name]) for name in
                          ("baseline_queries", "supplied_queries", "manifest")},
         "runner_sha256": digest(Path(__file__)),
+        "answerer": ANSWERER,
         "target_selection": "pilot" if USE_PILOT_TARGETS else "range",
         "selected_target_start": None if USE_PILOT_TARGETS else START_TARGET,
         "selected_target_images": [raw["img"] for raw, _ in pairs],

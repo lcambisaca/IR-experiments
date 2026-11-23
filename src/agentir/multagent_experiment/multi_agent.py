@@ -568,11 +568,11 @@ def generate_agent_dialogue(retriever, *, initial_caption, target_id, image_path
 def prepare_agent_experiment(root, retriever, pairs, *, n_states, settings, device="cuda", offline=False,
         candidate_captions="assets/protocol/visdial_captions.json", image_root="data/images",
         image_archive=None, download_missing=True, max_input_tokens=8192,
-        modes=(False, True), run_name="shared_agents_simple_v1"):
+        modes=(False, True), run_name="shared_agents_simple_v1", answerer="blip2"):
     """Prepare both conditions for run_evaluation.py using identical initial targets and cached images."""
     import importlib.util
     from ..evaluation import PreparedExperiment
-    from ..live_models import Qwen3, Blip2Answerer, require_cuda
+    from ..live_models import Qwen3, require_cuda, target_answerer_spec
     require_cuda(device)
     settings.validate(len(retriever.cache.paths), n_states)
     if not pairs or len(pairs) > settings.max_targets:
@@ -592,9 +592,12 @@ def prepare_agent_experiment(root, retriever, pairs, *, n_states, settings, devi
     if not re.fullmatch(r"[A-Za-z0-9_-]+", run_name):
         raise ValueError("run_name must use only letters, digits, underscores or hyphens.")
     folder = root / "runs" / "three_agents" / run_name / REWRITE_POLICY / PROPOSAL_POLICY
+    answerer_class, cache_name, answerer_identity = target_answerer_spec(answerer)
+    if answerer != "blip2":
+        folder = folder / (answerer + "_" + signature(answerer_identity)[:12])
     questioner = Qwen3(folder / "qwen_calls", device=device, offline=offline,
                        max_input_tokens=max_input_tokens, seed=settings.seed, max_output_tokens=1024)
-    answerer = Blip2Answerer(folder / "blip2_calls", device=device, offline=offline)
+    answerer = answerer_class(folder / cache_name, device=device, offline=offline)
     target_ids = {name: i for i, name in enumerate(retriever.cache.paths)}
     conversations, methods, elapsed = {}, {}, {}
     try:
@@ -620,7 +623,7 @@ def prepare_agent_experiment(root, retriever, pairs, *, n_states, settings, devi
     from .agent_prompts import EXAMPLES, QA_GROUNDING_EXAMPLE, SHARED, TASKS
     return PreparedExperiment(methods=methods,
         metadata={"run_name": run_name, "settings": asdict(settings), "checkpoint_folder": str(folder),
-                  "condition_wall_seconds": elapsed,
+                  "condition_wall_seconds": elapsed, "answerer": answerer_identity,
                   "rewrite_policy": REWRITE_POLICY,
                   "proposal_policy": PROPOSAL_POLICY,
                   "proposal_regeneration": "One extra three-agent/filter pass only if no eligible questions remain.",

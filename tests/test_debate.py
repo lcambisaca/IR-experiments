@@ -220,7 +220,8 @@ def test_debate_rejects_insufficient_budget_before_calls(agent_case,tmp_path):
             checkpoint_path=tmp_path/'budget.json')
 
 
-def test_prepared_debate_exports_transcript_and_metrics(agent_case,tmp_path,monkeypatch):
+@pytest.mark.parametrize("answerer_name", ["blip2", "qwen_vl"])
+def test_prepared_debate_exports_transcript_and_metrics(agent_case,tmp_path,monkeypatch, answerer_name):
     import agentir.live_models as models
     root=tmp_path/'project'
     root.mkdir()
@@ -230,7 +231,11 @@ def test_prepared_debate_exports_transcript_and_metrics(agent_case,tmp_path,monk
     answerer=ScriptedAnswerer(qwen)
     monkeypatch.setattr(models,'require_cuda',lambda device:device)
     monkeypatch.setattr(models,'Qwen3',lambda *args,**kwargs:qwen)
-    monkeypatch.setattr(models,'Blip2Answerer',lambda *args,**kwargs:answerer)
+    def make_answerer(*args, **kwargs):
+        return answerer
+    make_answerer.IDENTITY = models.QwenVLAnswerer.IDENTITY
+    model_name = "QwenVLAnswerer" if answerer_name == "qwen_vl" else "Blip2Answerer"
+    monkeypatch.setattr(models, model_name, make_answerer)
     monkeypatch.setattr(debate,'resolve_target_image',lambda *args,**kwargs:agent_case['image_path'])
     original=importlib.util.find_spec
     extras=('accelerate','sentencepiece','fast_pytorch_kmeans','psutil')
@@ -240,7 +245,7 @@ def test_prepared_debate_exports_transcript_and_metrics(agent_case,tmp_path,monk
     pairs=[({'img':target,'dialog':['a room','HUMAN_SECRET','FUTURE_SECRET']},
             {'img':target,'dialog':['a room','saved one','saved two']})]
     prepared=debate.prepare_debate_experiment(root,agent_case['retriever'],pairs,n_states=3,
-        settings=replace(agent_case['settings'],max_calls_per_round=14),candidate_captions='catalogue.json')
+        settings=replace(agent_case['settings'],max_calls_per_round=14),candidate_captions='catalogue.json', answerer=answerer_name)
     assert set(prepared.methods)=={'agents_debate'}
     conversations=prepared.artifacts['debate_dialogues.json']
     assert len(conversations)==1 and len(conversations[0]['states'])==3

@@ -35,5 +35,7 @@ runner.USE_PILOT_TARGETS = False
 runner.INCLUDE_SAVED_REFERENCES = False
 runner.SEARCH, runner.SELECTION = args.search, args.selection
 agent = "" if args.selection == "plugir_kl" else f"{args.selection}_"
+runner.SEARCH, runner.SELECTION, runner.ANSWERER = args.search, args.selection, args.answerer
+agent = ("" if args.selection == "plugir_kl" else f"{args.selection}_") + ("" if args.answerer == "blip2" else "qwenuser_")
 runner.RUN_LABEL = f"plugir_live_{agent}{args.search}_{args.start + 1}_{args.start + args.targets}"
 runner.main()

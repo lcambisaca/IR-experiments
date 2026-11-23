@@ -190,11 +190,10 @@ def generate_debate_dialogue(*args, settings, **kwargs):
 def prepare_debate_experiment(root, retriever, pairs, *, n_states, offline=False, settings=None,
         device="cuda", candidate_captions="assets/protocol/visdial_captions.json",
         image_root="data/images", image_archive=None, download_missing=True,
-        max_input_tokens=8192, run_name="shared_agents_debate_v1"):
+        max_input_tokens=8192, run_name="shared_agents_debate_v1", answerer="blip2"):
     """Prepare an independent debate condition for the common evaluator and shared targets."""
     from .setup import AGENTS
-    from ..live_models import (Qwen3, Blip2Answerer, require_cuda,
-                               QWEN_ID, QWEN_REVISION, BLIP2_ID, BLIP2_REVISION)
+    from ..live_models import Qwen3, QWEN_ID, QWEN_REVISION, require_cuda, target_answerer_spec
     require_cuda(device)
     if settings is None:
         settings = replace(AGENTS, max_calls_per_round=MAX_CALLS_PER_ROUND,
@@ -215,10 +214,11 @@ def prepare_debate_experiment(root, retriever, pairs, *, n_states, offline=False
     catalogue_path = root / candidate_captions
     catalogue = load_candidate_captions(catalogue_path, retriever.cache.paths)
     source_dir = Path(__file__).resolve().parent
+    answerer_class, cache_name, answerer_identity = target_answerer_spec(answerer)
     identity = {"method": "agents_debate", "policy": DEBATE_POLICY, "rewrite_policy": REWRITE_POLICY,
                 "settings": asdict(settings), "discussion_rounds": DISCUSSION_ROUNDS,
                 "filter_prompt_version": FILTER_PROMPT_VERSION, "max_input_tokens": max_input_tokens,
-                "qwen": [QWEN_ID, QWEN_REVISION], "answerer": [BLIP2_ID, BLIP2_REVISION],
+                "qwen": [QWEN_ID, QWEN_REVISION], "answerer": answerer_identity,
                 "cache": retriever.cache.report, "pool_sha256": signature(retriever.cache.paths),
                 "catalogue_sha256": digest(catalogue_path), "upstream": provenance(),
                 "sources": {name: digest(source_dir / name) for name in
@@ -226,7 +226,7 @@ def prepare_debate_experiment(root, retriever, pairs, *, n_states, offline=False
     folder = root / "runs" / "three_agents_debate" / run_name / signature(identity)[:20]
     questioner = Qwen3(folder / "qwen_calls", device=device, offline=offline,
                        max_input_tokens=max_input_tokens, seed=settings.seed, max_output_tokens=1024)
-    answerer = Blip2Answerer(folder / "blip2_calls", device=device, offline=offline)
+    answerer = answerer_class(folder / cache_name, device=device, offline=offline)
     target_ids = {name: index for index, name in enumerate(retriever.cache.paths)}
     conversations = []
     started = time.perf_counter()
