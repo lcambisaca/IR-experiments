@@ -288,9 +288,10 @@ class QwenVLAnswerer:
               "Question: {question}")
     IDENTITY = (VLM_ID, MAX_PIXELS, "qwen_answerer_v1")
 
-    def __init__(self, folder, *, device="cuda", offline=False):
+    def __init__(self, folder, *, device="cuda", offline=False, revision=None):
         self.device = require_cuda(device)
         self.folder, self.offline = Path(folder), offline
+        self.revision = revision
         self.model = self.processor = None
         self.records = []
 
@@ -299,7 +300,7 @@ class QwenVLAnswerer:
             from huggingface_hub import snapshot_download
             from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
             print(f"Loading {VLM_ID} as the simulated user.", flush=True)
-            local = snapshot_download(VLM_ID, local_files_only=self.offline)
+            local = snapshot_download(VLM_ID, revision=self.revision, local_files_only=self.offline)
             self.processor = AutoProcessor.from_pretrained(local, max_pixels=self.MAX_PIXELS)
             self.model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
                 local, torch_dtype=torch.bfloat16, low_cpu_mem_usage=True).eval()
@@ -316,6 +317,8 @@ class QwenVLAnswerer:
         from PIL import Image
         request = {"image_sha256": digest(image_path), "query": query, "identity": list(self.IDENTITY),
                    "prompt": self.PROMPT}
+        if getattr(self, "revision", None) is not None:
+            request["revision"] = self.revision
         path = self.folder / (signature(request) + ".json")
         if path.is_file():
             record = read_json(path)

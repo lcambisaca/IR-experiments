@@ -33,8 +33,8 @@ OFFLINE = False       # True requires BLIP model files already on this machine.
 SEED = 42
 RUN_LABEL = "plugir_critique_debate"
 
-N_TARGETS = 32         # Set to 32 for our reference sample, or None for all 2,064.
-N_STATES = 11           # 1 = caption only; 11 = caption plus ten dialogue turns.
+N_TARGETS = 99         # Set to 32 for our reference sample, or None for all 2,064.
+N_STATES = 4           # 1 = caption only; 11 = caption plus ten dialogue turns.
 DEVICE = "cuda"        # Use "cuda" only with a working NVIDIA PyTorch setup.
 
 # Saved comparisons are optional; live methods use their own generated dialogue.
@@ -42,9 +42,9 @@ INCLUDE_SAVED_REFERENCES = False
 SAVED_REFERENCES = ("raw_dialogue",)  # Also available: "caption_only", "supplied_plugir".
 
 RUN_LIVE_PLUGIR = True
-RUN_MULTI_AGENT = True  # Independent specialists + one critique reviewer.
+RUN_MULTI_AGENT = False  # Independent specialists + one critique reviewer.
 RUN_MULTI_AGENT_DEBATE = True
-USE_PILOT_TARGETS = True  # True: cake and giraffe; False: START_TARGET and N_TARGETS.
+USE_PILOT_TARGETS = False  # True: cake and giraffe; False: START_TARGET and N_TARGETS.
 
 LIVE_DEVICE = "cuda"       # Qwen/BLIP-2 generation GPU; DEVICE above controls BLIP retrieval.
 SEARCH = "rewrite"         # "rewrite" = original PlugIR search; "facts" = fact fusion inside the live loop (facts_e2e.py).

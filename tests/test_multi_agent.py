@@ -182,10 +182,10 @@ def test_all_redundant_proposals_do_not_force_answer(agent_case, tmp_path):
         assert s['audit']['critique_decision'] is None
 
 
-def test_invalid_model_outputs_fail_closed(agent_case, tmp_path):
-    """Do not silently repair malformed model responses."""
+def test_min_kl_invalid_model_outputs_fail_closed(agent_case, tmp_path):
+    """The independent minimum-KL condition still rejects malformed output."""
     with pytest.raises(ValueError, match='Invalid JSON'):
-        run_case(agent_case, tmp_path / 'bad.json', transport=AgentTransport(malformed=True))
+        run_case(agent_case, tmp_path / 'bad.json', critique=False, transport=AgentTransport(malformed=True))
     saved = json.loads((tmp_path / 'bad.json').read_text())
     assert saved['status'] == 'interrupted' and not saved['dialogue']
 
@@ -542,6 +542,66 @@ def test_invalid_proposal_batch_fails_closed(result):
         'choices':[{'message':{'content':json.dumps(result)},'finish_reason':'stop'}]})
     with pytest.raises(ValueError):
         AgentChat(transport, AgentSettings()).complete('propose_batch','full',{'question_count':5})
+
+
+class MalformedSpecialists(AgentTransport):
+    def __init__(self, roles, *, fail_retry=False):
+        super().__init__()
+        self.roles = set(roles)
+        self.fail_retry = fail_retry
+        self.proposal_requests = []
+
+    def create(self, **kwargs):
+        response = super().create(**kwargs)
+        call = self.records[-1]
+        if call['stage'] == 'propose_batch':
+            payload = call['payload']
+            role = payload['agent_role']
+            retry = 'proposal_retry' in payload
+            self.proposal_requests.append((self.interaction, role, retry, kwargs['seed']))
+            if self.interaction == 0 and role in self.roles and (not retry or self.fail_retry):
+                response['choices'][0]['message']['content'] = '{invalid' if not retry else '{"proposals":[{}]}'
+        return response
+
+
+@pytest.mark.parametrize('role', ['full', 'attributes', 'relations'])
+def test_critique_repairs_each_specialist_once(agent_case, tmp_path, role):
+    transport = MalformedSpecialists([role])
+    state, _, answerer = run_case(agent_case, tmp_path/'repair.json', transport=transport, n_states=2)
+    round_state = state['states'][1]
+    assert state['status'] == 'complete' and answerer.model.calls == 1
+    assert round_state['audit']['proposal_retried_specialists'] == [role]
+    assert round_state['audit']['proposal_omitted_specialists'] == []
+    requests = [entry for entry in transport.proposal_requests if entry[1] == role]
+    assert [entry[2] for entry in requests] == [False, True]
+    assert requests[0][3] != requests[1][3]
+    assert len(transport.proposal_requests) == 4
+    assert {p['owner'] for p in round_state['audit']['before_critique']} == {'full', 'attributes', 'relations'}
+
+
+def test_critique_omits_persistently_malformed_specialist(agent_case, tmp_path):
+    transport = MalformedSpecialists(['attributes'], fail_retry=True)
+    path = tmp_path/'drop.json'
+    state, _, answerer = run_case(agent_case, path, transport=transport)
+    first = json.loads(path.read_text())['states'][1]
+    assert state['status'] == 'complete' and answerer.model.calls == 2
+    assert first['audit']['proposal_omitted_specialists'] == ['attributes']
+    assert [call['response'] for call in first['llm_audit']
+            if call.get('validation_error')] == ['{invalid', '{"proposals":[{}]}']
+    assert {p['owner'] for p in first['audit']['before_critique']} == {'full', 'relations'}
+    assert state['states'][2]['audit']['proposal_omitted_specialists'] == []
+
+
+def test_critique_skips_unusable_round_and_continues(agent_case, tmp_path):
+    transport = MalformedSpecialists(['full', 'attributes', 'relations'], fail_retry=True)
+    path = tmp_path/'skip.json'
+    state, _, answerer = run_case(agent_case, path, transport=transport)
+    assert state['status'] == 'complete' and answerer.model.calls == 1
+    initial, skipped, next_round = state['states']
+    assert skipped['skip_reason'] == 'no_eligible_questions'
+    assert skipped['query'] == initial['query'] and skipped['target_rank'] == initial['target_rank']
+    assert len([entry for entry in transport.proposal_requests if entry[0] == 0]) == 6
+    assert next_round['question'] and next_round['answer']
 
 
 @pytest.mark.parametrize('decisions', [[],

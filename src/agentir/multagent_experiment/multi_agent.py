@@ -27,7 +27,7 @@ from ..retrieval import ranks_for_targets
 
 
 REWRITE_POLICY = "plugir_original_rewrite_v1"
-CRITIQUE_POLICY = "reviewer_retry_once_v2"
+CRITIQUE_POLICY = "reviewer_retry_once_proposal_recovery_v3"
 PROPOSAL_POLICY = "multi_agent_history_v6"
 PROMPT_REJECTION_LIMIT = 10
 MAX_FEEDBACK_REASON_LENGTH = 120
@@ -129,6 +129,8 @@ class AgentChat:
         self.audit, self.calls, self.sampling_context = [], 0, ""
         self.critique_retry_used = False
         self.proposal_regeneration_used = False
+        self.proposal_retries = set()
+        self.dropped_specialists = set()
 
     def begin(self, record, interaction):
         """Seed proposals by confirmed context, independent of critique/no-critique condition."""
@@ -136,13 +138,15 @@ class AgentChat:
         self.filter_retries = 0
         self.critique_retry_used = False
         self.proposal_regeneration_used = False
+        self.proposal_retries.clear()
+        self.dropped_specialists.clear()
         self.sampling_context = signature({"record": record, "interaction": interaction})
         self.transport.begin_round(interaction, self.sampling_context)
 
     @property
     def extra_call_allowance(self):
         """Reserve calls for bounded retries and one extra proposal pass when used."""
-        return (self.filter_retries + int(self.critique_retry_used)
+        return (self.filter_retries + int(self.critique_retry_used) + len(self.proposal_retries)
                 + (len(ROLES) + 1) * int(self.proposal_regeneration_used))
 
     def begin_proposal_regeneration(self):
@@ -184,11 +188,11 @@ class AgentChat:
             proposals = result.get("proposals")
             if (not isinstance(proposals, list) or len(proposals) > payload["question_count"]
                     or any(not isinstance(p, dict) for p in proposals)):
-                raise ValueError("Invalid proposal batch or question count.")
+                raise InvalidAgentOutput("Invalid proposal batch or question count.")
             fields = ("question",)
             if any(any(not isinstance(p.get(k), str) or not p[k].strip() for k in fields)
                    or not isinstance(p.get("evidence_ids"), list) for p in proposals):
-                raise ValueError("Missing batch proposal fields.")
+                raise InvalidAgentOutput("Missing batch proposal fields.")
             return result
         if stage == "filter_batch":
             decisions = result.get("decisions")
@@ -230,6 +234,25 @@ class AgentChat:
                 reason = None
             return {"slot": slot, "reason": reason}
         raise ValueError(f"Unsupported agent stage: {stage}")
+
+    def critique_proposals(self, role, payload):
+        """Retry each malformed specialist at most once per round, then omit it."""
+        if role in self.dropped_specialists:
+            return {"proposals": []}
+        try:
+            return self.complete("propose_batch", role, payload)
+        except InvalidAgentOutput as error:
+            self.audit[-1]["validation_error"] = str(error)
+        if role not in self.proposal_retries:
+            self.proposal_retries.add(role)
+            retry = {**payload, "proposal_retry": self.audit[-1]["validation_error"]}
+            try:
+                return self.complete("propose_batch", role, retry)
+            except InvalidAgentOutput as error:
+                self.audit[-1]["validation_error"] = str(error)
+        self.dropped_specialists.add(role)
+        self.audit[-1]["specialist_omitted"] = True
+        return {"proposals": []}
 
     def filter_proposals(self, payload, *, retry_invalid=False):
         """Keep valid verdicts and retry only unjudged slots, once per batch."""
@@ -431,7 +454,7 @@ def choose_critique_question(chat, payload):
 
 
 def generate_and_filter_proposals(chat, record, neutral, shared, prior_attempts, *,
-                                  generation_attempt, current_rejections=()):
+                                  generation_attempt, critique, current_rejections=()):
     """Generate one pool and apply identical prechecks, deduplication, and model filtering."""
     batches, attempts, eligible, pending = {}, [], [], []
     omitted_slots = []
@@ -442,11 +465,13 @@ def generate_and_filter_proposals(chat, record, neutral, shared, prior_attempts,
     seen = {}
     roles = list(ROLES)
     for role in roles:
-        batches[role] = chat.complete("propose_batch", role, {"record": record, "query": neutral,
+        payload = {"record": record, "query": neutral,
             "agent_role": role, "generation_attempt": generation_attempt,
             "batch_id": roles.index(role),
             "candidates": shared["captions"], "question_count": chat.settings.questions_per_agent,
-            "attempted_proposals": prompt_feedback})
+            "attempted_proposals": prompt_feedback}
+        batches[role] = (chat.critique_proposals(role, payload) if critique
+                         else chat.complete("propose_batch", role, payload))
     # Finish all independent searches before any question-pool filtering/review.
     for role in roles:
         batch = batches[role]
@@ -505,11 +530,12 @@ def question_round(chat, context, record, neutral, interaction, *, critique, pri
             chat.begin_proposal_regeneration()
         pool = generate_and_filter_proposals(
             chat, record, neutral, shared, prior_attempts, generation_attempt=generation_attempt,
+            critique=critique,
             current_rejections=rejected.values(),
         )
         generation_attempts.append(pool)
         final = pool["eligible_proposals"]
-        if final or generation_attempt:
+        if final or generation_attempt or len(chat.dropped_specialists) == len(ROLES):
             break
         # Explain all first-pool rejections before generating a fresh batch.
         for item in pool["attempts"]:
@@ -553,6 +579,8 @@ def question_round(chat, context, record, neutral, interaction, *, critique, pri
                        "selected": key == selected_key})
     return {"shared_retrieval": shared, "role_preferences": dict(ROLES),
             "filter_omitted_slots": omitted_slots,
+            "proposal_retried_specialists": sorted(chat.proposal_retries),
+            "proposal_omitted_specialists": sorted(chat.dropped_specialists),
             "generation_attempts": generation_attempts,
             "proposal_regeneration_used": len(generation_attempts) == 2,
             "proposal_regeneration_recovered": len(generation_attempts) == 2 and bool(final),
@@ -569,9 +597,11 @@ def question_round(chat, context, record, neutral, interaction, *, critique, pri
 def generate_agent_dialogue(retriever, *, initial_caption, target_id, image_path, captions,
                             questioner, answerer, settings, n_states, checkpoint_path,
                             critique=True, _kmeans=None, round_builder=None,
-                            chat_class=AgentChat, method_policy=None):
+                            chat_class=AgentChat, method_policy=None, stop_at_rank=None):
     """Run/resume independent critique or no-critique histories; ranks never feed decisions."""
     settings.validate(len(retriever.cache.paths), n_states)
+    if stop_at_rank is not None and (type(stop_at_rank) is not int or stop_at_rank < 1):
+        raise ValueError("First-hit stopping requires a positive rank.")
     path = Path(checkpoint_path)
     context = RetrievalContext(retriever, captions, settings, kmeans=_kmeans)
     chat = chat_class(questioner, settings)
@@ -579,6 +609,8 @@ def generate_agent_dialogue(retriever, *, initial_caption, target_id, image_path
     proposal_policy = PROPOSAL_POLICY if round_builder is None else method_policy
     if path.is_file():
         state = read_json(path)
+        if state.get("stop_at_rank") != stop_at_rank:
+            raise ValueError("Checkpoint uses a different first-hit policy.")
         if state.get("rewrite_policy") != REWRITE_POLICY:
             raise ValueError("Checkpoint uses a different rewrite policy; use a fresh checkpoint path.")
         if state.get("method_policy") != method_policy:
@@ -591,9 +623,13 @@ def generate_agent_dialogue(retriever, *, initial_caption, target_id, image_path
         state = {"method_policy": method_policy, "rewrite_policy": REWRITE_POLICY, "proposal_policy": proposal_policy, "critique_policy": CRITIQUE_POLICY if critique else None, "target": retriever.cache.paths[target_id], "dialogue": [], "states": [{"round": 0, "query": initial_caption,
             "raw_query": initial_caption, "target_rank": int(ranks_for_targets(retriever.scores([initial_caption]), [target_id])[0])}],
             "status": "partial"}
+        if stop_at_rank is not None:
+            state["stop_at_rank"] = stop_at_rank
         save_json(path, state)
     try:
         for interaction in range(len(state["states"]) - 1, n_states - 1):
+            if stop_at_rank is not None and state["states"][-1]["target_rank"] <= stop_at_rank:
+                break
             record = {"initial_caption": initial_caption, "dialogue": state["dialogue"]}
             neutral = state["states"][-1]["query"]
             chat.begin(record, interaction)
@@ -702,7 +738,7 @@ def prepare_agent_experiment(root, retriever, pairs, *, n_states, settings, devi
                 conversations[name].append(generate_agent_dialogue(retriever,
                     initial_caption=raw["dialog"][0], target_id=target_ids[raw["img"]], image_path=image,
                     captions=catalogue, questioner=questioner, answerer=answerer, settings=settings,
-                    n_states=n_states, checkpoint_path=folder / ("critique_selector_retry_once" if critique else name) / (Path(raw["img"]).stem + ".json"),
+                    n_states=n_states, checkpoint_path=folder / (CRITIQUE_POLICY if critique else name) / (Path(raw["img"]).stem + ".json"),
                     critique=critique))
             methods[name] = generated_query_method(conversations[name])
             elapsed[name] = time.perf_counter() - started
@@ -720,6 +756,7 @@ def prepare_agent_experiment(root, retriever, pairs, *, n_states, settings, devi
                   "proposal_regeneration": "One extra three-agent/filter pass only if no eligible questions remain.",
                   "critique_selection_policy": CRITIQUE_POLICY,
                   "critique_retry": "Retry an unusable selection once; keep an eligible slot without a rationale.",
+                  "critique_proposal_retry": "Retry each malformed specialist once per round, then omit it.",
                   "rewrite_source": provenance(),
                   "answer_input": "current description + '. ' + selected question (same as live PlugIR)",
                   "rewrite_calls": "Original reconstruction; one extra paraphrase call allowed if unchanged.",

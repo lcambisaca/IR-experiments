@@ -84,6 +84,12 @@ def messages_for(stage, role, payload):
             "\nThe first proposal pool had no eligible questions. Read the rejection reasons "
             "and do not repeat or rephrase rejected questions."
         )
+    if stage == "propose_batch" and "proposal_retry" in payload:
+        instruction += (
+            "\nThe previous batch failed validation. Return a fresh batch as one complete JSON "
+            "object matching the example. Use short questions and only supplied evidence IDs. "
+            "Return fewer proposals if needed to fit, and omit Markdown and commentary."
+        )
     if stage == "critique" and "selection_retry" in payload:
         retry = payload["selection_retry"]
         instruction += "\n" + retry["instruction"] + " Valid slots: " + json.dumps(retry["valid_slots"])

@@ -172,7 +172,8 @@ def unchanged_progress(items):
 
 def generate_live_dialogue(retriever, *, initial_caption, target_id, image_path, captions,
                            questioner, answerer, settings, n_states, checkpoint_path, run_identity,
-                           _kmeans=None, search="rewrite", selection="plugir_kl", vlm=None, image_root=None):
+                           _kmeans=None, search="rewrite", selection="plugir_kl", vlm=None, image_root=None,
+                           stop_at_rank=None):
     """Execute/resume the authors' loop using our selected cache and local transports.
     Only the initial caption enters the dialogue. BLIP-2 alone sees target pixels;
     target ranks are measured after a round and never influence question choice.
@@ -186,6 +187,10 @@ def generate_live_dialogue(retriever, *, initial_caption, target_id, image_path,
     identity = {"run": run_identity, "initial_caption": initial_caption,
                 "target": retriever.cache.paths[target_id], "image_sha256": digest(image_path),
                 "settings": asdict(settings), "upstream": provenance()}
+    if stop_at_rank is not None:
+        if search != "rewrite" or type(stop_at_rank) is not int or stop_at_rank < 1:
+            raise ValueError("First-hit stopping requires rewrite search and a positive rank.")
+        identity["stop_at_rank"] = stop_at_rank
     if search not in ("rewrite", "facts"):
         raise ValueError('search must be "rewrite" (original PlugIR) or "facts" (end-to-end fact fusion).')
     if search == "facts":  # FACTS: the default keeps the original identity unchanged.
@@ -219,8 +224,14 @@ def generate_live_dialogue(retriever, *, initial_caption, target_id, image_path,
 
     def observed_rank(text):
         """Log rank with the original generation encoder; this value never enters its loop."""
+        if stop_at_rank is not None:
+            # Match the evaluator's scoring of generated rewrite strings.
+            return int(ranks_for_targets(retriever.scores([text]), [target_id])[0])
         scores = normalize(namespace["get_text_features"](text), dim=-1) @ retriever.images.T
         return int(ranks_for_targets(scores.cpu(), [target_id])[0])
+
+    class FirstHitReached(Exception):
+        """Exit the original loop after a successful checkpoint."""
 
     def rewrite_rank(text):
         """FACTS diagnostic: the rank plain PlugIR would show for the same rewritten description."""
@@ -295,13 +306,19 @@ def generate_live_dialogue(retriever, *, initial_caption, target_id, image_path,
             save_json(path, state)
             print(f"State {rnd}: {record['question']} -> {record['answer']}\n"
                   f"Query: {record['query']}\nTarget rank: {record['target_rank']}/{len(retriever.images)} (saved)", flush=True)
+            if stop_at_rank is not None and record["target_rank"] <= stop_at_rank:
+                raise FirstHitReached
 
         namespace.update(restore_round_state=restore_round_state, begin_round=begin_round,
                          checkpoint_round=checkpoint_round, start_round=len(state["states"]) - 1,
                          max_rounds=n_states - 1)
         try:
-            if len(state["states"]) < n_states:
-                exec(loop_code, namespace)
+            hit = stop_at_rank is not None and state["states"][-1]["target_rank"] <= stop_at_rank
+            if len(state["states"]) < n_states and not hit:
+                try:
+                    exec(loop_code, namespace)
+                except FirstHitReached:
+                    pass
             state["status"] = "complete"
             save_json(path, state)
             return {**state, "states": state["states"][:n_states], "dialogue": state["dialogue"][:n_states - 1],
