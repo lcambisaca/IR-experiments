@@ -18,6 +18,7 @@ from agentir.evaluation import (
 )
 from agentir.retrieval import BlipRetriever
 from agentir.live import LiveSettings
+from agentir.multagent_experiment.debate import prepare_debate_experiment
 from agentir.multagent_experiment.setup import (
     RUN_LABEL as PILOT_LABEL, prepare_three_agents, select_pilot_pairs,
 )
@@ -30,10 +31,10 @@ TEXT_BATCH_SIZE = 8   # Maximum texts per encoding call; methods below run one c
 CPU_THREADS = 4
 OFFLINE = False       # True requires BLIP model files already on this machine.
 SEED = 42
-RUN_LABEL = "baseline_full_50k"
+RUN_LABEL = "plugir_critique_debate"
 
-N_TARGETS = 32         # Set to 32 for our reference sample, or None for all 2,064.
-N_STATES = 11           # 1 = caption only; 11 = caption plus ten dialogue turns.
+N_TARGETS = 99         # Set to 32 for our reference sample, or None for all 2,064.
+N_STATES = 4           # 1 = caption only; 11 = caption plus ten dialogue turns.
 DEVICE = "cuda"        # Use "cuda" only with a working NVIDIA PyTorch setup.
 
 # Saved comparisons are optional; live methods use their own generated dialogue.
@@ -41,14 +42,15 @@ INCLUDE_SAVED_REFERENCES = False
 SAVED_REFERENCES = ("raw_dialogue",)  # Also available: "caption_only", "supplied_plugir".
 
 RUN_LIVE_PLUGIR = True
-RUN_MULTI_AGENT = True
-USE_PILOT_TARGETS = True  # True: cake and giraffe; False: START_TARGET and N_TARGETS.
+RUN_MULTI_AGENT = False  # Independent specialists + one critique reviewer.
+RUN_MULTI_AGENT_DEBATE = True
+USE_PILOT_TARGETS = False  # True: cake and giraffe; False: START_TARGET and N_TARGETS.
 
 LIVE_DEVICE = "cuda"       # Qwen/BLIP-2 generation GPU; DEVICE above controls BLIP retrieval.
 SEARCH = "rewrite"         # "rewrite" = original PlugIR search; "facts" = fact fusion inside the live loop (facts_e2e.py).
-ANSWERER = "blip2"         # Simulated user: "blip2" = PlugIR's; "qwen_vl" = Qwen2.5-VL-3B (new baseline, see QWEN_USER_BASELINE.md).
+ANSWERER = "qwen_vl"         # Simulated user: "blip2" = PlugIR's; "qwen_vl" = Qwen2.5-VL-3B (new baseline, see QWEN_USER_BASELINE.md).
 SELECTION = "plugir_kl"    # "plugir_kl" = original PlugIR question choice; "probe_vlm" = answer-entropy agent (probe_agent.py).
-MAX_INPUT_TOKENS = 4096    # Stop rather than silently truncate older Qwen dialogue.
+MAX_INPUT_TOKENS = 8192    # Stop rather than silently truncate older Qwen dialogue.
 
 CANDIDATE_CAPTIONS = "assets/protocol/visdial_captions.json"  # Public candidate catalogue.
 IMAGE_ROOT = "data/images" # Target JPEGs 
@@ -66,14 +68,30 @@ LIVE = LiveSettings(
 )
 
 
-def prepare_qwen_live(root, retriever, pairs, *, n_states, offline):
-    """Generate or resume live conversations for the selected targets."""
-    from agentir.live import prepare_live_experiment
-    return prepare_live_experiment(root, retriever, pairs, n_states=n_states, settings=LIVE,
-        device=LIVE_DEVICE, offline=offline, candidate_captions=CANDIDATE_CAPTIONS,
-        image_root=IMAGE_ROOT, image_archive=IMAGE_ARCHIVE, download_missing=DOWNLOAD_MISSING_TARGETS,
-        max_input_tokens=MAX_INPUT_TOKENS, search=SEARCH, selection=SELECTION, answerer=ANSWERER)
+def generation_options(offline):
+    """Keep model device, input limit, captions, and target-image handling shared."""
+    return dict(device=LIVE_DEVICE, offline=offline, answerer=ANSWERER, max_input_tokens=MAX_INPUT_TOKENS,
+        candidate_captions=CANDIDATE_CAPTIONS, image_root=IMAGE_ROOT,
+        image_archive=IMAGE_ARCHIVE, download_missing=DOWNLOAD_MISSING_TARGETS)
 
+
+def prepare_qwen_live(root, retriever, pairs, *, n_states, offline):
+    """Generate live PlugIR; keep raw dialogue in artifacts without an extra scoring pass."""
+    from agentir.live import prepare_live_experiment
+    prepared = prepare_live_experiment(root, retriever, pairs, n_states=n_states, settings=LIVE,
+        search=SEARCH, selection=SELECTION, **generation_options(offline))
+    prepared.methods.pop("live_raw_same_dialogue", None)
+    return prepared
+
+
+def prepare_multi_agent_baseline(root, retriever, pairs, *, n_states, offline):
+    return prepare_three_agents(root, retriever, pairs, n_states=n_states,
+                               **generation_options(offline))
+
+
+def prepare_multi_agent_debate(root, retriever, pairs, *, n_states, offline):
+    return prepare_debate_experiment(root, retriever, pairs, n_states=n_states,
+                                     **generation_options(offline))
 
 def collect_experiments(root, retriever, pairs, *, n_states=None):
     """Prepare enabled experiments and collect their search functions and outputs."""
@@ -81,7 +99,9 @@ def collect_experiments(root, retriever, pairs, *, n_states=None):
     prepared_experiments = {}
     preparers = {}
     if RUN_MULTI_AGENT:
-        preparers["three_agents"] = prepare_three_agents
+        preparers["three_agents"] = prepare_multi_agent_baseline
+    if RUN_MULTI_AGENT_DEBATE:
+        preparers["agent_debate"] = prepare_multi_agent_debate
 
     if RUN_LIVE_PLUGIR:
         preparers["qwen_live"] = prepare_qwen_live
@@ -117,8 +137,8 @@ def select_target_pairs(pairs):
 def main():
     """Load the cache, evaluate enabled methods, and save metrics and run details."""
     references = SAVED_REFERENCES if INCLUDE_SAVED_REFERENCES else ()
-    if not references and not (RUN_LIVE_PLUGIR or RUN_MULTI_AGENT):
-        raise ValueError("Enable RUN_LIVE_PLUGIR, RUN_MULTI_AGENT, or INCLUDE_SAVED_REFERENCES.")
+    if not references and not (RUN_LIVE_PLUGIR or RUN_MULTI_AGENT or RUN_MULTI_AGENT_DEBATE):
+        raise ValueError("Enable RUN_LIVE_PLUGIR, RUN_MULTI_AGENT, RUN_MULTI_AGENT_DEBATE, or INCLUDE_SAVED_REFERENCES.")
     random.seed(SEED)
     torch.manual_seed(SEED)
     root = Path(__file__).resolve().parent
@@ -130,7 +150,7 @@ def main():
                             read_json(paths["supplied_queries"]), cache.paths)
     available = len(pairs)
     n_states = N_STATES
-    device = LIVE_DEVICE if RUN_MULTI_AGENT else DEVICE
+    device = LIVE_DEVICE if RUN_MULTI_AGENT or RUN_MULTI_AGENT_DEBATE else DEVICE
 
     pairs = select_target_pairs(pairs)
     if type(n_states) is not int or not 1 <= n_states <= 11:
@@ -156,6 +176,7 @@ def main():
         "input_sha256": {name: digest(paths[name]) for name in
                          ("baseline_queries", "supplied_queries", "manifest")},
         "runner_sha256": digest(Path(__file__)),
+        "answerer": ANSWERER,
         "target_selection": "pilot" if USE_PILOT_TARGETS else "range",
         "selected_target_start": None if USE_PILOT_TARGETS else START_TARGET,
         "selected_target_images": [raw["img"] for raw, _ in pairs],

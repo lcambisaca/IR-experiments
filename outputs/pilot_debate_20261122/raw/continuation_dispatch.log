@@ -1,0 +1,10 @@
+nohup: ignoring input
+START agents_debate:0 2026-11-23T04:54:21Z
+FINISHED agents_debate:0 exit=1 2026-11-23T05:01:14Z
+START agents_debate:1 2026-11-23T05:01:14Z
+FINISHED agents_debate:1 exit=1 2026-11-23T05:02:39Z
+START live_plugir_qwen:0 2026-11-23T05:02:39Z
+FINISHED live_plugir_qwen:0 exit=0 2026-11-23T05:09:56Z
+START live_plugir_qwen:1 2026-11-23T05:09:56Z
+FINISHED live_plugir_qwen:1 exit=0 2026-11-23T05:17:31Z
+ALL_INDEPENDENT_HISTORIES_ATTEMPTED

@@ -1,0 +1,55 @@
+[
+  {
+    "folder": "IR-experiments-pilot\\runs\\live_upstream\\aaec02ad94051834aeaf\\blip2_calls",
+    "persisted_completions": 20,
+    "stages": {
+      "BLIP-2 answer": 20
+    },
+    "finish_reasons": {},
+    "qwen_decode_seconds": null,
+    "qwen_input_tokens": null,
+    "qwen_output_tokens": null
+  },
+  {
+    "folder": "IR-experiments-pilot\\runs\\live_upstream\\aaec02ad94051834aeaf\\qwen_calls",
+    "persisted_completions": 410,
+    "stages": {
+      "filter_questions": 192,
+      "generate_questions_referring": 184,
+      "reconstruct_dialog": 20,
+      "generate_questions": 8,
+      "paraphrase": 6
+    },
+    "finish_reasons": {
+      "length": 274,
+      "stop": 136
+    },
+    "qwen_decode_seconds": 458.84090199001275,
+    "qwen_input_tokens": 199267,
+    "qwen_output_tokens": 7821
+  },
+  {
+    "folder": "IR-experiments-pilot\\runs\\three_agents\\shared_agents_simple_v1\\blip2_calls",
+    "persisted_completions": 26,
+    "stages": {
+      "BLIP-2 answer": 26
+    },
+    "finish_reasons": {},
+    "qwen_decode_seconds": null,
+    "qwen_input_tokens": null,
+    "qwen_output_tokens": null
+  },
+  {
+    "folder": "IR-experiments-pilot\\runs\\three_agents\\shared_agents_simple_v1\\qwen_calls",
+    "persisted_completions": 173,
+    "stages": {
+      "complete": 173
+    },
+    "finish_reasons": {
+      "stop": 173
+    },
+    "qwen_decode_seconds": 1524.4161219859975,
+    "qwen_input_tokens": 236760,
+    "qwen_output_tokens": 27506
+  }
+]

@@ -1,0 +1,180 @@
+{
+  "cases": [
+    {
+      "method": "agents_no_critique",
+      "initial_caption": "a group of people posing in front of a cake",
+      "start": "2026-11-20T17:48:14.713484+00:00",
+      "end": "2026-11-20T17:58:15.954501+00:00",
+      "wall_seconds": 601.238909358,
+      "error": null,
+      "peak_cuda_allocated_bytes": 10367644160,
+      "peak_cuda_reserved_bytes": 10787749888,
+      "sampled_peak_gpu_mib": 10538,
+      "gpu_samples": 601,
+      "checkpoint": "/home/lrc87/IR-experiments-pilot/runs/three_agents/shared_agents_simple_v1/agents_no_critique/000000364869.json"
+    },
+    {
+      "method": "agents_no_critique",
+      "initial_caption": "a giraffe is standing in an open field",
+      "start": "2026-11-20T17:58:15.955910+00:00",
+      "end": "2026-11-20T18:08:02.243460+00:00",
+      "wall_seconds": 586.287177362,
+      "error": null,
+      "peak_cuda_allocated_bytes": 10484948480,
+      "peak_cuda_reserved_bytes": 10898898944,
+      "sampled_peak_gpu_mib": 10646,
+      "gpu_samples": 586,
+      "checkpoint": "/home/lrc87/IR-experiments-pilot/runs/three_agents/shared_agents_simple_v1/agents_no_critique/000000562109.json"
+    },
+    {
+      "method": "agents_critique",
+      "initial_caption": "a group of people posing in front of a cake",
+      "start": "2026-11-20T18:08:02.244237+00:00",
+      "end": "2026-11-20T18:13:02.436977+00:00",
+      "wall_seconds": 300.1923982420003,
+      "error": "ValueError('Critique must choose one eligible proposal slot and give a reason.')",
+      "peak_cuda_allocated_bytes": 10327198720,
+      "peak_cuda_reserved_bytes": 10783555584,
+      "sampled_peak_gpu_mib": 10536,
+      "gpu_samples": 300,
+      "checkpoint": "/home/lrc87/IR-experiments-pilot/runs/three_agents/shared_agents_simple_v1/critique_selector/000000364869.json"
+    },
+    {
+      "method": "agents_critique",
+      "initial_caption": "a giraffe is standing in an open field",
+      "start": "2026-11-20T18:17:02.671631+00:00",
+      "end": "2026-11-20T18:27:25.750187+00:00",
+      "wall_seconds": 623.0782145120002,
+      "error": null,
+      "peak_cuda_allocated_bytes": 10409273856,
+      "peak_cuda_reserved_bytes": 10785652736,
+      "sampled_peak_gpu_mib": 10536,
+      "gpu_samples": 623,
+      "checkpoint": "/home/lrc87/IR-experiments-pilot/runs/three_agents/shared_agents_simple_v1/critique_selector/000000562109.json"
+    },
+    {
+      "method": "live_plugir_qwen",
+      "initial_caption": "a group of people posing in front of a cake",
+      "start": "2026-11-20T18:27:26.865491+00:00",
+      "end": "2026-11-20T18:35:16.968020+00:00",
+      "wall_seconds": 470.10046494499966,
+      "error": null,
+      "peak_cuda_allocated_bytes": 10251214848,
+      "peak_cuda_reserved_bytes": 10798235648,
+      "sampled_peak_gpu_mib": 10550,
+      "gpu_samples": 470,
+      "checkpoint": "/home/lrc87/IR-experiments-pilot/runs/live_upstream/aaec02ad94051834aeaf/dialogues/ee95c5a658c74dafaeef938fd96ebf7f10759262d7767aa9933b362456e9fd86.json"
+    },
+    {
+      "method": "live_plugir_qwen",
+      "initial_caption": "a giraffe is standing in an open field",
+      "start": "2026-11-20T18:35:16.973037+00:00",
+      "end": "2026-11-20T18:41:22.385924+00:00",
+      "wall_seconds": 365.41253030000007,
+      "error": null,
+      "peak_cuda_allocated_bytes": 10243761664,
+      "peak_cuda_reserved_bytes": 10796138496,
+      "sampled_peak_gpu_mib": 10548,
+      "gpu_samples": 366,
+      "checkpoint": "/home/lrc87/IR-experiments-pilot/runs/live_upstream/aaec02ad94051834aeaf/dialogues/a2863806f3cc7068585cc3bcac95d67be4f8923d11da55ccbe84d356488e23d0.json"
+    }
+  ],
+  "summary": {
+    "agents_no_critique": {
+      "wall_seconds": 1187.52608672,
+      "peak_cuda_allocated_bytes": 10484948480,
+      "peak_cuda_reserved_bytes": 10898898944,
+      "sampled_peak_gpu_mib": 10646,
+      "cases": 2
+    },
+    "agents_critique": {
+      "wall_seconds": 923.2706127540005,
+      "peak_cuda_allocated_bytes": 10409273856,
+      "peak_cuda_reserved_bytes": 10785652736,
+      "sampled_peak_gpu_mib": 10536,
+      "cases": 2
+    },
+    "live_plugir_qwen": {
+      "wall_seconds": 835.5129952449997,
+      "peak_cuda_allocated_bytes": 10251214848,
+      "peak_cuda_reserved_bytes": 10798235648,
+      "sampled_peak_gpu_mib": 10550,
+      "cases": 2
+    }
+  },
+  "run_events": [
+    {
+      "utc": "2026-11-20T17:47:59.165894+00:00",
+      "event": "run_start",
+      "argv": [
+        "pilot_observe.py"
+      ],
+      "checkpoint_inventory": []
+    },
+    {
+      "utc": "2026-11-20T18:13:02.793922+00:00",
+      "event": "run_failed",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/lrc87/IR-experiments-pilot/pilot_observe.py\", line 43, in <module>\n    runner.main()\n  File \"/home/lrc87/IR-experiments-pilot/run_evaluation.py\", line 143, in main\n    methods, prepared_experiments = collect_experiments(root, retriever, pairs, n_states=n_states) # This is what runs our experiemnts\n                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/lrc87/IR-experiments-pilot/run_evaluation.py\", line 89, in collect_experiments\n    prepared_experiment = prepare(\n                          ^^^^^^^^\n  File \"/home/lrc87/IR-experiments-pilot/src/agentir/multagent_experiment/setup.py\", line 47, in prepare_three_agents\n    return prepare_agent_experiment(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/lrc87/IR-experiments-pilot/src/agentir/multagent_experiment/multi_agent.py\", line 477, in prepare_agent_experiment\n    conversations[name].append(generate_agent_dialogue(retriever,\n                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/lrc87/IR-experiments-pilot/pilot_observe.py\", line 30, in call\n    return fn(*args,**kwargs)\n           ^^^^^^^^^^^^^^^^^^\n  File \"/home/lrc87/IR-experiments-pilot/src/agentir/multagent_experiment/multi_agent.py\", line 389, in generate_agent_dialogue\n    audit = question_round(chat, context, record, neutral, interaction,\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/lrc87/IR-experiments-pilot/src/agentir/multagent_experiment/multi_agent.py\", line 330, in question_round\n    decision = chat.complete(\"critique\", \"full\", {\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/lrc87/IR-experiments-pilot/src/agentir/multagent_experiment/multi_agent.py\", line 141, in complete\n    raise ValueError(\"Critique must choose one eligible proposal slot and give a reason.\")\nValueError: Critique must choose one eligible proposal slot and give a reason.\n"
+    },
+    {
+      "utc": "2026-11-20T18:16:47.227094+00:00",
+      "event": "run_start",
+      "reason": "Preserve invalid cake critique; continue unaffected cases without scientific changes."
+    },
+    {
+      "utc": "2026-11-20T18:41:25.497223+00:00",
+      "event": "run_complete",
+      "completion": {
+        "agents_no_critique": [
+          {
+            "target": "unlabeled2017/000000364869.jpg",
+            "status": "complete",
+            "states": 11,
+            "error": null
+          },
+          {
+            "target": "unlabeled2017/000000562109.jpg",
+            "status": "complete",
+            "states": 11,
+            "error": null
+          }
+        ],
+        "agents_critique": [
+          {
+            "target": "unlabeled2017/000000364869.jpg",
+            "status": "interrupted",
+            "states": 6,
+            "error": "Critique must choose one eligible proposal slot and give a reason."
+          },
+          {
+            "target": "unlabeled2017/000000562109.jpg",
+            "status": "complete",
+            "states": 11,
+            "error": null
+          }
+        ],
+        "live_plugir_qwen": [
+          {
+            "target": "unlabeled2017/000000364869.jpg",
+            "status": "complete",
+            "states": 11,
+            "error": null
+          },
+          {
+            "target": "unlabeled2017/000000562109.jpg",
+            "status": "complete",
+            "states": 11,
+            "error": null
+          }
+        ]
+      }
+    }
+  ],
+  "unmatched_starts": [],
+  "gpu_samples": 2997,
+  "sampled_peak_gpu_mib": 10646,
+  "whole_process_resources": {
+    "process-resources.txt": "Command exited with non-zero status 1\n\tCommand being timed: \"/home/lrc87/.venvs/agentir-pilot/bin/python -u pilot_observe.py\"\n\tUser time (seconds): 1323.54\n\tSystem time (seconds): 98.33\n\tPercent of CPU this job got: 94%\n\tElapsed (wall clock) time (h:mm:ss or m:ss): 25:10.65\n\tAverage shared text size (kbytes): 0\n\tAverage unshared data size (kbytes): 0\n\tAverage stack size (kbytes): 0\n\tAverage total size (kbytes): 0\n\tMaximum resident set size (kbytes): 31094816\n\tAverage resident set size (kbytes): 0\n\tMajor (requiring I/O) page faults: 8594\n\tMinor (reclaiming a frame) page faults: 31673300\n\tVoluntary context switches: 173425\n\tInvoluntary context switches: 3509\n\tSwaps: 0\n\tFile system inputs: 46293080\n\tFile system outputs: 3513816\n\tSocket messages sent: 0\n\tSocket messages received: 0\n\tSignals delivered: 0\n\tPage size (bytes): 4096\n\tExit status: 1\n",
+    "continuation\\process-resources.txt": "\tCommand being timed: \"/home/lrc87/.venvs/agentir-pilot/bin/python -u pilot_continue.py\"\n\tUser time (seconds): 1217.20\n\tSystem time (seconds): 101.41\n\tPercent of CPU this job got: 88%\n\tElapsed (wall clock) time (h:mm:ss or m:ss): 24:45.51\n\tAverage shared text size (kbytes): 0\n\tAverage unshared data size (kbytes): 0\n\tAverage stack size (kbytes): 0\n\tAverage total size (kbytes): 0\n\tMaximum resident set size (kbytes): 31173184\n\tAverage resident set size (kbytes): 0\n\tMajor (requiring I/O) page faults: 10248\n\tMinor (reclaiming a frame) page faults: 26577948\n\tVoluntary context switches: 194793\n\tInvoluntary context switches: 3123\n\tSwaps: 0\n\tFile system inputs: 85735840\n\tFile system outputs: 65048\n\tSocket messages sent: 0\n\tSocket messages received: 0\n\tSignals delivered: 0\n\tPage size (bytes): 4096\n\tExit status: 0\n"
+  }
+}

@@ -30,6 +30,9 @@ args = parser.parse_args()
 runner.START_TARGET, runner.N_TARGETS, runner.N_STATES = args.start, args.targets, 11
 runner.DEVICE = runner.LIVE_DEVICE = "cuda"
 runner.RUN_LIVE_PLUGIR, runner.OFFLINE = True, True
+runner.RUN_MULTI_AGENT = runner.RUN_MULTI_AGENT_DEBATE = False
+runner.USE_PILOT_TARGETS = False
+runner.INCLUDE_SAVED_REFERENCES = False
 runner.SEARCH, runner.SELECTION, runner.ANSWERER = args.search, args.selection, args.answerer
 agent = ("" if args.selection == "plugir_kl" else f"{args.selection}_") + ("" if args.answerer == "blip2" else "qwenuser_")
 runner.RUN_LABEL = f"plugir_live_{agent}{args.search}_{args.start + 1}_{args.start + args.targets}"

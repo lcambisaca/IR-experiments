@@ -93,10 +93,9 @@ and one original reconstruction call. Critique adds one selector call. The
 unchanged-query fallback can add one paraphrase call beyond the ordinary
 `max_calls_per_round` ceiling. All calls are counted and saved; original PlugIR
 rewrite retry behavior remains unchanged. If no question is eligible, the round
-makes no answer or rewrite call. Proposal/filter/critique output still uses its
-structured JSON validation. Invalid critique slots have the one-retry recovery
-below; malformed JSON, truncation and other execution errors still retain their
-existing interrupted-checkpoint behavior.
+makes no answer or rewrite call. Proposal, filter and critique responses use
+structured JSON validation. Filter and reviewer failures can recover through
+the bounded rules below. Unhandled errors retain an interrupted checkpoint.
 
 The agent transport explicitly allows up to 1024 output tokens, accommodating
 the combined filter's maximum 960-token request. Individual proposal requests
@@ -169,11 +168,10 @@ Description, past dialogue, and representative captions are context for judging
 those choices, not additional selectable questions. Proposals are not regenerated
 or refiltered during recovery.
 
-If the first selection returns an invalid slot, retry exactly once with the same
-eligible list and context, the previous response, explicit valid slot numbers,
-and the instruction: "Your previous selection was invalid. Choose only from these
-eligible slots. Context is for judging the choices, not for supplying another question."
-A valid retry proceeds normally. Two invalid slot selections produce a completed
+If the first selection is unreadable or names an invalid slot, retry exactly once
+with the same eligible list and context, the previous response and explicit valid
+slot numbers. An eligible slot with a blank or missing reason is accepted and
+marked as having no recorded rationale. Two unusable selections produce a completed
 no-question state with `skip_reason="invalid_critique_selection"`; there is no
 answerer call, rewrite, or dialogue update for that interaction. The search query
 and target rank remain unchanged, and later rounds continue. Eligible proposals
@@ -182,9 +180,13 @@ are not marked rejected merely because the reviewer failed.
 Both responses, validation errors, valid slots, and retry payloads are retained
 in `llm_audit` and `audit.critique_attempts`. Ordinary lack of eligible proposals
 uses the distinct reason `no_eligible_questions` and makes no reviewer call.
-Only invalid-slot validation triggers this recovery; unrelated runtime failures
-are not swallowed. Single eligible proposals still follow the existing reviewer
-path; no automatic-selection shortcut is introduced in this change.
+Single eligible proposals still go through the reviewer.
+
+A truncated or unreadable filter batch gets one retry with short reasons.
+The retry keeps individually valid, unique verdicts for submitted slots and
+excludes questions still unjudged. A readable batch that merely omits slots
+retries those slots only. Either path can trigger the existing proposal
+regeneration if no eligible questions remain.
 
 A recovery call is counted and has one explicit extra allowance beyond the normal
 round ceiling. That allowance also leaves room for the usual reconstruction;
@@ -193,12 +195,9 @@ six-call ceiling, a successful retry can therefore use seven total Qwen calls,
 or eight if reconstruction triggers the paraphrase fallback. There is no unbounded
 retry loop or silent alternative selector.
 
-The reviewer policy is `eligible_slot_retry_once_v1`. New critique checkpoints use
-`critique_selector_retry_once/` beneath the existing rewrite-policy directory.
-Resume checks the critique-policy marker, preventing earlier critique histories
-from being silently combined with this recovery behavior. Minimum-KL selection,
-question-generation prompts, filtering, and the original rewrite functions are
-unchanged by this recovery patch.
+The reviewer policy is `reviewer_retry_once_v2`. Critique checkpoints use
+`critique_selector_retry_once/` under the proposal-policy directory.
+Resume checks both policy markers to keep earlier histories separate.
 
 ## One regeneration when filtering leaves no eligible questions
 
@@ -209,6 +208,11 @@ agent receives the same original description, actual dialogue, neutral query,
 representative captions, and the rejected questions with their reasons. It can
 propose up to `questions_per_agent` new questions (at most five), once. Rejected
 questions are avoidance feedback, never confirmed target facts.
+
+Critique and debate prompts show up to ten recent distinct rejected questions,
+with reasons capped at 120 characters. Critique's regeneration also includes
+the current pool's rejections. Every prior Q&A remains in the prompt. The full
+question history is retained for audits and exact-repeat checks.
 
 The regenerated pool goes through the same deterministic prechecks, exact-question
 deduplication, evidence-ID checks, and the same model filtering prompt. Repeated

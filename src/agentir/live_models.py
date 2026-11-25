@@ -267,10 +267,19 @@ class VisionAnswerer:
         return [answers[key] for key in keys]
 
 
+def target_answerer_spec(name):
+    """Return the target answerer, cache directory name and protocol identity."""
+    if name == "blip2":
+        return Blip2Answerer, "blip2_calls", [BLIP2_ID, BLIP2_REVISION]
+    if name == "qwen_vl":
+        return QwenVLAnswerer, "answerer_calls", list(QwenVLAnswerer.IDENTITY)
+    raise ValueError("answerer must be blip2 or qwen_vl")
+
+
 class QwenVLAnswerer:
     """Simulated user played by Qwen2.5-VL-3B instead of BLIP-2 (Matan, Nov 19 meeting).
-    Sees only the target photo and PlugIR's question, never the dialogue or captions.
-    Same interface as Blip2Answerer; answers cached per (photo, question).
+    Receives the target photo and the caller's description-plus-question query.
+    Same interface as Blip2Answerer; answers are cached per photo and query.
     """
     MAX_PIXELS = 512 * 28 * 28  # More detail than the agent's candidate-photo view.
     PROMPT = ("You are looking at the photo you have in mind and answering a question about it. "
@@ -279,9 +288,10 @@ class QwenVLAnswerer:
               "Question: {question}")
     IDENTITY = (VLM_ID, MAX_PIXELS, "qwen_answerer_v1")
 
-    def __init__(self, folder, *, device="cuda", offline=False):
+    def __init__(self, folder, *, device="cuda", offline=False, revision=None):
         self.device = require_cuda(device)
         self.folder, self.offline = Path(folder), offline
+        self.revision = revision
         self.model = self.processor = None
         self.records = []
 
@@ -290,7 +300,7 @@ class QwenVLAnswerer:
             from huggingface_hub import snapshot_download
             from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
             print(f"Loading {VLM_ID} as the simulated user.", flush=True)
-            local = snapshot_download(VLM_ID, local_files_only=self.offline)
+            local = snapshot_download(VLM_ID, revision=self.revision, local_files_only=self.offline)
             self.processor = AutoProcessor.from_pretrained(local, max_pixels=self.MAX_PIXELS)
             self.model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
                 local, torch_dtype=torch.bfloat16, low_cpu_mem_usage=True).eval()
@@ -307,6 +317,8 @@ class QwenVLAnswerer:
         from PIL import Image
         request = {"image_sha256": digest(image_path), "query": query, "identity": list(self.IDENTITY),
                    "prompt": self.PROMPT}
+        if getattr(self, "revision", None) is not None:
+            request["revision"] = self.revision
         path = self.folder / (signature(request) + ".json")
         if path.is_file():
             record = read_json(path)

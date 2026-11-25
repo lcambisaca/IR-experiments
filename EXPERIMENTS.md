@@ -160,3 +160,87 @@ rather than fixing it. The earlier cake/giraffe pilot used the previous protocol
 Multi-agent checkpoints/call caches now live beneath the
 `plugir_original_rewrite_v1` policy directory. Legacy checkpoints are not silently
 resumed. Use a fresh run name when changing other settings or prompts.
+
+## Three-method question-generation comparison
+
+The current pilot enables these three conditions in `run_evaluation.py`:
+
+```python
+RUN_LIVE_PLUGIR = True
+RUN_MULTI_AGENT = True
+RUN_MULTI_AGENT_DEBATE = True
+USE_PILOT_TARGETS = True
+N_STATES = 11
+INCLUDE_SAVED_REFERENCES = False
+```
+
+`AGENT_MODES = (True,)` in `setup.py` selects only the single-reviewer critique
+baseline; minimum-KL multi-agent selection remains available by adding `False`.
+The evaluated method columns are `live_plugir_qwen`, `agents_critique`, and
+`agents_debate`. PlugIR's raw dialogue is preserved in artifacts without another
+raw-query evaluation pass. Generation is sequential. All methods receive the
+same selected pairs, starting captions, retriever, requested state count, image
+handling, model device, and 8192-token input ceiling. They use the pinned Qwen
+question/rewrite model, the same configured answerer and description-plus-question
+answer input, and original PlugIR reconstruction/paraphrase behavior.
+
+Set `USE_PILOT_TARGETS=False` to use `START_TARGET` and `N_TARGETS` (32 by default).
+Each method has its own dialogue history and checkpoints; after the first round,
+different questions and answers can produce different retrieval evidence. These
+are comparisons on the same targets, not artificially shared future histories.
+
+### Debate method
+
+The implementation is separate: `src/agentir/multagent_experiment/debate.py`.
+Each interaction retrieves/clusters once. Generalist, attributes, and relationships
+roles independently open with up to two caption-supported observations, one
+initial question (or abstention), and a limitation. Two synchronous discussion
+rounds follow. In each round, all three roles see the identical transcript from
+previous rounds, not responses produced earlier in their own round. They can
+challenge assumptions, change their minds, and develop new questions.
+
+A neutral coordinator reads the nine contributions and formulates one final
+question, with supporting caption IDs, a short synthesis reason, and any unresolved
+disagreement. It may keep, revise, combine, or replace suggestions. It is not
+restricted to choosing an existing proposal. Candidate possibilities and peer
+claims are never inserted into the confirmed dialogue as facts.
+
+The specialists use candidate comparisons to propose a question about an
+unresolved detail in the target photo. The final gate rejects explicit references
+to numbered retrieval images and requests to identify a matching candidate.
+The model filter also checks that the target viewer can answer the question.
+A rejected question gets one coordinator revision. If the coordinator still has
+no eligible question, the final discussion proposals receive the same checks
+in one fallback batch. The first eligible specialist proposal in role order is
+asked. When none qualify, the interaction is skipped with the prior query and rank.
+
+Debate allows one logged JSON or schema correction per interaction. If it cannot
+recover a valid specialist response, it keeps any usable fields from one attempt
+or records an abstention. An unusable coordinator response moves directly to
+the specialist fallback when the format correction is exhausted. The shared
+filter keeps valid verdicts, retries missing slots once, and excludes unjudged
+proposals. With `exclude_unjudged=True`, it excludes missing proposals immediately.
+
+A normal answered debate round uses 12 Qwen calls: three openings, six discussion
+responses, one coordinator, one filter, and one original rewrite. A revision can
+add two calls. One fallback filter, up to three filter retries, one debate format
+correction, and one paraphrase bring the default upper bound to 20 calls.
+The deterministic gate can avoid a model filter call. There
+is only one target-answer call per answered interaction. Report this extra
+internal computation alongside retrieval gains; it is not a matched-cost claim.
+
+`prepared/agent_debate/debate_dialogues.json` saves the full transcript, opening
+observations, both discussion rounds, coordinator attempts and reasons, validation
+results, actual model calls, questions, answers, rewrites, and target ranks.
+`debate_prompt_pack.json` preserves the prompts and upstream rewrite provenance.
+The common evaluator exports ranks, Recall/Hits, BRI, and run metadata as before.
+Debate checkpoints and call caches live under `runs/three_agents_debate/`, isolated
+from baseline and PlugIR runs. Their folder identity includes source hashes,
+settings, pinned model revisions, pool/catalogue identity and prompt version;
+target checkpoint names include the target JPEG hash. Partial rounds can resume
+using the normal per-request model caches.
+
+Offline tests cover shared evidence, independent openings, synchronous exchanges,
+novel coordinator questions, final revision/skip, answer/rewrite parity, resumed
+histories, label isolation, and three-method runner exports. GPU fit, actual model
+JSON compliance, answer quality, and retrieval benefit still require the pilot.

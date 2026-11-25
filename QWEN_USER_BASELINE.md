@@ -24,16 +24,30 @@ goes down. Recall@10 checks only round t's own top 10.
 
 - `QwenVLAnswerer` in [src/agentir/live_models.py](src/agentir/live_models.py)
   - Same interface as `Blip2Answerer`, so the PlugIR loop is untouched.
-  - It sees **only the target photo and PlugIR's question**, never the dialogue or the captions.
+  - It receives the target photo, current search description, and selected question.
+    The description starts as the initial caption and is updated from the dialogue
+    after each answered question. The [original PlugIR code](https://github.com/Saehyung-Lee/PlugIR/blob/main/generate_dialog.py#L561-L564)
+    passes the same inputs to BLIP-2.
   - Decoding is greedy, at most 24 new tokens, with images up to 512×28×28 pixels.
-  - Answers are cached per (photo, question) in `answerer_calls/`.
+  - Answers are cached per (photo, description, question) in `answerer_calls/`.
   - Prompt (`QwenVLAnswerer.PROMPT`): answer in a short phrase with the specific detail asked for
     (a colour, a number, an object, a place). If the photo doesn't show it, say what is visible instead.
 - [src/agentir/live.py](src/agentir/live.py): `prepare_live_experiment(..., answerer="blip2" | "qwen_vl")`.
   - The default `blip2` leaves the run identity unchanged, so old run folders still resume.
   - `qwen_vl` adds `identity["answerer"]`, so its runs get their own folder.
-- [run_evaluation.py](run_evaluation.py): new setting `ANSWERER = "blip2"`.
+- [run_evaluation.py](run_evaluation.py): the shared comparison defaults to `ANSWERER = "qwen_vl"` for PlugIR, critique and debate. Set it to `"blip2"` to use the original answerer.
 - [scripts/run_plugir_live.py](scripts/run_plugir_live.py): new flag `--answerer qwen_vl`.
+
+### Rerank a saved three-method comparison
+
+Use the folder printed by the comparison runner. Run both commands for each of
+`plugir`, `critique` and `debate` by changing `--method`. Each method reads its
+own dialogue and writes results under `<run>/vlm_judge/<method>/`.
+
+```bash
+python scripts/vlm_judge.py rerank --experiment runs/experiments/<run> --method debate
+python scripts/vlm_judge.py score --experiment runs/experiments/<run> --method debate
+```
 
 ### How to run the new baseline
 

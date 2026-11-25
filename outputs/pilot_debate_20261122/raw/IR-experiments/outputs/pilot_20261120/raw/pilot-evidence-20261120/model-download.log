@@ -1,0 +1,21 @@
+nohup: ignoring input
+MODEL Salesforce/blip-itm-large-coco 19502f1e215844f7e48bd48473f86932486d3441
+Fetching 7 files:   0%|          | 0/7 [00:00<?, ?it/s]Xet Storage is enabled for this repo, but the 'hf_xet' package is not installed. Falling back to regular HTTP download. For better performance, install the package with: `pip install huggingface_hub[hf_xet]` or `pip install hf_xet`
+Fetching 7 files:  14%|█▍        | 1/7 [00:00<00:00,  9.01it/s]Fetching 7 files:  43%|████▎     | 3/7 [00:11<00:17,  4.26s/it]Fetching 7 files: 100%|██████████| 7/7 [00:11<00:00,  1.65s/it]
+/home/lrc87/.cache/huggingface/hub/models--Salesforce--blip-itm-large-coco/snapshots/19502f1e215844f7e48bd48473f86932486d3441
+MODEL Qwen/Qwen3-4B-Instruct-2507 cdbee75f17c01a7cc42f958dc650907174af0554
+Fetching 10 files:   0%|          | 0/10 [00:00<?, ?it/s]Xet Storage is enabled for this repo, but the 'hf_xet' package is not installed. Falling back to regular HTTP download. For better performance, install the package with: `pip install huggingface_hub[hf_xet]` or `pip install hf_xet`
+Xet Storage is enabled for this repo, but the 'hf_xet' package is not installed. Falling back to regular HTTP download. For better performance, install the package with: `pip install huggingface_hub[hf_xet]` or `pip install hf_xet`
+Xet Storage is enabled for this repo, but the 'hf_xet' package is not installed. Falling back to regular HTTP download. For better performance, install the package with: `pip install huggingface_hub[hf_xet]` or `pip install hf_xet`
+Fetching 10 files:  30%|███       | 3/10 [00:00<00:00, 23.93it/s]Xet Storage is enabled for this repo, but the 'hf_xet' package is not installed. Falling back to regular HTTP download. For better performance, install the package with: `pip install huggingface_hub[hf_xet]` or `pip install hf_xet`
+Fetching 10 files:  30%|███       | 3/10 [00:18<00:00, 23.93it/s]Fetching 10 files:  40%|████      | 4/10 [00:27<00:53,  8.92s/it]Fetching 10 files: 100%|██████████| 10/10 [00:27<00:00,  2.77s/it]
+/home/lrc87/.cache/huggingface/hub/models--Qwen--Qwen3-4B-Instruct-2507/snapshots/cdbee75f17c01a7cc42f958dc650907174af0554
+MODEL Salesforce/blip2-flan-t5-xl 0eb0d3b46c14c1f8c7680bca2693baafdb90bb28
+Fetching 15 files:   0%|          | 0/15 [00:00<?, ?it/s]Xet Storage is enabled for this repo, but the 'hf_xet' package is not installed. Falling back to regular HTTP download. For better performance, install the package with: `pip install huggingface_hub[hf_xet]` or `pip install hf_xet`
+Xet Storage is enabled for this repo, but the 'hf_xet' package is not installed. Falling back to regular HTTP download. For better performance, install the package with: `pip install huggingface_hub[hf_xet]` or `pip install hf_xet`
+Xet Storage is enabled for this repo, but the 'hf_xet' package is not installed. Falling back to regular HTTP download. For better performance, install the package with: `pip install huggingface_hub[hf_xet]` or `pip install hf_xet`
+Xet Storage is enabled for this repo, but the 'hf_xet' package is not installed. Falling back to regular HTTP download. For better performance, install the package with: `pip install huggingface_hub[hf_xet]` or `pip install hf_xet`
+Xet Storage is enabled for this repo, but the 'hf_xet' package is not installed. Falling back to regular HTTP download. For better performance, install the package with: `pip install huggingface_hub[hf_xet]` or `pip install hf_xet`
+Fetching 15 files:  27%|██▋       | 4/15 [02:48<07:44, 42.25s/it]Fetching 15 files: 100%|██████████| 15/15 [02:48<00:00, 11.27s/it]
+/home/lrc87/.cache/huggingface/hub/models--Salesforce--blip2-flan-t5-xl/snapshots/0eb0d3b46c14c1f8c7680bca2693baafdb90bb28
+MODEL_DOWNLOADS_COMPLETE

@@ -1,0 +1,3184 @@
+{
+  "histories": [
+    {
+      "method": "agents_critique",
+      "target": "unlabeled2017/000000364869.jpg",
+      "checkpoint": "IR-experiments\\runs\\three_agents\\shared_agents_simple_v1\\plugir_original_rewrite_v1\\regenerate_empty_pool_once_v1\\critique_selector_retry_once\\000000364869.json",
+      "status": "complete",
+      "last_error": null,
+      "states": 11,
+      "ranks": [
+        9,
+        15,
+        18,
+        39,
+        22,
+        36,
+        29,
+        27,
+        30,
+        26,
+        19
+      ],
+      "final_rank": 19,
+      "best_rank": 9,
+      "BRI": 2.1972243785858154,
+      "metrics": [
+        {
+          "round": 0,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 0,
+          "k": 10,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 0,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 1,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 1,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 1,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 2,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 2,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 2,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 3,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 3,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 3,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 4,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 4,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 4,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 5,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 5,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 5,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 6,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 6,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 6,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 7,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 7,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 7,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 8,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 8,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 8,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 9,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 9,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 9,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 10,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 10,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 10,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        }
+      ],
+      "owners": {
+        "full": 8,
+        "relations": 2
+      },
+      "filters": {
+        "unknown": 38,
+        "already_known": 9,
+        "duplicate": 3,
+        "ambiguous": 2,
+        "unsupported": 3,
+        "already_asked": 13,
+        "previously_rejected": 29
+      },
+      "normalized_repeats": [],
+      "literal_repeats": [],
+      "rows": [
+        {
+          "state": 0,
+          "question": null,
+          "answer": null,
+          "query": "a group of people posing in front of a cake",
+          "rank": 9,
+          "improvement": null,
+          "window": null,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 0,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 0
+        },
+        {
+          "state": 1,
+          "question": "Is the cake decorated with candles?",
+          "answer": "a group of people posing in front of a cake",
+          "query": "a group of people posing in front of a decorated cake with candles",
+          "rank": 15,
+          "improvement": -6,
+          "window": 500,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 1,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 6
+        },
+        {
+          "state": 2,
+          "question": "Are any of the people blowing out candles on the cake?",
+          "answer": "a group of people posing in front of a decorated cake with candles",
+          "query": "A group of people standing in front of a beautifully decorated cake with candles.",
+          "rank": 18,
+          "improvement": -3,
+          "window": 450,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 1,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 7
+        },
+        {
+          "state": 3,
+          "question": "Is the cake a birthday cake?",
+          "answer": "yes",
+          "query": "a group of people posing in front of a birthday cake decorated with candles, some of them blowing out the candles",
+          "rank": 39,
+          "improvement": -21,
+          "window": 400,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 1,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 6
+        },
+        {
+          "state": 4,
+          "question": "Are any of the people interacting with the cake directly?",
+          "answer": "a group of people posing in front of a cake",
+          "query": "a group of people posing in front of a birthday cake decorated with candles, with no one blowing out the candles or interacting directly with the cake",
+          "rank": 22,
+          "improvement": 17,
+          "window": 350,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 1,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 6
+        },
+        {
+          "state": 5,
+          "question": "What is the relationship between the people and the cake?",
+          "answer": "a group of people posing in front of a cake",
+          "query": "a group of people posing in front of a birthday cake decorated with candles, with no direct interaction, simply celebrating in the background",
+          "rank": 36,
+          "improvement": -14,
+          "window": 300,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 1,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 6
+        },
+        {
+          "state": 6,
+          "question": "What is the cake's decoration?",
+          "answer": "a group of people posing in front of a cake",
+          "query": "a group of people posing in front of a birthday cake decorated with candles, with no direct interaction, simply celebrating the occasion",
+          "rank": 29,
+          "improvement": 7,
+          "window": 250,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 1,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 6
+        },
+        {
+          "state": 7,
+          "question": "Are any of the people looking at the cake directly?",
+          "answer": "a group of people posing in front of a cake",
+          "query": "a group of people posing in front of a birthday cake decorated with candles, with no direct interaction, all looking at the cake directly",
+          "rank": 27,
+          "improvement": 2,
+          "window": 200,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 1,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 6
+        },
+        {
+          "state": 8,
+          "question": "What action is the group of people performing?",
+          "answer": "a group of people posing in front of a birthday cake",
+          "query": "a group of people posing in front of a birthday cake decorated with candles, with no direct interaction, all looking at the cake",
+          "rank": 30,
+          "improvement": -3,
+          "window": 150,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 1,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 6
+        },
+        {
+          "state": 9,
+          "question": "Are any of the people standing near the cake?",
+          "answer": "a group of people standing in front of a cake",
+          "query": "a group of people standing in front of a birthday cake decorated with candles, posing and looking at the cake, with no direct interaction",
+          "rank": 26,
+          "improvement": 4,
+          "window": 100,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 1,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 6
+        },
+        {
+          "state": 10,
+          "question": "Is the cake on a table or on a surface?",
+          "answer": "a group of people standing in front of a birthday cake decorated with candles, posing",
+          "query": "a group of people standing in front of a birthday cake decorated with candles, posing, with the cake on a surface, but no one interacting with it directly",
+          "rank": 19,
+          "improvement": 7,
+          "window": 50,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 1,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 6
+        }
+      ],
+      "alias": "analysis/checkpoints/agents_critique_000000364869.json"
+    },
+    {
+      "method": "agents_critique",
+      "target": "unlabeled2017/000000562109.jpg",
+      "checkpoint": "IR-experiments\\runs\\three_agents\\shared_agents_simple_v1\\plugir_original_rewrite_v1\\regenerate_empty_pool_once_v1\\critique_selector_retry_once\\000000562109.json",
+      "status": "interrupted",
+      "last_error": "Batch filter must return one valid decision per slot.",
+      "states": 10,
+      "ranks": [
+        89,
+        191,
+        143,
+        151,
+        165,
+        167,
+        124,
+        78,
+        102,
+        96
+      ],
+      "final_rank": 96,
+      "best_rank": 78,
+      "BRI": 4.451990127563477,
+      "metrics": [
+        {
+          "round": 0,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 0,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 0,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 1,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 1,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 1,
+          "k": 100,
+          "recall_percent": 0.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 2,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 2,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 2,
+          "k": 100,
+          "recall_percent": 0.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 3,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 3,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 3,
+          "k": 100,
+          "recall_percent": 0.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 4,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 4,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 4,
+          "k": 100,
+          "recall_percent": 0.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 5,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 5,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 5,
+          "k": 100,
+          "recall_percent": 0.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 6,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 6,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 6,
+          "k": 100,
+          "recall_percent": 0.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 7,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 7,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 7,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 8,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 8,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 8,
+          "k": 100,
+          "recall_percent": 0.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 9,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 9,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 9,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        }
+      ],
+      "owners": {
+        "attributes": 1,
+        "full": 8
+      },
+      "filters": {
+        "unknown": 59,
+        "already_known": 9,
+        "ambiguous": 2,
+        "unsupported": 6,
+        "previously_rejected": 15,
+        "duplicate": 4
+      },
+      "normalized_repeats": [],
+      "literal_repeats": [],
+      "rows": [
+        {
+          "state": 0,
+          "question": null,
+          "answer": null,
+          "query": "a giraffe is standing in an open field",
+          "rank": 89,
+          "improvement": null,
+          "window": null,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 0,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 0
+        },
+        {
+          "state": 1,
+          "question": "Is the field shaded or open?",
+          "answer": "open",
+          "query": "a giraffe is standing in an open, sunlit field",
+          "rank": 191,
+          "improvement": -102,
+          "window": 500,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 1,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 6
+        },
+        {
+          "state": 2,
+          "question": "Is there a tree nearby?",
+          "answer": "yes",
+          "query": "a giraffe stands in an open field with a tree nearby",
+          "rank": 143,
+          "improvement": 48,
+          "window": 450,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 1,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 6
+        },
+        {
+          "state": 3,
+          "question": "Is the giraffe standing alone or with other giraffes?",
+          "answer": "a giraffe stands in an open field with a tree nearby",
+          "query": "a giraffe stands alone in an open field with a tree nearby",
+          "rank": 151,
+          "improvement": -8,
+          "window": 400,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 1,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 6
+        },
+        {
+          "state": 4,
+          "question": "Are there other giraffes nearby?",
+          "answer": "no",
+          "query": "A lone giraffe stands in an open field, near a tree.",
+          "rank": 165,
+          "improvement": -14,
+          "window": 350,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 1,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 7
+        },
+        {
+          "state": 5,
+          "question": "Is the giraffe standing or moving?",
+          "answer": "standing",
+          "query": "a giraffe stands alone in an open field with a tree nearby, standing still",
+          "rank": 167,
+          "improvement": -2,
+          "window": 300,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 1,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 6
+        },
+        {
+          "state": 6,
+          "question": "Is the giraffe near a fence?",
+          "answer": "no",
+          "query": "a giraffe stands alone in an open field with a tree nearby, not near a fence, in a sunny, unshaded area",
+          "rank": 124,
+          "improvement": 43,
+          "window": 250,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 1,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 6
+        },
+        {
+          "state": 7,
+          "question": "Is the tree directly visible and in the foreground?",
+          "answer": "no",
+          "query": "a giraffe stands alone in an open field with a tree nearby in the background, not near a fence, and not in the foreground",
+          "rank": 78,
+          "improvement": 46,
+          "window": 200,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 1,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 6
+        },
+        {
+          "state": 8,
+          "question": "Are there rocks near the giraffe?",
+          "answer": "no",
+          "query": "a giraffe stands alone in an open field with a tree nearby, not near a fence or rocks, the tree is not in the foreground, and the scene is unshaded",
+          "rank": 102,
+          "improvement": -24,
+          "window": 150,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 1,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 6
+        },
+        {
+          "state": 9,
+          "question": "Is the field dry or green?",
+          "answer": "a giraffe stands alone in an open field with trees nearby",
+          "query": "a giraffe stands alone in an open, green field with trees nearby, not near a fence or rocks, and not in the foreground of the tree",
+          "rank": 96,
+          "improvement": 6,
+          "window": 100,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 1,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 6
+        }
+      ],
+      "alias": "analysis/checkpoints/agents_critique_000000562109.json"
+    },
+    {
+      "method": "agents_debate",
+      "target": "unlabeled2017/000000562109.jpg",
+      "checkpoint": "IR-experiments\\runs\\three_agents_debate\\shared_agents_debate_v1\\1ebdeb777e9bfd15ab3f\\dialogues\\308d13de8a9629b805f35399ed1b937a103b6278f237e413a85a1da02e1b0653.json",
+      "status": "interrupted",
+      "last_error": "Opening observations need valid supplied evidence IDs.",
+      "states": 1,
+      "ranks": [
+        89
+      ],
+      "final_rank": 89,
+      "best_rank": 89,
+      "BRI": null,
+      "metrics": [
+        {
+          "round": 0,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 0,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 0,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        }
+      ],
+      "owners": {},
+      "filters": {},
+      "normalized_repeats": [],
+      "literal_repeats": [],
+      "rows": [
+        {
+          "state": 0,
+          "question": null,
+          "answer": null,
+          "query": "a giraffe is standing in an open field",
+          "rank": 89,
+          "improvement": null,
+          "window": null,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 0,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 0
+        }
+      ],
+      "alias": "analysis/checkpoints/agents_debate_000000562109.json"
+    },
+    {
+      "method": "agents_debate",
+      "target": "unlabeled2017/000000364869.jpg",
+      "checkpoint": "IR-experiments\\runs\\three_agents_debate\\shared_agents_debate_v1\\1ebdeb777e9bfd15ab3f\\dialogues\\cbcf690e9bf8c3223ed14f80cc4a71a0f35cbca2b13fa16995def615b4183c60.json",
+      "status": "interrupted",
+      "last_error": "Opening observations need valid supplied evidence IDs.",
+      "states": 4,
+      "ranks": [
+        9,
+        14,
+        9,
+        48
+      ],
+      "final_rank": 48,
+      "best_rank": 9,
+      "BRI": 2.1972246170043945,
+      "metrics": [
+        {
+          "round": 0,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 0,
+          "k": 10,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 0,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 1,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 1,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 1,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 2,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 2,
+          "k": 10,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 2,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 3,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 3,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 3,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        }
+      ],
+      "owners": {
+        "coordinator": 3
+      },
+      "filters": {
+        "unknown": 3
+      },
+      "normalized_repeats": [],
+      "literal_repeats": [],
+      "rows": [
+        {
+          "state": 0,
+          "question": null,
+          "answer": null,
+          "query": "a group of people posing in front of a cake",
+          "rank": 9,
+          "improvement": null,
+          "window": null,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 0,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 0
+        },
+        {
+          "state": 1,
+          "question": "Which candidate shows a group of people posing together with a cake directly in front of them?",
+          "answer": "a group of people posing together with a cake",
+          "query": "a group of people posing together in front of a cake",
+          "rank": 14,
+          "improvement": -5,
+          "window": 500,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 0,
+          "coordinator_attempts": 1,
+          "coordinator_exact_matches": [
+            "full",
+            "relations"
+          ],
+          "llm_calls": 12
+        },
+        {
+          "state": 2,
+          "question": "Does candidate 46619 show a cake directly in front of the group during the pose?",
+          "answer": "yes",
+          "query": "a group of people posing together with a cake directly in front of them",
+          "rank": 9,
+          "improvement": 5,
+          "window": 450,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 0,
+          "coordinator_attempts": 1,
+          "coordinator_exact_matches": [
+            "attributes",
+            "attributes",
+            "full",
+            "attributes",
+            "relations"
+          ],
+          "llm_calls": 12
+        },
+        {
+          "state": 3,
+          "question": "Does candidate 21232 show the bride and groom in a static, posed arrangement with the wedding cake directly in front of them, as opposed to simply slicing it together?",
+          "answer": "yes",
+          "query": "a group of people posing together with a wedding cake directly in front of them in a static, posed arrangement",
+          "rank": 48,
+          "improvement": -39,
+          "window": 400,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 0,
+          "coordinator_attempts": 1,
+          "coordinator_exact_matches": [],
+          "llm_calls": 12
+        }
+      ],
+      "alias": "analysis/checkpoints/agents_debate_000000364869.json"
+    },
+    {
+      "method": "live_plugir_qwen",
+      "target": "unlabeled2017/000000562109.jpg",
+      "checkpoint": "IR-experiments\\runs\\live_upstream\\7516ff962f1f39f92cea\\dialogues\\a2863806f3cc7068585cc3bcac95d67be4f8923d11da55ccbe84d356488e23d0.json",
+      "status": "complete",
+      "last_error": null,
+      "states": 11,
+      "ranks": [
+        89,
+        50,
+        50,
+        73,
+        33,
+        29,
+        33,
+        68,
+        86,
+        63,
+        82
+      ],
+      "final_rank": 82,
+      "best_rank": 29,
+      "BRI": 3.5997021198272705,
+      "metrics": [
+        {
+          "round": 0,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 0,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 0,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 1,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 1,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 1,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 2,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 2,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 2,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 3,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 3,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 3,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 4,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 4,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 4,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 5,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 5,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 5,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 6,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 6,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 6,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 7,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 7,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 7,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 8,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 8,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 8,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 9,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 9,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 9,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 10,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 10,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 10,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        }
+      ],
+      "owners": {},
+      "filters": {},
+      "normalized_repeats": [
+        [
+          5,
+          6,
+          "What type of fence is surrounding the open field where the giraffe is standing at the zoo?"
+        ],
+        [
+          2,
+          7,
+          "What color is the giraffe's coat in the open field at the zoo?"
+        ]
+      ],
+      "literal_repeats": [
+        [
+          5,
+          6,
+          "What type of fence is surrounding the open field where the giraffe is standing at the zoo?"
+        ],
+        [
+          2,
+          7,
+          "What color is the giraffe's coat in the open field at the zoo?"
+        ]
+      ],
+      "rows": [
+        {
+          "state": 0,
+          "question": null,
+          "answer": null,
+          "query": "a giraffe is standing in an open field",
+          "rank": 89,
+          "improvement": null,
+          "window": null,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 0,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 0
+        },
+        {
+          "state": 1,
+          "question": "What is the exact location or setting of the open field where the giraffe is standing?",
+          "answer": "a zoo",
+          "query": "a giraffe is standing in an open field at a zoo",
+          "rank": 50,
+          "improvement": 39,
+          "window": null,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 0,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 19
+        },
+        {
+          "state": 2,
+          "question": "What color is the giraffe's coat in the open field at the zoo?",
+          "answer": "a giraffe is standing in an open field at a zoo.",
+          "query": "a giraffe standing in an open field at a zoo",
+          "rank": 50,
+          "improvement": 0,
+          "window": null,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 0,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 11
+        },
+        {
+          "state": 3,
+          "question": "What type of fence or enclosure is present near the giraffe in the open field at the zoo?",
+          "answer": "a giraffe standing in an open field at a zoo",
+          "query": "a giraffe standing in an open field at a zoo, with a fence or enclosure nearby, coat color not specified",
+          "rank": 73,
+          "improvement": -23,
+          "window": null,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 0,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 11
+        },
+        {
+          "state": 4,
+          "question": "What type of vegetation or landscape features are visible in the open field where the giraffe is standing at the zoo?",
+          "answer": "a giraffe standing in an open field at a zoo",
+          "query": "a giraffe standing in an open field at a zoo, with a fence enclosure nearby, surrounded by vegetation, coat color typical of a giraffe",
+          "rank": 33,
+          "improvement": 40,
+          "window": null,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 0,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 11
+        },
+        {
+          "state": 5,
+          "question": "What type of fence is surrounding the open field where the giraffe is standing at the zoo?",
+          "answer": "a fence",
+          "query": "a giraffe standing in an open field at a zoo, surrounded by a fence, with typical grassy vegetation in the background",
+          "rank": 29,
+          "improvement": 4,
+          "window": null,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 0,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 11
+        },
+        {
+          "state": 6,
+          "question": "What type of fence is surrounding the open field where the giraffe is standing at the zoo?",
+          "answer": "a fence",
+          "query": "A giraffe standing in an open field within a zoo, enclosed by a fence, with grassy plants in the background.",
+          "rank": 33,
+          "improvement": -4,
+          "window": null,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 0,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 12
+        },
+        {
+          "state": 7,
+          "question": "What color is the giraffe's coat in the open field at the zoo?",
+          "answer": "a tan",
+          "query": "a giraffe standing in an open field at a zoo, surrounded by a fence, with a tan coat and typical zoo landscape features visible in the background",
+          "rank": 68,
+          "improvement": -35,
+          "window": null,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 0,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 11
+        },
+        {
+          "state": 8,
+          "question": "What type of path or surface is visible in the open field at the zoo where the giraffe is standing?",
+          "answer": "a grassy area",
+          "query": "a giraffe standing in a grassy open field at a zoo, surrounded by a fence, with a tan coat and a grassy path nearby",
+          "rank": 86,
+          "improvement": -18,
+          "window": null,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 0,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 11
+        },
+        {
+          "state": 9,
+          "question": "What type of fence is the giraffe near in the open field at the zoo?",
+          "answer": "a wooden fence",
+          "query": "a giraffe with a tan coat stands in a grassy open field at a zoo, near a wooden fence",
+          "rank": 63,
+          "improvement": 23,
+          "window": null,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 0,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 11
+        },
+        {
+          "state": 10,
+          "question": "**Question:** What type of fence is the giraffe near in the open field at the zoo?",
+          "answer": "a wooden fence",
+          "query": "a giraffe standing in a grassy open field at a zoo, near a wooden fence, with a tan coat",
+          "rank": 82,
+          "improvement": -19,
+          "window": null,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 0,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 33
+        }
+      ],
+      "alias": "analysis/checkpoints/live_plugir_qwen_000000562109.json"
+    },
+    {
+      "method": "live_plugir_qwen",
+      "target": "unlabeled2017/000000364869.jpg",
+      "checkpoint": "IR-experiments\\runs\\live_upstream\\7516ff962f1f39f92cea\\dialogues\\ee95c5a658c74dafaeef938fd96ebf7f10759262d7767aa9933b362456e9fd86.json",
+      "status": "complete",
+      "last_error": null,
+      "states": 11,
+      "ranks": [
+        9,
+        16,
+        21,
+        23,
+        21,
+        23,
+        8,
+        4,
+        16,
+        8,
+        13
+      ],
+      "final_rank": 13,
+      "best_rank": 4,
+      "BRI": 1.901620864868164,
+      "metrics": [
+        {
+          "round": 0,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 0,
+          "k": 10,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 0,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 1,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 1,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 1,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 2,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 2,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 2,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 3,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 3,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 3,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 4,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 4,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 4,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 5,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 5,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 5,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 6,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 6,
+          "k": 10,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 6,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 7,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 7,
+          "k": 10,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 7,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 8,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 8,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 8,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 9,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 9,
+          "k": 10,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 9,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 10,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 10,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 10,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        }
+      ],
+      "owners": {},
+      "filters": {},
+      "normalized_repeats": [
+        [
+          7,
+          8,
+          "**Question:** What colors are the birthday cake and the clothing of the people posing in front of it?"
+        ]
+      ],
+      "literal_repeats": [
+        [
+          7,
+          8,
+          "**Question:** What colors are the birthday cake and the clothing of the people posing in front of it?"
+        ]
+      ],
+      "rows": [
+        {
+          "state": 0,
+          "question": null,
+          "answer": null,
+          "query": "a group of people posing in front of a cake",
+          "rank": 9,
+          "improvement": null,
+          "window": null,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 0,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 0
+        },
+        {
+          "state": 1,
+          "question": "What type of cake are they posing in front of?",
+          "answer": "a cake",
+          "query": "A crowd of individuals standing in front of a cake.",
+          "rank": 16,
+          "improvement": -7,
+          "window": null,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 0,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 20
+        },
+        {
+          "state": 2,
+          "question": "What is the occasion associated with the cake they are posing in front of?",
+          "answer": "a birthday",
+          "query": "a group of people posing in front of a birthday cake",
+          "rank": 21,
+          "improvement": -5,
+          "window": null,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 0,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 11
+        },
+        {
+          "state": 3,
+          "question": "What is the gender composition of the group posing in front of the cake?",
+          "answer": "a group of people posing in front of a birthday cake",
+          "query": "A crowd of individuals standing in front of a birthday cake.",
+          "rank": 23,
+          "improvement": -2,
+          "window": null,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 0,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 12
+        },
+        {
+          "state": 4,
+          "question": "What is the age range or demographic of the people in the group posing in front of the cake?",
+          "answer": "a crowd of individuals standing in front of a birthday cake",
+          "query": "a group of people posing in front of a birthday cake",
+          "rank": 21,
+          "improvement": 2,
+          "window": null,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 0,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 15
+        },
+        {
+          "state": 5,
+          "question": "What are the genders of the individuals in the group posing in front of the cake?",
+          "answer": "a group of people posing in front of a birthday cake",
+          "query": "A crowd of individuals standing in front of a birthday cake.",
+          "rank": 23,
+          "improvement": -2,
+          "window": null,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 0,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 12
+        },
+        {
+          "state": 6,
+          "question": "What is the age of the woman cutting the cake in the scene?",
+          "answer": "a young woman",
+          "query": "A group of people posing in front of a birthday cake, including a young woman cutting the cake, with a diverse age range and mixed genders, standing in a crowd setting.",
+          "rank": 8,
+          "improvement": 15,
+          "window": null,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 0,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 11
+        },
+        {
+          "state": 7,
+          "question": "**Question:** What colors are the birthday cake and the clothing of the people posing in front of it?",
+          "answer": "a group of people posing in front of a birthday cake",
+          "query": "a group of people posing in front of a birthday cake, featuring a young woman cutting the cake, with vibrant colors on both the cake and the clothing of the individuals",
+          "rank": 4,
+          "improvement": 4,
+          "window": null,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 0,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 21
+        },
+        {
+          "state": 8,
+          "question": "**Question:** What colors are the birthday cake and the clothing of the people posing in front of it?",
+          "answer": "a group of people posing in front of a birthday cake",
+          "query": "a group of people posing in front of a birthday cake, featuring a young woman cutting the cake, with vibrant colors on both the cake and the clothing of the individuals, including bright hues like red, yellow, and blue",
+          "rank": 16,
+          "improvement": -12,
+          "window": null,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 0,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 33
+        },
+        {
+          "state": 9,
+          "question": "What types of poses or expressions are the people making while posing in front of the birthday cake?",
+          "answer": "a group of people posing in front of a birthday cake",
+          "query": "A group of people posing in front of a birthday cake, featuring a young woman cutting the cake, with vibrant colors on both the cake and their clothing, and expressions of celebration and joy.",
+          "rank": 8,
+          "improvement": 8,
+          "window": null,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 0,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 21
+        },
+        {
+          "state": 10,
+          "question": "**Question:** Which of the retrieval candidates best describes a group of people posing in front of a birthday cake, including the presence of children and a diverse age range?",
+          "answer": "a group of people posing in front of a birthday cake",
+          "query": "a group of people of diverse ages, including children, posing joyfully in front of a birthday cake, with a young woman cutting the cake, featuring vibrant colors in both the cake and the clothing of the individuals",
+          "rank": 13,
+          "improvement": -5,
+          "window": null,
+          "skip": null,
+          "regeneration": false,
+          "reviewer_attempts": 0,
+          "coordinator_attempts": 0,
+          "coordinator_exact_matches": [],
+          "llm_calls": 15
+        }
+      ],
+      "alias": "analysis/checkpoints/live_plugir_qwen_000000364869.json"
+    }
+  ],
+  "events": [
+    {
+      "event": "start",
+      "method": "agents_critique",
+      "target": "unlabeled2017/000000364869.jpg",
+      "utc": "2026-11-23T04:33:19.605317+00:00",
+      "checkpoint": "/home/lrc87/pilot_debate_20261122/IR-experiments/runs/three_agents/shared_agents_simple_v1/plugir_original_rewrite_v1/regenerate_empty_pool_once_v1/critique_selector_retry_once/000000364869.json",
+      "checkpoint_existed": false
+    },
+    {
+      "event": "end",
+      "method": "agents_critique",
+      "target": "unlabeled2017/000000364869.jpg",
+      "start_utc": "2026-11-23T04:33:19.605317+00:00",
+      "end_utc": "2026-11-23T04:42:55.941804+00:00",
+      "wall_seconds": 576.3365491600001,
+      "error": null,
+      "peak_allocated_bytes": 10365075456,
+      "peak_reserved_bytes": 10796138496,
+      "qwen_records": 61,
+      "qwen_actual": 61,
+      "qwen_replays": 0,
+      "blip2_records": 10,
+      "blip2_actual": 10,
+      "blip2_replays": 0,
+      "input_tokens": 71523,
+      "output_tokens": 6614,
+      "qwen_generation_seconds": 361.09378263400015
+    },
+    {
+      "event": "start",
+      "method": "agents_critique",
+      "target": "unlabeled2017/000000562109.jpg",
+      "utc": "2026-11-23T04:42:55.944541+00:00",
+      "checkpoint": "/home/lrc87/pilot_debate_20261122/IR-experiments/runs/three_agents/shared_agents_simple_v1/plugir_original_rewrite_v1/regenerate_empty_pool_once_v1/critique_selector_retry_once/000000562109.json",
+      "checkpoint_existed": false
+    },
+    {
+      "event": "end",
+      "method": "agents_critique",
+      "target": "unlabeled2017/000000562109.jpg",
+      "start_utc": "2026-11-23T04:42:55.944541+00:00",
+      "end_utc": "2026-11-23T04:52:05.357280+00:00",
+      "wall_seconds": 549.4127954179999,
+      "error": "ValueError: Batch filter must return one valid decision per slot.",
+      "peak_allocated_bytes": 10368705024,
+      "peak_reserved_bytes": 10796138496,
+      "qwen_records": 59,
+      "qwen_actual": 59,
+      "qwen_replays": 0,
+      "blip2_records": 9,
+      "blip2_actual": 9,
+      "blip2_replays": 0,
+      "input_tokens": 70848,
+      "output_tokens": 7949,
+      "qwen_generation_seconds": 434.43245399199895
+    },
+    {
+      "event": "continuation_dispatch",
+      "method": "agents_debate",
+      "target_index": 0,
+      "reason": "Independent history continuation after preserved primary error; runner and scientific source unchanged."
+    },
+    {
+      "event": "start",
+      "method": "agents_debate",
+      "target": "unlabeled2017/000000364869.jpg",
+      "utc": "2026-11-23T04:54:34.185037+00:00",
+      "checkpoint": "/home/lrc87/pilot_debate_20261122/IR-experiments/runs/three_agents_debate/shared_agents_debate_v1/1ebdeb777e9bfd15ab3f/dialogues/cbcf690e9bf8c3223ed14f80cc4a71a0f35cbca2b13fa16995def615b4183c60.json",
+      "checkpoint_existed": false
+    },
+    {
+      "event": "end",
+      "method": "agents_debate",
+      "target": "unlabeled2017/000000364869.jpg",
+      "start_utc": "2026-11-23T04:54:34.185037+00:00",
+      "end_utc": "2026-11-23T05:01:10.468163+00:00",
+      "wall_seconds": 396.28316727499987,
+      "error": "ValueError: Opening observations need valid supplied evidence IDs.",
+      "peak_allocated_bytes": 10491417088,
+      "peak_reserved_bytes": 10949230592,
+      "qwen_records": 37,
+      "qwen_actual": 37,
+      "qwen_replays": 0,
+      "blip2_records": 3,
+      "blip2_actual": 3,
+      "blip2_replays": 0,
+      "input_tokens": 44961,
+      "output_tokens": 3932,
+      "qwen_generation_seconds": 216.8805986629991
+    },
+    {
+      "event": "continuation_dispatch",
+      "method": "agents_debate",
+      "target_index": 1,
+      "reason": "Independent history continuation after preserved primary error; runner and scientific source unchanged."
+    },
+    {
+      "event": "start",
+      "method": "agents_debate",
+      "target": "unlabeled2017/000000562109.jpg",
+      "utc": "2026-11-23T05:01:33.407869+00:00",
+      "checkpoint": "/home/lrc87/pilot_debate_20261122/IR-experiments/runs/three_agents_debate/shared_agents_debate_v1/1ebdeb777e9bfd15ab3f/dialogues/308d13de8a9629b805f35399ed1b937a103b6278f237e413a85a1da02e1b0653.json",
+      "checkpoint_existed": false
+    },
+    {
+      "event": "end",
+      "method": "agents_debate",
+      "target": "unlabeled2017/000000562109.jpg",
+      "start_utc": "2026-11-23T05:01:33.407869+00:00",
+      "end_utc": "2026-11-23T05:02:37.602529+00:00",
+      "wall_seconds": 64.19470336600034,
+      "error": "ValueError: Opening observations need valid supplied evidence IDs.",
+      "peak_allocated_bytes": 10133947904,
+      "peak_reserved_bytes": 10169090048,
+      "qwen_records": 1,
+      "qwen_actual": 1,
+      "qwen_replays": 0,
+      "blip2_records": 0,
+      "blip2_actual": 0,
+      "blip2_replays": 0,
+      "input_tokens": 685,
+      "output_tokens": 166,
+      "qwen_generation_seconds": 9.228358225000193
+    },
+    {
+      "event": "continuation_dispatch",
+      "method": "live_plugir_qwen",
+      "target_index": 0,
+      "reason": "Independent history continuation after preserved primary error; runner and scientific source unchanged."
+    },
+    {
+      "event": "start",
+      "method": "live_plugir_qwen",
+      "target": "unlabeled2017/000000364869.jpg",
+      "utc": "2026-11-23T05:02:45.590301+00:00",
+      "checkpoint": "/home/lrc87/pilot_debate_20261122/IR-experiments/runs/live_upstream/7516ff962f1f39f92cea/dialogues/ee95c5a658c74dafaeef938fd96ebf7f10759262d7767aa9933b362456e9fd86.json",
+      "checkpoint_existed": false
+    },
+    {
+      "event": "end",
+      "method": "live_plugir_qwen",
+      "target": "unlabeled2017/000000364869.jpg",
+      "start_utc": "2026-11-23T05:02:45.590301+00:00",
+      "end_utc": "2026-11-23T05:09:52.151576+00:00",
+      "wall_seconds": 426.56185326800005,
+      "error": null,
+      "peak_allocated_bytes": 10242550272,
+      "peak_reserved_bytes": 10802429952,
+      "qwen_records": 171,
+      "qwen_actual": 171,
+      "qwen_replays": 0,
+      "blip2_records": 10,
+      "blip2_actual": 10,
+      "blip2_replays": 0,
+      "input_tokens": 78807,
+      "output_tokens": 3157,
+      "qwen_generation_seconds": 179.88033088199973
+    },
+    {
+      "event": "continuation_dispatch",
+      "method": "live_plugir_qwen",
+      "target_index": 1,
+      "reason": "Independent history continuation after preserved primary error; runner and scientific source unchanged."
+    },
+    {
+      "event": "start",
+      "method": "live_plugir_qwen",
+      "target": "unlabeled2017/000000562109.jpg",
+      "utc": "2026-11-23T05:10:15.530650+00:00",
+      "checkpoint": "/home/lrc87/pilot_debate_20261122/IR-experiments/runs/live_upstream/7516ff962f1f39f92cea/dialogues/a2863806f3cc7068585cc3bcac95d67be4f8923d11da55ccbe84d356488e23d0.json",
+      "checkpoint_existed": false
+    },
+    {
+      "event": "end",
+      "method": "live_plugir_qwen",
+      "target": "unlabeled2017/000000562109.jpg",
+      "start_utc": "2026-11-23T05:10:15.530650+00:00",
+      "end_utc": "2026-11-23T05:17:27.328280+00:00",
+      "wall_seconds": 431.79768134999995,
+      "error": null,
+      "peak_allocated_bytes": 10254384128,
+      "peak_reserved_bytes": 10800332800,
+      "qwen_records": 141,
+      "qwen_actual": 141,
+      "qwen_replays": 0,
+      "blip2_records": 10,
+      "blip2_actual": 10,
+      "blip2_replays": 0,
+      "input_tokens": 67401,
+      "output_tokens": 2639,
+      "qwen_generation_seconds": 146.95093263999934
+    }
+  ],
+  "aggregate": [
+    {
+      "method": "agents_critique",
+      "shared_states": 10,
+      "BRI": 3.3246068954467773,
+      "metrics": [
+        {
+          "round": 0,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 0,
+          "k": 10,
+          "recall_percent": 50.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 0,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 1,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 1,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 1,
+          "k": 100,
+          "recall_percent": 50.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 2,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 2,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 2,
+          "k": 100,
+          "recall_percent": 50.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 3,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 3,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 3,
+          "k": 100,
+          "recall_percent": 50.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 4,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 4,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 4,
+          "k": 100,
+          "recall_percent": 50.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 5,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 5,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 5,
+          "k": 100,
+          "recall_percent": 50.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 6,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 6,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 6,
+          "k": 100,
+          "recall_percent": 50.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 7,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 7,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 7,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 8,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 8,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 8,
+          "k": 100,
+          "recall_percent": 50.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 9,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 9,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 9,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        }
+      ]
+    },
+    {
+      "method": "agents_debate",
+      "shared_states": 1,
+      "BRI": null,
+      "metrics": [
+        {
+          "round": 0,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 0,
+          "k": 10,
+          "recall_percent": 50.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 0,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        }
+      ]
+    },
+    {
+      "method": "live_plugir_qwen",
+      "shared_states": 11,
+      "BRI": 2.7506613731384277,
+      "metrics": [
+        {
+          "round": 0,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 0,
+          "k": 10,
+          "recall_percent": 50.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 0,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 1,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 1,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 1,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 2,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 2,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 2,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 3,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 3,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 3,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 4,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 4,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 4,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 5,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 5,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 5,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 6,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 6,
+          "k": 10,
+          "recall_percent": 50.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 6,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 7,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 7,
+          "k": 10,
+          "recall_percent": 50.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 7,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 8,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 8,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 8,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 9,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 9,
+          "k": 10,
+          "recall_percent": 50.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 9,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 10,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 10,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 10,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        }
+      ]
+    }
+  ],
+  "scopes": [
+    {
+      "scope": "cake_all_three_states_0_to_3",
+      "method": "agents_critique",
+      "states": 4,
+      "targets": [
+        "000000364869"
+      ],
+      "BRI": 2.1972246170043945,
+      "metrics": [
+        {
+          "round": 0,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 0,
+          "k": 10,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 0,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 1,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 1,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 1,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 2,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 2,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 2,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 3,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 3,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 3,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        }
+      ]
+    },
+    {
+      "scope": "cake_all_three_states_0_to_3",
+      "method": "agents_debate",
+      "states": 4,
+      "targets": [
+        "000000364869"
+      ],
+      "BRI": 2.1972246170043945,
+      "metrics": [
+        {
+          "round": 0,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 0,
+          "k": 10,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 0,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 1,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 1,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 1,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 2,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 2,
+          "k": 10,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 2,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 3,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 3,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 3,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        }
+      ]
+    },
+    {
+      "scope": "cake_all_three_states_0_to_3",
+      "method": "live_plugir_qwen",
+      "states": 4,
+      "targets": [
+        "000000364869"
+      ],
+      "BRI": 2.1972246170043945,
+      "metrics": [
+        {
+          "round": 0,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 0,
+          "k": 10,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 0,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 1,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 1,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 1,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 2,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 2,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 2,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 3,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 3,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 3,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        }
+      ]
+    },
+    {
+      "scope": "both_targets_critique_vs_live_states_0_to_9",
+      "method": "agents_critique",
+      "states": 10,
+      "targets": [
+        "000000364869",
+        "000000562109"
+      ],
+      "BRI": 3.3246068954467773,
+      "metrics": [
+        {
+          "round": 0,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 0,
+          "k": 10,
+          "recall_percent": 50.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 0,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 1,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 1,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 1,
+          "k": 100,
+          "recall_percent": 50.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 2,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 2,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 2,
+          "k": 100,
+          "recall_percent": 50.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 3,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 3,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 3,
+          "k": 100,
+          "recall_percent": 50.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 4,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 4,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 4,
+          "k": 100,
+          "recall_percent": 50.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 5,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 5,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 5,
+          "k": 100,
+          "recall_percent": 50.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 6,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 6,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 6,
+          "k": 100,
+          "recall_percent": 50.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 7,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 7,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 7,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 8,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 8,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 8,
+          "k": 100,
+          "recall_percent": 50.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 9,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 9,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 9,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        }
+      ]
+    },
+    {
+      "scope": "both_targets_critique_vs_live_states_0_to_9",
+      "method": "live_plugir_qwen",
+      "states": 10,
+      "targets": [
+        "000000364869",
+        "000000562109"
+      ],
+      "BRI": 2.7922022342681885,
+      "metrics": [
+        {
+          "round": 0,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 0,
+          "k": 10,
+          "recall_percent": 50.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 0,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 1,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 1,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 1,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 2,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 2,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 2,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 3,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 3,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 3,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 4,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 4,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 4,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 5,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 5,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 5,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 6,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 6,
+          "k": 10,
+          "recall_percent": 50.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 6,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 7,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 7,
+          "k": 10,
+          "recall_percent": 50.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 7,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 8,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 8,
+          "k": 10,
+          "recall_percent": 0.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 8,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        },
+        {
+          "round": 9,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 9,
+          "k": 10,
+          "recall_percent": 50.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 9,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        }
+      ]
+    },
+    {
+      "scope": "both_targets_all_three_initial_only",
+      "method": "agents_critique",
+      "states": 1,
+      "targets": [
+        "000000364869",
+        "000000562109"
+      ],
+      "BRI": null,
+      "metrics": [
+        {
+          "round": 0,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 0,
+          "k": 10,
+          "recall_percent": 50.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 0,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        }
+      ]
+    },
+    {
+      "scope": "both_targets_all_three_initial_only",
+      "method": "agents_debate",
+      "states": 1,
+      "targets": [
+        "000000364869",
+        "000000562109"
+      ],
+      "BRI": null,
+      "metrics": [
+        {
+          "round": 0,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 0,
+          "k": 10,
+          "recall_percent": 50.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 0,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        }
+      ]
+    },
+    {
+      "scope": "both_targets_all_three_initial_only",
+      "method": "live_plugir_qwen",
+      "states": 1,
+      "targets": [
+        "000000364869",
+        "000000562109"
+      ],
+      "BRI": null,
+      "metrics": [
+        {
+          "round": 0,
+          "k": 1,
+          "recall_percent": 0.0,
+          "hits_percent": 0.0
+        },
+        {
+          "round": 0,
+          "k": 10,
+          "recall_percent": 50.0,
+          "hits_percent": 50.0
+        },
+        {
+          "round": 0,
+          "k": 100,
+          "recall_percent": 100.0,
+          "hits_percent": 100.0
+        }
+      ]
+    }
+  ],
+  "checks": {
+    "fresh_checkpoints": 6,
+    "qwen_records": 470,
+    "blip2_records": 42,
+    "common_initial_captions_and_ranks": true,
+    "initial_representatives_identical_between_critique_and_debate": true,
+    "completed_debate_rounds_with_synchronous_snapshot_verified": 3,
+    "standard_live_report_rows_match_checkpoints": 22,
+    "max_device_used_MiB": 10692.0
+  }
+}

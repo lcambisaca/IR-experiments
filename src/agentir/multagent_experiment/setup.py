@@ -8,7 +8,7 @@ TARGET_IMAGES = (
 )
 N_STATES = 11  # Default for direct calls; run_evaluation.py supplies its own N_STATES.
 RUN_LABEL = "specialists_shared_cake_giraffe"
-AGENT_MODES = (False,True)
+AGENT_MODES = (True,)  # Critique baseline; add False to include minimum-KL separately.
 AGENT_INPUT_TOKENS = 8192
 AGENTS = AgentSettings(
     seed=1021, threshold_low=500, exclude_top_k=10,
@@ -35,7 +35,7 @@ def prepare_three_agents(root, retriever, pairs, *, n_states=N_STATES, offline=F
                          candidate_captions="assets/protocol/visdial_captions.json",
                          image_root="data/images", image_archive=None,
                          download_missing=True, max_input_tokens=AGENT_INPUT_TOKENS,
-                         run_name="shared_agents_simple_v1"):
+                         run_name="shared_agents_simple_v1", answerer="blip2"):
     
     """Prepare the supplied matched targets and return a PreparedExperiment.
 
@@ -49,5 +49,5 @@ def prepare_three_agents(root, retriever, pairs, *, n_states=N_STATES, offline=F
         settings=settings, modes=modes, device=device,
         candidate_captions=candidate_captions, image_root=image_root,
         image_archive=image_archive, download_missing=download_missing,
-        max_input_tokens=max_input_tokens, run_name=run_name,
+        max_input_tokens=max_input_tokens, run_name=run_name, answerer=answerer,
     )

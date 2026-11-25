@@ -1,0 +1,2026 @@
+[
+  {
+    "method": "agents_no_critique",
+    "target": "unlabeled2017/000000364869.jpg",
+    "status": "complete",
+    "last_error": null,
+    "states": 11,
+    "selected_roles": {
+      "attributes": 1,
+      "full": 1,
+      "relations": 4
+    },
+    "selected_contributing_roles": {
+      "attributes": 1,
+      "full": 1,
+      "relations": 4
+    },
+    "logical_qwen_calls_saved_in_completed_states": 44,
+    "reused_qwen_calls_saved_in_completed_states": 0,
+    "exact_selected_repeats": {},
+    "exact_repeated_proposals": {
+      "is the cake decorated with candles": [
+        {
+          "round": 1,
+          "owner": "full",
+          "status": "unknown"
+        },
+        {
+          "round": 1,
+          "owner": "relations",
+          "status": "duplicate"
+        }
+      ],
+      "who is posing with the cake": [
+        {
+          "round": 1,
+          "owner": "full",
+          "status": "already_known"
+        },
+        {
+          "round": 6,
+          "owner": "full",
+          "status": "previously_rejected"
+        }
+      ],
+      "is the cake being cut or sliced": [
+        {
+          "round": 1,
+          "owner": "full",
+          "status": "unsupported"
+        },
+        {
+          "round": 6,
+          "owner": "full",
+          "status": "previously_rejected"
+        }
+      ],
+      "what type of cake is it": [
+        {
+          "round": 1,
+          "owner": "attributes",
+          "status": "unknown"
+        },
+        {
+          "round": 5,
+          "owner": "attributes",
+          "status": "already_asked"
+        },
+        {
+          "round": 7,
+          "owner": "attributes",
+          "status": "already_asked"
+        }
+      ],
+      "is the cake chocolate": [
+        {
+          "round": 1,
+          "owner": "attributes",
+          "status": "unknown"
+        },
+        {
+          "round": 1,
+          "owner": "relations",
+          "status": "duplicate"
+        }
+      ],
+      "who is posing in front of the cake": [
+        {
+          "round": 1,
+          "owner": "attributes",
+          "status": "already_known"
+        },
+        {
+          "round": 7,
+          "owner": "full",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 9,
+          "owner": "full",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 10,
+          "owner": "full",
+          "status": "previously_rejected"
+        }
+      ],
+      "are the people posing in front of the cake or cutting it": [
+        {
+          "round": 1,
+          "owner": "relations",
+          "status": "already_known"
+        },
+        {
+          "round": 4,
+          "owner": "full",
+          "status": "previously_rejected"
+        }
+      ],
+      "is the cake visible in the scene": [
+        {
+          "round": 2,
+          "owner": "full",
+          "status": "already_known"
+        },
+        {
+          "round": 4,
+          "owner": "full",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 5,
+          "owner": "attributes",
+          "status": "previously_rejected"
+        }
+      ],
+      "what colour is the cake": [
+        {
+          "round": 2,
+          "owner": "attributes",
+          "status": "unsupported"
+        },
+        {
+          "round": 3,
+          "owner": "attributes",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 4,
+          "owner": "full",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 4,
+          "owner": "attributes",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 5,
+          "owner": "full",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 5,
+          "owner": "attributes",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 6,
+          "owner": "full",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 6,
+          "owner": "attributes",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 7,
+          "owner": "attributes",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 8,
+          "owner": "attributes",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 9,
+          "owner": "full",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 9,
+          "owner": "attributes",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 10,
+          "owner": "full",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 10,
+          "owner": "attributes",
+          "status": "previously_rejected"
+        }
+      ],
+      "what is the spatial relationship between the people and the cake": [
+        {
+          "round": 2,
+          "owner": "relations",
+          "status": "unknown"
+        },
+        {
+          "round": 5,
+          "owner": "relations",
+          "status": "unknown"
+        }
+      ],
+      "who is cutting the cake": [
+        {
+          "round": 3,
+          "owner": "full",
+          "status": "unsupported"
+        },
+        {
+          "round": 4,
+          "owner": "full",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 5,
+          "owner": "full",
+          "status": "previously_rejected"
+        }
+      ],
+      "where is the cake located in relation to the group": [
+        {
+          "round": 4,
+          "owner": "full",
+          "status": "already_known"
+        },
+        {
+          "round": 6,
+          "owner": "full",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 6,
+          "owner": "relations",
+          "status": "previously_rejected"
+        }
+      ],
+      "is the cake on a table": [
+        {
+          "round": 5,
+          "owner": "full",
+          "status": "already_known"
+        },
+        {
+          "round": 5,
+          "owner": "attributes",
+          "status": "duplicate"
+        },
+        {
+          "round": 5,
+          "owner": "relations",
+          "status": "duplicate"
+        },
+        {
+          "round": 7,
+          "owner": "full",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 7,
+          "owner": "attributes",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 8,
+          "owner": "full",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 9,
+          "owner": "full",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 10,
+          "owner": "full",
+          "status": "previously_rejected"
+        }
+      ],
+      "are the people posing in front of a birthday cake on a table": [
+        {
+          "round": 5,
+          "owner": "full",
+          "status": "already_known"
+        },
+        {
+          "round": 6,
+          "owner": "full",
+          "status": "previously_rejected"
+        }
+      ],
+      "is the cake visible to the people": [
+        {
+          "round": 5,
+          "owner": "full",
+          "status": "unknown"
+        },
+        {
+          "round": 6,
+          "owner": "relations",
+          "status": "already_known"
+        },
+        {
+          "round": 7,
+          "owner": "attributes",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 8,
+          "owner": "full",
+          "status": "previously_rejected"
+        }
+      ],
+      "are the people standing or sitting in front of the cake": [
+        {
+          "round": 5,
+          "owner": "relations",
+          "status": "unknown"
+        },
+        {
+          "round": 7,
+          "owner": "attributes",
+          "status": "already_known"
+        },
+        {
+          "round": 8,
+          "owner": "full",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 9,
+          "owner": "full",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 10,
+          "owner": "full",
+          "status": "previously_rejected"
+        }
+      ],
+      "is the cake visible to the people posing": [
+        {
+          "round": 5,
+          "owner": "relations",
+          "status": "unknown"
+        },
+        {
+          "round": 7,
+          "owner": "full",
+          "status": "already_asked"
+        },
+        {
+          "round": 9,
+          "owner": "full",
+          "status": "already_asked"
+        },
+        {
+          "round": 10,
+          "owner": "full",
+          "status": "already_asked"
+        }
+      ],
+      "what is the relationship between the people and the cake": [
+        {
+          "round": 6,
+          "owner": "relations",
+          "status": "unsupported"
+        },
+        {
+          "round": 7,
+          "owner": "full",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 7,
+          "owner": "relations",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 8,
+          "owner": "full",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 8,
+          "owner": "relations",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 9,
+          "owner": "relations",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 10,
+          "owner": "relations",
+          "status": "previously_rejected"
+        }
+      ],
+      "are the people standing or sitting in relation to the cake": [
+        {
+          "round": 6,
+          "owner": "relations",
+          "status": "unknown"
+        },
+        {
+          "round": 7,
+          "owner": "full",
+          "status": "already_asked"
+        }
+      ]
+    },
+    "partial_round_audit": null
+  },
+  {
+    "method": "agents_no_critique",
+    "target": "unlabeled2017/000000562109.jpg",
+    "status": "complete",
+    "last_error": null,
+    "states": 11,
+    "selected_roles": {
+      "full": 5,
+      "attributes": 3
+    },
+    "selected_contributing_roles": {
+      "full": 5,
+      "attributes": 3
+    },
+    "logical_qwen_calls_saved_in_completed_states": 48,
+    "reused_qwen_calls_saved_in_completed_states": 0,
+    "exact_selected_repeats": {},
+    "exact_repeated_proposals": {
+      "is the scene set in a natural open field or a man made enclosure": [
+        {
+          "round": 1,
+          "owner": "full",
+          "status": "already_known"
+        },
+        {
+          "round": 4,
+          "owner": "full",
+          "status": "previously_rejected"
+        }
+      ],
+      "what type of environment surrounds the giraffe": [
+        {
+          "round": 1,
+          "owner": "full",
+          "status": "unknown"
+        },
+        {
+          "round": 3,
+          "owner": "full",
+          "status": "already_asked"
+        }
+      ],
+      "what is adjacent to the giraffe": [
+        {
+          "round": 1,
+          "owner": "relations",
+          "status": "unknown"
+        },
+        {
+          "round": 2,
+          "owner": "relations",
+          "status": "unknown"
+        }
+      ],
+      "are there other animals present": [
+        {
+          "round": 1,
+          "owner": "relations",
+          "status": "unknown"
+        },
+        {
+          "round": 2,
+          "owner": "full",
+          "status": "unknown"
+        }
+      ],
+      "is the field covered with tall grass or dry brush": [
+        {
+          "round": 2,
+          "owner": "full",
+          "status": "unknown"
+        },
+        {
+          "round": 7,
+          "owner": "full",
+          "status": "already_known"
+        },
+        {
+          "round": 8,
+          "owner": "attributes",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 9,
+          "owner": "attributes",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 10,
+          "owner": "attributes",
+          "status": "previously_rejected"
+        }
+      ],
+      "what type of vegetation is surrounding the giraffe": [
+        {
+          "round": 2,
+          "owner": "attributes",
+          "status": "already_known"
+        },
+        {
+          "round": 4,
+          "owner": "full",
+          "status": "previously_rejected"
+        }
+      ],
+      "are there any trees nearby": [
+        {
+          "round": 2,
+          "owner": "attributes",
+          "status": "unknown"
+        },
+        {
+          "round": 3,
+          "owner": "full",
+          "status": "already_asked"
+        }
+      ],
+      "what is the background of the field grassy or otherwise": [
+        {
+          "round": 3,
+          "owner": "full",
+          "status": "already_known"
+        },
+        {
+          "round": 5,
+          "owner": "full",
+          "status": "previously_rejected"
+        }
+      ],
+      "what colour is the giraffe": [
+        {
+          "round": 3,
+          "owner": "attributes",
+          "status": "unsupported"
+        },
+        {
+          "round": 9,
+          "owner": "attributes",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 10,
+          "owner": "attributes",
+          "status": "previously_rejected"
+        }
+      ],
+      "what type of grass is present": [
+        {
+          "round": 3,
+          "owner": "attributes",
+          "status": "unknown"
+        },
+        {
+          "round": 4,
+          "owner": "attributes",
+          "status": "already_asked"
+        },
+        {
+          "round": 8,
+          "owner": "attributes",
+          "status": "already_asked"
+        },
+        {
+          "round": 10,
+          "owner": "attributes",
+          "status": "already_asked"
+        }
+      ],
+      "what is the spatial relationship between the giraffe and the trees": [
+        {
+          "round": 3,
+          "owner": "relations",
+          "status": "unknown"
+        },
+        {
+          "round": 4,
+          "owner": "relations",
+          "status": "ambiguous"
+        },
+        {
+          "round": 5,
+          "owner": "relations",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 6,
+          "owner": "full",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 6,
+          "owner": "relations",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 7,
+          "owner": "relations",
+          "status": "previously_rejected"
+        }
+      ],
+      "is the giraffe standing near a tree or in an open area without trees": [
+        {
+          "round": 3,
+          "owner": "relations",
+          "status": "already_known"
+        },
+        {
+          "round": 4,
+          "owner": "full",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 9,
+          "owner": "full",
+          "status": "previously_rejected"
+        }
+      ],
+      "what colour is the grass": [
+        {
+          "round": 5,
+          "owner": "attributes",
+          "status": "unsupported"
+        },
+        {
+          "round": 6,
+          "owner": "attributes",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 7,
+          "owner": "attributes",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 8,
+          "owner": "attributes",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 9,
+          "owner": "attributes",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 10,
+          "owner": "attributes",
+          "status": "previously_rejected"
+        }
+      ],
+      "is the scene set in a natural open field or within a man made enclosure": [
+        {
+          "round": 6,
+          "owner": "full",
+          "status": "already_known"
+        },
+        {
+          "round": 7,
+          "owner": "full",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 9,
+          "owner": "full",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 10,
+          "owner": "full",
+          "status": "previously_rejected"
+        }
+      ],
+      "is the field surrounded by rocks or not": [
+        {
+          "round": 6,
+          "owner": "full",
+          "status": "unknown"
+        },
+        {
+          "round": 9,
+          "owner": "full",
+          "status": "already_asked"
+        }
+      ],
+      "are the trees located near the giraffe or in a distant area": [
+        {
+          "round": 7,
+          "owner": "full",
+          "status": "unknown"
+        },
+        {
+          "round": 8,
+          "owner": "attributes",
+          "status": "already_asked"
+        }
+      ],
+      "are the trees visible in the background or in the foreground": [
+        {
+          "round": 8,
+          "owner": "full",
+          "status": "unknown"
+        },
+        {
+          "round": 9,
+          "owner": "full",
+          "status": "already_asked"
+        },
+        {
+          "round": 9,
+          "owner": "attributes",
+          "status": "already_asked"
+        },
+        {
+          "round": 10,
+          "owner": "full",
+          "status": "already_asked"
+        }
+      ],
+      "what is the spatial relationship between the giraffe and the tall trees": [
+        {
+          "round": 8,
+          "owner": "relations",
+          "status": "unknown"
+        },
+        {
+          "round": 9,
+          "owner": "relations",
+          "status": "ambiguous"
+        },
+        {
+          "round": 10,
+          "owner": "relations",
+          "status": "previously_rejected"
+        }
+      ],
+      "is the giraffe standing in a field with tall trees in the distant background or in an area without trees": [
+        {
+          "round": 9,
+          "owner": "attributes",
+          "status": "already_known"
+        },
+        {
+          "round": 10,
+          "owner": "full",
+          "status": "previously_rejected"
+        }
+      ]
+    },
+    "partial_round_audit": null
+  },
+  {
+    "method": "agents_critique",
+    "target": "unlabeled2017/000000364869.jpg",
+    "status": "interrupted",
+    "last_error": "Critique must choose one eligible proposal slot and give a reason.",
+    "states": 6,
+    "selected_roles": {
+      "full": 1,
+      "attributes": 4
+    },
+    "selected_contributing_roles": {
+      "full": 1,
+      "relations": 1,
+      "attributes": 4
+    },
+    "logical_qwen_calls_saved_in_completed_states": 30,
+    "reused_qwen_calls_saved_in_completed_states": 4,
+    "exact_selected_repeats": {},
+    "exact_repeated_proposals": {
+      "is the cake decorated with candles": [
+        {
+          "round": 1,
+          "owner": "full",
+          "status": "unknown"
+        },
+        {
+          "round": 1,
+          "owner": "relations",
+          "status": "duplicate"
+        }
+      ],
+      "what type of cake is it": [
+        {
+          "round": 1,
+          "owner": "attributes",
+          "status": "unknown"
+        },
+        {
+          "round": 2,
+          "owner": "attributes",
+          "status": "unknown"
+        },
+        {
+          "round": 3,
+          "owner": "attributes",
+          "status": "unknown"
+        }
+      ],
+      "is the cake chocolate": [
+        {
+          "round": 1,
+          "owner": "attributes",
+          "status": "unknown"
+        },
+        {
+          "round": 1,
+          "owner": "relations",
+          "status": "duplicate"
+        },
+        {
+          "round": 2,
+          "owner": "attributes",
+          "status": "unknown"
+        }
+      ],
+      "what color is the cake": [
+        {
+          "round": 2,
+          "owner": "full",
+          "status": "unknown"
+        },
+        {
+          "round": 2,
+          "owner": "relations",
+          "status": "duplicate"
+        },
+        {
+          "round": 3,
+          "owner": "full",
+          "status": "unknown"
+        },
+        {
+          "round": 4,
+          "owner": "full",
+          "status": "unknown"
+        },
+        {
+          "round": 4,
+          "owner": "attributes",
+          "status": "duplicate"
+        },
+        {
+          "round": 5,
+          "owner": "attributes",
+          "status": "unknown"
+        }
+      ],
+      "is the cake a birthday cake": [
+        {
+          "round": 2,
+          "owner": "full",
+          "status": "unknown"
+        },
+        {
+          "round": 3,
+          "owner": "full",
+          "status": "unsupported"
+        }
+      ],
+      "is the cake on a table or on the ground": [
+        {
+          "round": 2,
+          "owner": "full",
+          "status": "unknown"
+        },
+        {
+          "round": 2,
+          "owner": "relations",
+          "status": "duplicate"
+        },
+        {
+          "round": 3,
+          "owner": "full",
+          "status": "unknown"
+        },
+        {
+          "round": 4,
+          "owner": "full",
+          "status": "unknown"
+        }
+      ],
+      "how many people are posing in front of the cake": [
+        {
+          "round": 2,
+          "owner": "full",
+          "status": "unknown"
+        },
+        {
+          "round": 2,
+          "owner": "relations",
+          "status": "duplicate"
+        },
+        {
+          "round": 3,
+          "owner": "attributes",
+          "status": "unknown"
+        }
+      ],
+      "what colour is the cake": [
+        {
+          "round": 2,
+          "owner": "attributes",
+          "status": "unknown"
+        },
+        {
+          "round": 3,
+          "owner": "attributes",
+          "status": "unknown"
+        }
+      ],
+      "what type of decorations are on the cake besides candles": [
+        {
+          "round": 4,
+          "owner": "attributes",
+          "status": "unsupported"
+        },
+        {
+          "round": 5,
+          "owner": "attributes",
+          "status": "previously_rejected"
+        }
+      ],
+      "is the cake on a table": [
+        {
+          "round": 4,
+          "owner": "attributes",
+          "status": "already_known"
+        },
+        {
+          "round": 5,
+          "owner": "full",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 5,
+          "owner": "attributes",
+          "status": "previously_rejected"
+        }
+      ]
+    },
+    "partial_round_audit": [
+      {
+        "stage": "propose_batch",
+        "role": "full",
+        "payload": {
+          "record": {
+            "initial_caption": "a group of people posing in front of a cake",
+            "dialogue": [
+              {
+                "question": "Is the cake decorated with candles?",
+                "answer": "yes"
+              },
+              {
+                "question": "How many candles are on the cake?",
+                "answer": "a few"
+              },
+              {
+                "question": "Are there any other decorations on the cake besides candles?",
+                "answer": "yes"
+              },
+              {
+                "question": "Are the people posing in front of a birthday cake?",
+                "answer": "yes"
+              },
+              {
+                "question": "What color is the cake?",
+                "answer": "green"
+              }
+            ]
+          },
+          "query": "a group of people are posing in front of a green birthday cake that is decorated with candles and a few other decorations",
+          "agent_role": "full",
+          "batch_id": 0,
+          "candidates": [
+            {
+              "id": 30089,
+              "caption": "men sitting around the table eating food"
+            },
+            {
+              "id": 11690,
+              "caption": "a group of tennis players posing for a group picture"
+            },
+            {
+              "id": 1450,
+              "caption": "a group of people standing on the street waiting for a train"
+            },
+            {
+              "id": 28475,
+              "caption": "a birthday cake on a table with candles on it"
+            },
+            {
+              "id": 3691,
+              "caption": "a group of men playing video game consoles"
+            },
+            {
+              "id": 36949,
+              "caption": "older woman sitting at the table with a 40th birthday cake"
+            },
+            {
+              "id": 17567,
+              "caption": "a young girl is looking at her own cake"
+            },
+            {
+              "id": 6659,
+              "caption": "cupcakes on a blue cake stand"
+            },
+            {
+              "id": 6631,
+              "caption": "the candles are on top of a large cake"
+            },
+            {
+              "id": 13180,
+              "caption": "people waiting for a train"
+            }
+          ],
+          "question_count": 5,
+          "attempted_proposals": [
+            {
+              "question": "Is the cake decorated with candles?",
+              "reason": "Already asked; see the shared dialogue for its answer."
+            },
+            {
+              "question": "Who is posing with the cake?",
+              "reason": "initial caption states group posing in front of cake"
+            },
+            {
+              "question": "Is the cake being cut or sliced?",
+              "reason": "no evidence of cutting in initial or dialogue"
+            },
+            {
+              "question": "Who is posing in front of the cake?",
+              "reason": "initial caption states group posing in front of cake"
+            },
+            {
+              "question": "Is the cake being sliced?",
+              "reason": "no evidence of slicing in dialogue or initial caption"
+            },
+            {
+              "question": "Are the people posing in front of the cake or cutting it?",
+              "reason": "people are posing, not cutting, per initial caption"
+            },
+            {
+              "question": "How many candles are on the cake?",
+              "reason": "Already asked; see the shared dialogue for its answer."
+            },
+            {
+              "question": "Are the people posing in a group or individually?",
+              "reason": "Group posed confirmed in initial caption"
+            },
+            {
+              "question": "Is the cake a birthday cake?",
+              "reason": "No evidence in dialogue or initial caption"
+            },
+            {
+              "question": "Are there any other decorations on the cake besides candles?",
+              "reason": "Already asked; see the shared dialogue for its answer."
+            },
+            {
+              "question": "What type of decorations are on the cake besides candles?",
+              "reason": "candles are only confirmed decoration"
+            },
+            {
+              "question": "Is the cake on a table?",
+              "reason": "cake on table confirmed in dialogue"
+            },
+            {
+              "question": "Are the people posing in front of a birthday cake?",
+              "reason": "Already asked; see the shared dialogue for its answer."
+            },
+            {
+              "question": "What is the relationship between the people and the cake?",
+              "reason": "relationship not explicitly defined"
+            },
+            {
+              "question": "What other decorations are on the cake besides candles?",
+              "reason": "Answer confirms other decorations exist"
+            },
+            {
+              "question": "Are the people posing in front of a birthday cake or a non-birthday cake?",
+              "reason": "Answer confirms birthday cake"
+            },
+            {
+              "question": "What color is the cake?",
+              "reason": "Already asked; see the shared dialogue for its answer."
+            },
+            {
+              "question": "Are the people posing in front of a birthday cake with candles and other decorations?",
+              "reason": "Candles and decorations confirmed by dialogue"
+            },
+            {
+              "question": "Is the cake a birthday cake with a few candles and other decorations?",
+              "reason": "Candles and decorations confirmed by dialogue"
+            }
+          ]
+        },
+        "response": "{\"proposals\": [{\"question\": \"Is the cake on a table?\", \"evidence_ids\": [28475, 36949, 6659, 6631]}, {\"question\": \"What color is the cake?\", \"evidence_ids\": [28475, 36949, 6659, 6631]}, {\"question\": \"Are the people posing in front of a green birthday cake?\", \"evidence_ids\": [28475, 36949, 6659, 6631]}, {\"question\": \"Is the cake decorated with candles and other decorations?\", \"evidence_ids\": [28475, 36949, 6659, 6631]}, {\"question\": \"Is the cake a birthday cake with a green color and candles and other decorations?\", \"evidence_ids\": [28475, 36949, 6659, 6631]}]}"
+      },
+      {
+        "stage": "propose_batch",
+        "role": "attributes",
+        "payload": {
+          "record": {
+            "initial_caption": "a group of people posing in front of a cake",
+            "dialogue": [
+              {
+                "question": "Is the cake decorated with candles?",
+                "answer": "yes"
+              },
+              {
+                "question": "How many candles are on the cake?",
+                "answer": "a few"
+              },
+              {
+                "question": "Are there any other decorations on the cake besides candles?",
+                "answer": "yes"
+              },
+              {
+                "question": "Are the people posing in front of a birthday cake?",
+                "answer": "yes"
+              },
+              {
+                "question": "What color is the cake?",
+                "answer": "green"
+              }
+            ]
+          },
+          "query": "a group of people are posing in front of a green birthday cake that is decorated with candles and a few other decorations",
+          "agent_role": "attributes",
+          "batch_id": 1,
+          "candidates": [
+            {
+              "id": 30089,
+              "caption": "men sitting around the table eating food"
+            },
+            {
+              "id": 11690,
+              "caption": "a group of tennis players posing for a group picture"
+            },
+            {
+              "id": 1450,
+              "caption": "a group of people standing on the street waiting for a train"
+            },
+            {
+              "id": 28475,
+              "caption": "a birthday cake on a table with candles on it"
+            },
+            {
+              "id": 3691,
+              "caption": "a group of men playing video game consoles"
+            },
+            {
+              "id": 36949,
+              "caption": "older woman sitting at the table with a 40th birthday cake"
+            },
+            {
+              "id": 17567,
+              "caption": "a young girl is looking at her own cake"
+            },
+            {
+              "id": 6659,
+              "caption": "cupcakes on a blue cake stand"
+            },
+            {
+              "id": 6631,
+              "caption": "the candles are on top of a large cake"
+            },
+            {
+              "id": 13180,
+              "caption": "people waiting for a train"
+            }
+          ],
+          "question_count": 5,
+          "attempted_proposals": [
+            {
+              "question": "Is the cake decorated with candles?",
+              "reason": "Already asked; see the shared dialogue for its answer."
+            },
+            {
+              "question": "Who is posing with the cake?",
+              "reason": "initial caption states group posing in front of cake"
+            },
+            {
+              "question": "Is the cake being cut or sliced?",
+              "reason": "no evidence of cutting in initial or dialogue"
+            },
+            {
+              "question": "Who is posing in front of the cake?",
+              "reason": "initial caption states group posing in front of cake"
+            },
+            {
+              "question": "Is the cake being sliced?",
+              "reason": "no evidence of slicing in dialogue or initial caption"
+            },
+            {
+              "question": "Are the people posing in front of the cake or cutting it?",
+              "reason": "people are posing, not cutting, per initial caption"
+            },
+            {
+              "question": "How many candles are on the cake?",
+              "reason": "Already asked; see the shared dialogue for its answer."
+            },
+            {
+              "question": "Are the people posing in a group or individually?",
+              "reason": "Group posed confirmed in initial caption"
+            },
+            {
+              "question": "Is the cake a birthday cake?",
+              "reason": "No evidence in dialogue or initial caption"
+            },
+            {
+              "question": "Are there any other decorations on the cake besides candles?",
+              "reason": "Already asked; see the shared dialogue for its answer."
+            },
+            {
+              "question": "What type of decorations are on the cake besides candles?",
+              "reason": "candles are only confirmed decoration"
+            },
+            {
+              "question": "Is the cake on a table?",
+              "reason": "cake on table confirmed in dialogue"
+            },
+            {
+              "question": "Are the people posing in front of a birthday cake?",
+              "reason": "Already asked; see the shared dialogue for its answer."
+            },
+            {
+              "question": "What is the relationship between the people and the cake?",
+              "reason": "relationship not explicitly defined"
+            },
+            {
+              "question": "What other decorations are on the cake besides candles?",
+              "reason": "Answer confirms other decorations exist"
+            },
+            {
+              "question": "Are the people posing in front of a birthday cake or a non-birthday cake?",
+              "reason": "Answer confirms birthday cake"
+            },
+            {
+              "question": "What color is the cake?",
+              "reason": "Already asked; see the shared dialogue for its answer."
+            },
+            {
+              "question": "Are the people posing in front of a birthday cake with candles and other decorations?",
+              "reason": "Candles and decorations confirmed by dialogue"
+            },
+            {
+              "question": "Is the cake a birthday cake with a few candles and other decorations?",
+              "reason": "Candles and decorations confirmed by dialogue"
+            }
+          ]
+        },
+        "response": "{\"proposals\": [{\"question\": \"What type of decorations are on the cake besides candles?\", \"evidence_ids\": [28475, 36949, 6659, 6631]}]}"
+      },
+      {
+        "stage": "propose_batch",
+        "role": "relations",
+        "payload": {
+          "record": {
+            "initial_caption": "a group of people posing in front of a cake",
+            "dialogue": [
+              {
+                "question": "Is the cake decorated with candles?",
+                "answer": "yes"
+              },
+              {
+                "question": "How many candles are on the cake?",
+                "answer": "a few"
+              },
+              {
+                "question": "Are there any other decorations on the cake besides candles?",
+                "answer": "yes"
+              },
+              {
+                "question": "Are the people posing in front of a birthday cake?",
+                "answer": "yes"
+              },
+              {
+                "question": "What color is the cake?",
+                "answer": "green"
+              }
+            ]
+          },
+          "query": "a group of people are posing in front of a green birthday cake that is decorated with candles and a few other decorations",
+          "agent_role": "relations",
+          "batch_id": 2,
+          "candidates": [
+            {
+              "id": 30089,
+              "caption": "men sitting around the table eating food"
+            },
+            {
+              "id": 11690,
+              "caption": "a group of tennis players posing for a group picture"
+            },
+            {
+              "id": 1450,
+              "caption": "a group of people standing on the street waiting for a train"
+            },
+            {
+              "id": 28475,
+              "caption": "a birthday cake on a table with candles on it"
+            },
+            {
+              "id": 3691,
+              "caption": "a group of men playing video game consoles"
+            },
+            {
+              "id": 36949,
+              "caption": "older woman sitting at the table with a 40th birthday cake"
+            },
+            {
+              "id": 17567,
+              "caption": "a young girl is looking at her own cake"
+            },
+            {
+              "id": 6659,
+              "caption": "cupcakes on a blue cake stand"
+            },
+            {
+              "id": 6631,
+              "caption": "the candles are on top of a large cake"
+            },
+            {
+              "id": 13180,
+              "caption": "people waiting for a train"
+            }
+          ],
+          "question_count": 5,
+          "attempted_proposals": [
+            {
+              "question": "Is the cake decorated with candles?",
+              "reason": "Already asked; see the shared dialogue for its answer."
+            },
+            {
+              "question": "Who is posing with the cake?",
+              "reason": "initial caption states group posing in front of cake"
+            },
+            {
+              "question": "Is the cake being cut or sliced?",
+              "reason": "no evidence of cutting in initial or dialogue"
+            },
+            {
+              "question": "Who is posing in front of the cake?",
+              "reason": "initial caption states group posing in front of cake"
+            },
+            {
+              "question": "Is the cake being sliced?",
+              "reason": "no evidence of slicing in dialogue or initial caption"
+            },
+            {
+              "question": "Are the people posing in front of the cake or cutting it?",
+              "reason": "people are posing, not cutting, per initial caption"
+            },
+            {
+              "question": "How many candles are on the cake?",
+              "reason": "Already asked; see the shared dialogue for its answer."
+            },
+            {
+              "question": "Are the people posing in a group or individually?",
+              "reason": "Group posed confirmed in initial caption"
+            },
+            {
+              "question": "Is the cake a birthday cake?",
+              "reason": "No evidence in dialogue or initial caption"
+            },
+            {
+              "question": "Are there any other decorations on the cake besides candles?",
+              "reason": "Already asked; see the shared dialogue for its answer."
+            },
+            {
+              "question": "What type of decorations are on the cake besides candles?",
+              "reason": "candles are only confirmed decoration"
+            },
+            {
+              "question": "Is the cake on a table?",
+              "reason": "cake on table confirmed in dialogue"
+            },
+            {
+              "question": "Are the people posing in front of a birthday cake?",
+              "reason": "Already asked; see the shared dialogue for its answer."
+            },
+            {
+              "question": "What is the relationship between the people and the cake?",
+              "reason": "relationship not explicitly defined"
+            },
+            {
+              "question": "What other decorations are on the cake besides candles?",
+              "reason": "Answer confirms other decorations exist"
+            },
+            {
+              "question": "Are the people posing in front of a birthday cake or a non-birthday cake?",
+              "reason": "Answer confirms birthday cake"
+            },
+            {
+              "question": "What color is the cake?",
+              "reason": "Already asked; see the shared dialogue for its answer."
+            },
+            {
+              "question": "Are the people posing in front of a birthday cake with candles and other decorations?",
+              "reason": "Candles and decorations confirmed by dialogue"
+            },
+            {
+              "question": "Is the cake a birthday cake with a few candles and other decorations?",
+              "reason": "Candles and decorations confirmed by dialogue"
+            }
+          ]
+        },
+        "response": "{\"proposals\": [{\"question\": \"Where is the cake located relative to the people?\", \"evidence_ids\": [30089, 11690, 1450, 28475, 3691, 36949, 17567, 6659, 6631, 13180]}]}"
+      },
+      {
+        "stage": "filter_batch",
+        "role": "full",
+        "payload": {
+          "record": {
+            "initial_caption": "a group of people posing in front of a cake",
+            "dialogue": [
+              {
+                "question": "Is the cake decorated with candles?",
+                "answer": "yes"
+              },
+              {
+                "question": "How many candles are on the cake?",
+                "answer": "a few"
+              },
+              {
+                "question": "Are there any other decorations on the cake besides candles?",
+                "answer": "yes"
+              },
+              {
+                "question": "Are the people posing in front of a birthday cake?",
+                "answer": "yes"
+              },
+              {
+                "question": "What color is the cake?",
+                "answer": "green"
+              }
+            ]
+          },
+          "proposals": [
+            {
+              "question": "Are the people posing in front of a green birthday cake?",
+              "evidence_ids": [
+                28475,
+                36949,
+                6659,
+                6631
+              ],
+              "slot": 0
+            },
+            {
+              "question": "Is the cake decorated with candles and other decorations?",
+              "evidence_ids": [
+                28475,
+                36949,
+                6659,
+                6631
+              ],
+              "slot": 1
+            },
+            {
+              "question": "Is the cake a birthday cake with a green color and candles and other decorations?",
+              "evidence_ids": [
+                28475,
+                36949,
+                6659,
+                6631
+              ],
+              "slot": 2
+            },
+            {
+              "question": "Where is the cake located relative to the people?",
+              "evidence_ids": [
+                30089,
+                11690,
+                1450,
+                28475,
+                3691,
+                36949,
+                17567,
+                6659,
+                6631,
+                13180
+              ],
+              "slot": 3
+            }
+          ],
+          "candidates": [
+            {
+              "id": 30089,
+              "caption": "men sitting around the table eating food"
+            },
+            {
+              "id": 11690,
+              "caption": "a group of tennis players posing for a group picture"
+            },
+            {
+              "id": 1450,
+              "caption": "a group of people standing on the street waiting for a train"
+            },
+            {
+              "id": 28475,
+              "caption": "a birthday cake on a table with candles on it"
+            },
+            {
+              "id": 3691,
+              "caption": "a group of men playing video game consoles"
+            },
+            {
+              "id": 36949,
+              "caption": "older woman sitting at the table with a 40th birthday cake"
+            },
+            {
+              "id": 17567,
+              "caption": "a young girl is looking at her own cake"
+            },
+            {
+              "id": 6659,
+              "caption": "cupcakes on a blue cake stand"
+            },
+            {
+              "id": 6631,
+              "caption": "the candles are on top of a large cake"
+            },
+            {
+              "id": 13180,
+              "caption": "people waiting for a train"
+            }
+          ]
+        },
+        "response": "{\"decisions\": [{\"slot\": 0, \"status\": \"already_known\", \"reason\": \"Confirmed by dialogue answer\"}, {\"slot\": 1, \"status\": \"already_known\", \"reason\": \"Candles and other decorations confirmed\"}, {\"slot\": 2, \"status\": \"already_known\", \"reason\": \"All attributes confirmed in dialogue\"}, {\"slot\": 3, \"status\": \"unknown\", \"reason\": \"No evidence about location relative to people\"}]}"
+      },
+      {
+        "stage": "critique",
+        "role": "full",
+        "payload": {
+          "record": {
+            "initial_caption": "a group of people posing in front of a cake",
+            "dialogue": [
+              {
+                "question": "Is the cake decorated with candles?",
+                "answer": "yes"
+              },
+              {
+                "question": "How many candles are on the cake?",
+                "answer": "a few"
+              },
+              {
+                "question": "Are there any other decorations on the cake besides candles?",
+                "answer": "yes"
+              },
+              {
+                "question": "Are the people posing in front of a birthday cake?",
+                "answer": "yes"
+              },
+              {
+                "question": "What color is the cake?",
+                "answer": "green"
+              }
+            ]
+          },
+          "query": "a group of people are posing in front of a green birthday cake that is decorated with candles and a few other decorations",
+          "candidates": [
+            {
+              "id": 30089,
+              "caption": "men sitting around the table eating food"
+            },
+            {
+              "id": 11690,
+              "caption": "a group of tennis players posing for a group picture"
+            },
+            {
+              "id": 1450,
+              "caption": "a group of people standing on the street waiting for a train"
+            },
+            {
+              "id": 28475,
+              "caption": "a birthday cake on a table with candles on it"
+            },
+            {
+              "id": 3691,
+              "caption": "a group of men playing video game consoles"
+            },
+            {
+              "id": 36949,
+              "caption": "older woman sitting at the table with a 40th birthday cake"
+            },
+            {
+              "id": 17567,
+              "caption": "a young girl is looking at her own cake"
+            },
+            {
+              "id": 6659,
+              "caption": "cupcakes on a blue cake stand"
+            },
+            {
+              "id": 6631,
+              "caption": "the candles are on top of a large cake"
+            },
+            {
+              "id": 13180,
+              "caption": "people waiting for a train"
+            }
+          ],
+          "proposals": [
+            {
+              "slot": 0,
+              "question": "Where is the cake located relative to the people?",
+              "evidence_ids": [
+                30089,
+                11690,
+                1450,
+                28475,
+                3691,
+                36949,
+                17567,
+                6659,
+                6631,
+                13180
+              ]
+            }
+          ]
+        },
+        "response": "{\"slot\": 4, \"reason\": \"The question about the number of candles ('How many candles are on the cake?') is directly supported by the dialogue, which confirms 'a few' candles. This detail is specific, visible, and distinguishes candidates that include candles (e.g., 28475, 36949, 6631) from those that don't or are ambiguous. It is a grounded, plausible detail not present in the original caption and not answered by any candidate captions, making it a strong candidate for distinction.\"}"
+      }
+    ]
+  },
+  {
+    "method": "agents_critique",
+    "target": "unlabeled2017/000000562109.jpg",
+    "status": "complete",
+    "last_error": null,
+    "states": 11,
+    "selected_roles": {
+      "full": 5,
+      "attributes": 2
+    },
+    "selected_contributing_roles": {
+      "full": 5,
+      "attributes": 2
+    },
+    "logical_qwen_calls_saved_in_completed_states": 54,
+    "reused_qwen_calls_saved_in_completed_states": 4,
+    "exact_selected_repeats": {},
+    "exact_repeated_proposals": {
+      "how many giraffes are present": [
+        {
+          "round": 1,
+          "owner": "full",
+          "status": "unknown"
+        },
+        {
+          "round": 2,
+          "owner": "attributes",
+          "status": "unknown"
+        }
+      ],
+      "is the scene set in a natural open field or a man made enclosure": [
+        {
+          "round": 1,
+          "owner": "full",
+          "status": "already_known"
+        },
+        {
+          "round": 4,
+          "owner": "full",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 6,
+          "owner": "full",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 8,
+          "owner": "full",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 8,
+          "owner": "attributes",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 9,
+          "owner": "full",
+          "status": "previously_rejected"
+        }
+      ],
+      "is the grassy area adjacent to a body of water": [
+        {
+          "round": 2,
+          "owner": "full",
+          "status": "unknown"
+        },
+        {
+          "round": 2,
+          "owner": "relations",
+          "status": "duplicate"
+        }
+      ],
+      "is the giraffe standing or moving in the scene": [
+        {
+          "round": 3,
+          "owner": "full",
+          "status": "already_known"
+        },
+        {
+          "round": 6,
+          "owner": "full",
+          "status": "previously_rejected"
+        }
+      ],
+      "what other animals are present besides the giraffe": [
+        {
+          "round": 3,
+          "owner": "attributes",
+          "status": "already_known"
+        },
+        {
+          "round": 4,
+          "owner": "full",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 4,
+          "owner": "attributes",
+          "status": "previously_rejected"
+        }
+      ],
+      "is the giraffe standing or lying down": [
+        {
+          "round": 3,
+          "owner": "attributes",
+          "status": "unsupported"
+        },
+        {
+          "round": 4,
+          "owner": "full",
+          "status": "previously_rejected"
+        }
+      ],
+      "are the other animals present in the field or within an enclosure": [
+        {
+          "round": 3,
+          "owner": "relations",
+          "status": "already_known"
+        },
+        {
+          "round": 4,
+          "owner": "full",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 4,
+          "owner": "relations",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 8,
+          "owner": "full",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 9,
+          "owner": "full",
+          "status": "previously_rejected"
+        }
+      ],
+      "what is the material or type of the field surface": [
+        {
+          "round": 4,
+          "owner": "attributes",
+          "status": "unsupported"
+        },
+        {
+          "round": 5,
+          "owner": "attributes",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 6,
+          "owner": "full",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 6,
+          "owner": "attributes",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 7,
+          "owner": "attributes",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 8,
+          "owner": "attributes",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 9,
+          "owner": "attributes",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 10,
+          "owner": "attributes",
+          "status": "previously_rejected"
+        }
+      ],
+      "is the giraffe standing alone or with other giraffes": [
+        {
+          "round": 4,
+          "owner": "attributes",
+          "status": "unknown"
+        },
+        {
+          "round": 5,
+          "owner": "full",
+          "status": "unknown"
+        }
+      ],
+      "are the zebras present in the field or within an enclosure": [
+        {
+          "round": 5,
+          "owner": "full",
+          "status": "already_known"
+        },
+        {
+          "round": 5,
+          "owner": "relations",
+          "status": "duplicate"
+        },
+        {
+          "round": 6,
+          "owner": "full",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 6,
+          "owner": "attributes",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 6,
+          "owner": "relations",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 7,
+          "owner": "full",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 8,
+          "owner": "attributes",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 10,
+          "owner": "attributes",
+          "status": "previously_rejected"
+        }
+      ],
+      "are there any other animals present besides the giraffe and the zebra": [
+        {
+          "round": 6,
+          "owner": "full",
+          "status": "already_known"
+        },
+        {
+          "round": 7,
+          "owner": "full",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 8,
+          "owner": "full",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 8,
+          "owner": "attributes",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 9,
+          "owner": "full",
+          "status": "previously_rejected"
+        },
+        {
+          "round": 10,
+          "owner": "full",
+          "status": "previously_rejected"
+        }
+      ],
+      "is the giraffe standing on grass or another surface": [
+        {
+          "round": 6,
+          "owner": "attributes",
+          "status": "already_known"
+        },
+        {
+          "round": 7,
+          "owner": "full",
+          "status": "previously_rejected"
+        }
+      ],
+      "what is the exact location of the zebra relative to the giraffe": [
+        {
+          "round": 7,
+          "owner": "full",
+          "status": "unknown"
+        },
+        {
+          "round": 8,
+          "owner": "full",
+          "status": "already_asked"
+        },
+        {
+          "round": 9,
+          "owner": "full",
+          "status": "already_asked"
+        }
+      ],
+      "is the zebra in the pen located near the giraffe": [
+        {
+          "round": 8,
+          "owner": "attributes",
+          "status": "unknown"
+        },
+        {
+          "round": 9,
+          "owner": "full",
+          "status": "already_asked"
+        },
+        {
+          "round": 10,
+          "owner": "full",
+          "status": "already_asked"
+        },
+        {
+          "round": 10,
+          "owner": "attributes",
+          "status": "already_asked"
+        }
+      ],
+      "are the zebras in the pen located near the giraffe": [
+        {
+          "round": 9,
+          "owner": "relations",
+          "status": "already_known"
+        },
+        {
+          "round": 10,
+          "owner": "relations",
+          "status": "previously_rejected"
+        }
+      ]
+    },
+    "partial_round_audit": null
+  },
+  {
+    "method": "live_plugir_qwen",
+    "target": "unlabeled2017/000000562109.jpg",
+    "status": "complete",
+    "last_error": null,
+    "states": 11,
+    "selected_roles": {},
+    "selected_contributing_roles": {},
+    "logical_qwen_calls_saved_in_completed_states": 208,
+    "reused_qwen_calls_saved_in_completed_states": 0,
+    "exact_selected_repeats": {
+      "what color is the fence surrounding the giraffe in the open field of the zoo": 4
+    },
+    "exact_repeated_proposals": {},
+    "partial_round_audit": null
+  },
+  {
+    "method": "live_plugir_qwen",
+    "target": "unlabeled2017/000000364869.jpg",
+    "status": "complete",
+    "last_error": null,
+    "states": 11,
+    "selected_roles": {},
+    "selected_contributing_roles": {},
+    "logical_qwen_calls_saved_in_completed_states": 202,
+    "reused_qwen_calls_saved_in_completed_states": 0,
+    "exact_selected_repeats": {
+      "what specific clothing items do the people wear when posing in front of the birthday cake": 2
+    },
+    "exact_repeated_proposals": {},
+    "partial_round_audit": null
+  }
+]

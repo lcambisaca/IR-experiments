@@ -50,6 +50,8 @@ def dialogue_text(conversation, round_index):
     """Caption plus the user's answers so far; never PlugIR's rewritten query."""
     lines = [f"Caption: {conversation['caption']}"]
     for state in conversation["states"][1:round_index + 1]:
+        if state.get("no_question"):
+            continue
         lines.append(f"Q: {state['question']}\nA: {state['answer']}")
     return "\n".join(lines)
 
@@ -113,11 +115,40 @@ def done_keys(path):
         return {(r["target"], r["round"], r["image"]) for r in map(json.loads, f)}
 
 
+EXPERIMENT_DIALOGUES = {
+    "plugir": "qwen_live/generated_dialogues.json",
+    "critique": "three_agents/agent_dialogues.json",
+    "debate": "agent_debate/debate_dialogues.json",
+}
+
+
+def experiment_conversations(folder, method):
+    path = folder / "prepared" / EXPERIMENT_DIALOGUES[method]
+    with path.open(encoding="utf-8") as source:
+        records = json.load(source)
+    if method == "critique":
+        records = records["agents_critique"]
+    conversations = []
+    for record in records:
+        states = record["states"]
+        if method == "plugir":
+            if record["identity"].get("search") == "facts_only":
+                raise ValueError("Reranking requires rewrite search to reproduce the saved candidate order.")
+            target = record["identity"]["target"]
+        else:
+            target = record["target"]
+        conversations.append({"target": target, "caption": states[0]["query"], "states": states})
+    return conversations
+
+
 def run(args):
+    if args.experiment:
+        conversations = experiment_conversations(ROOT / args.experiment, args.method)
+    else:
+        conversations = [c for f in args.conversations for c in json.loads((ROOT / f).read_text(encoding="utf-8"))["conversations"]]
     retriever, index, image = setup()
     judge = Judge(args.model)
     paths = retriever.cache.paths
-    conversations = [c for f in args.conversations for c in json.load(open(ROOT / f))["conversations"]]
     out = OUT / f"{args.mode}_{args.model}{args.tag}.jsonl"
     out.parent.mkdir(parents=True, exist_ok=True)
     done, started, judged, mismatches = done_keys(out), time.time(), 0, 0
@@ -265,11 +296,20 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("mode", choices=["sanity", "choose", "rerank", "score"])
     parser.add_argument("--model", choices=list(MODELS), default="3b")
-    parser.add_argument("--conversations", nargs="+", default=["results/conversations/plugir_qwen_targets_151_250.json"])
+    inputs = parser.add_mutually_exclusive_group()
+    inputs.add_argument("--experiment", help="saved comparison folder, e.g. runs/experiments/<run>")
+    parser.add_argument("--method", choices=list(EXPERIMENT_DIALOGUES), help="method in the saved comparison")
+    inputs.add_argument("--conversations", nargs="+", default=["results/conversations/plugir_qwen_targets_151_250.json"])
     parser.add_argument("--output", default="")
     parser.add_argument("--tag", default="", help="suffix for output files, e.g. _qwenuser")
     parser.add_argument("--dir", default="", help="judgement folder (default runs/vlm_judge); results/vlm_rerank has the saved run")
     args = parser.parse_args()
+    if bool(args.experiment) != bool(args.method):
+        parser.error("Use --experiment and --method together.")
+    if args.experiment:
+        if args.dir:
+            parser.error("An experiment uses its own method-specific results folder.")
+        OUT = ROOT / args.experiment / "vlm_judge" / args.method
     if args.dir:
         OUT = ROOT / args.dir
     {"sanity": run, "rerank": run, "choose": choose, "score": score}[args.mode](args)

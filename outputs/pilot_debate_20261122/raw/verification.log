@@ -1,0 +1,26 @@
+nohup: ignoring input
+Downloading one target image: unlabeled2017/000000364869.jpg
+Downloading one target image: unlabeled2017/000000562109.jpg
+CACHE_AND_TARGETS_VERIFIED [{"target": "unlabeled2017/000000364869.jpg", "caption": "a group of people posing in front of a cake", "sha256": "a7425cfc97a00bf87a30fbb26f1b41cd4b76114f401aba2cb2cb2158102b177f", "size": [640, 492]}, {"target": "unlabeled2017/000000562109.jpg", "caption": "a giraffe is standing in an open field", "sha256": "8d445abe263c554fefd86068fe619780dff5db017ce514208ef862bf04c8e1d9", "size": [640, 426]}]
+DOWNLOADING_PINNED_MODEL Salesforce/blip-itm-large-coco 19502f1e215844f7e48bd48473f86932486d3441
+Fetching 7 files:   0%|          | 0/7 [00:00<?, ?it/s]Xet Storage is enabled for this repo, but the 'hf_xet' package is not installed. Falling back to regular HTTP download. For better performance, install the package with: `pip install huggingface_hub[hf_xet]` or `pip install hf_xet`
+Fetching 7 files:  14%|█▍        | 1/7 [00:00<00:00,  7.77it/s]Fetching 7 files:  43%|████▎     | 3/7 [00:11<00:16,  4.13s/it]Fetching 7 files: 100%|██████████| 7/7 [00:11<00:00,  1.60s/it]
+DOWNLOADING_PINNED_MODEL Qwen/Qwen3-4B-Instruct-2507 cdbee75f17c01a7cc42f958dc650907174af0554
+Fetching 10 files:   0%|          | 0/10 [00:00<?, ?it/s]Xet Storage is enabled for this repo, but the 'hf_xet' package is not installed. Falling back to regular HTTP download. For better performance, install the package with: `pip install huggingface_hub[hf_xet]` or `pip install hf_xet`
+Fetching 10 files:  10%|█         | 1/10 [00:00<00:00,  9.19it/s]Xet Storage is enabled for this repo, but the 'hf_xet' package is not installed. Falling back to regular HTTP download. For better performance, install the package with: `pip install huggingface_hub[hf_xet]` or `pip install hf_xet`
+Xet Storage is enabled for this repo, but the 'hf_xet' package is not installed. Falling back to regular HTTP download. For better performance, install the package with: `pip install huggingface_hub[hf_xet]` or `pip install hf_xet`
+Xet Storage is enabled for this repo, but the 'hf_xet' package is not installed. Falling back to regular HTTP download. For better performance, install the package with: `pip install huggingface_hub[hf_xet]` or `pip install hf_xet`
+Fetching 10 files:  40%|████      | 4/10 [00:28<00:45,  7.59s/it]Fetching 10 files: 100%|██████████| 10/10 [00:28<00:00,  2.81s/it]
+DOWNLOADING_PINNED_MODEL Salesforce/blip2-flan-t5-xl 0eb0d3b46c14c1f8c7680bca2693baafdb90bb28
+Fetching 13 files:   0%|          | 0/13 [00:00<?, ?it/s]Xet Storage is enabled for this repo, but the 'hf_xet' package is not installed. Falling back to regular HTTP download. For better performance, install the package with: `pip install huggingface_hub[hf_xet]` or `pip install hf_xet`
+Fetching 13 files:   8%|▊         | 1/13 [00:00<00:01,  9.31it/s]Xet Storage is enabled for this repo, but the 'hf_xet' package is not installed. Falling back to regular HTTP download. For better performance, install the package with: `pip install huggingface_hub[hf_xet]` or `pip install hf_xet`
+Xet Storage is enabled for this repo, but the 'hf_xet' package is not installed. Falling back to regular HTTP download. For better performance, install the package with: `pip install huggingface_hub[hf_xet]` or `pip install hf_xet`
+Fetching 13 files:  31%|███       | 4/13 [01:24<03:26, 22.95s/it]Fetching 13 files: 100%|██████████| 13/13 [01:24<00:00,  6.53s/it]
+MODEL_FILES_READY
+Loading pinned BLIP text retriever on cuda; first use downloads weights.
+Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+Loading Qwen/Qwen3-4B-Instruct-2507; first use downloads several GB.
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s]Loading checkpoint shards: 100%|██████████| 3/3 [00:00<00:00, 52.56it/s]
+Loading Salesforce/blip2-flan-t5-xl; first use downloads several GB.
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:  50%|█████     | 1/2 [00:01<00:01,  1.35s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:02<00:00,  1.10s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:02<00:00,  1.13s/it]
+PREFLIGHT_READY {"qwen": {"peak_allocated": 8111277568, "peak_reserved": 8124366848}, "blip2": {"peak_allocated": 8124238336, "peak_reserved": 8906604544}}

@@ -4,7 +4,10 @@ Interactive text-to-image retrieval experiments built on **PlugIR**. A user star
 with a caption, a questioner asks about the target image, a simulated user answers,
 and the dialogue is turned into a search over **50,000 images** (BLIP
 `blip-itm-large-coco`). Every method uses the same models (Qwen3-4B-Instruct-2507
-questioner/rewriter, BLIP-2 flan-t5-xl answerer), image pool and evaluator.
+questioner/rewriter and Qwen2.5-VL-3B answerer by default in the shared
+comparison), image pool and evaluator. The answerer receives the target photo,
+current search description, and selected question, following the input pattern
+in the [original PlugIR code](https://github.com/Saehyung-Lee/PlugIR/blob/main/generate_dialog.py#L561-L564).
 
 The repository contains:
 
@@ -36,6 +39,7 @@ The repository contains:
 | Live PlugIR + Qwen baseline | [live.py](src/agentir/live.py), [live_models.py](src/agentir/live_models.py), [plugir_upstream.py](src/agentir/plugir_upstream.py), [third_party/PlugIR](third_party/PlugIR) | [results/conversations/](results/conversations/) | `RUN_LIVE_PLUGIR = True` or [scripts/run_plugir_live.py](scripts/run_plugir_live.py) |
 | Answer-entropy questioner | [probe_agent.py](src/agentir/probe_agent.py), `VisionAnswerer` in [live_models.py](src/agentir/live_models.py) | [results/agent_v2_vlm_probe/](results/agent_v2_vlm_probe/) | `SELECTION = "probe_vlm"` or `scripts/run_plugir_live.py --selection probe_vlm` |
 | Multi-agent questioner | [multagent_experiment/](src/agentir/multagent_experiment/) | not committed yet | `RUN_MULTI_AGENT = True` |
+| Multi-agent debate | [debate.py](src/agentir/multagent_experiment/debate.py) | generated during the pilot | `RUN_MULTI_AGENT_DEBATE = True`; see [three-method comparison](EXPERIMENTS.md#three-method-question-generation-comparison) |
 | Caption mix and fact fusion | [fact_fusion.py](fact_fusion.py) (post-hoc), [facts_e2e.py](src/agentir/facts_e2e.py) (live), [scripts/](scripts/) | [results/fact_fusion/](results/fact_fusion/), [results/fact_fusion_confirm/](results/fact_fusion_confirm/) | `SEARCH = "facts"`; see [CAPTION_MIX_FACT_FUSION.md](CAPTION_MIX_FACT_FUSION.md) |
 | Round 0: fusing caption rewrites | [paraphrase_experiment.py](paraphrase_experiment.py), [strategy_experiment.py](strategy_experiment.py), [fusion_experiment.py](fusion_experiment.py) | [results/paraphrase/](results/paraphrase/), [results/rewrite_fusion/](results/rewrite_fusion/) | see [REWRITE_FUSION_VISION_RERANK.md](REWRITE_FUSION_VISION_RERANK.md) |
 | Round 0: vision re-ranking | [vision_rerank_experiment.py](vision_rerank_experiment.py), [notebook](notebooks/vision_rerank_kaggle.ipynb) | [results/vision_rerank/](results/vision_rerank/) | `python rewrite_vision_numbers.py` prints every reported number |

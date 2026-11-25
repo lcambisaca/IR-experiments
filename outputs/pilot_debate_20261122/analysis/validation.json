@@ -1,0 +1,10 @@
+{
+  "fresh_checkpoints": 6,
+  "qwen_records": 470,
+  "blip2_records": 42,
+  "common_initial_captions_and_ranks": true,
+  "initial_representatives_identical_between_critique_and_debate": true,
+  "completed_debate_rounds_with_synchronous_snapshot_verified": 3,
+  "standard_live_report_rows_match_checkpoints": 22,
+  "max_device_used_MiB": 10692.0
+}

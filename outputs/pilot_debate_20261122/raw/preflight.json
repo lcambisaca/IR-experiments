@@ -1,0 +1,180 @@
+{
+  "status": "ready",
+  "source": {
+    "commit": "82ed6186d4c5b98d32dff4e949e32d45804b023f",
+    "status": " M EXPERIMENTS.md\n M README.md\n M run_evaluation.py\n M scripts/run_plugir_live.py\n M src/agentir/multagent_experiment/multi_agent.py\n M src/agentir/multagent_experiment/setup.py\n M tests/test_live.py\n M tests/test_multi_agent.py\n M tests/test_runner_targets.py\n?? src/agentir/multagent_experiment/debate.py\n?? tests/test_debate.py\n",
+    "files": {
+      ".gitattributes": "389841dcf19199e13f9cbf3f70ea3141e8be0e5643a60610f1c819b81864ec6d",
+      ".gitignore": "cbb7278dfaaf188e45370eb0b530cab69f06dd2b13cd2a9e7a3acef420cbfbeb",
+      "CAPTION_MIX_FACT_FUSION.md": "d4076cb466f84fd4b82ba1e3b94e1babb05d6c715f9da3f178435b697016ebb2",
+      "EXPERIMENTS.md": "1bf0d9bb94ca6fc61f8cd922a7d912001264b35c02ea6f0be6460fb32330eab9",
+      "PLUGIR_COMPARISON.md": "09c12274f1cc0ba43447ca3d07c79a717c99e0e1efe64b19a20e22839dbf8ff1",
+      "README.md": "67332fda13343cbd579f660ce900f532dff563c0559d9a226744a67824360763",
+      "REWRITE_FUSION_VISION_RERANK.md": "465ba919f420183fe4c58b360c22be64634f96e9214a8993396d87cc26fb2b37",
+      "assets/colab_reference/per_round.csv": "352e04f9918bbaefa5bf1eff90a51119782f9fc78e694e737155ee70ea95e339",
+      "assets/colab_reference/run_config.json": "77510d2cd4a3757fdd953f958bced2fc94c64be09622a669138fbd278c2fde58",
+      "assets/colab_reference/summary.csv": "03ea179c2e486d4426b8ac81650d430377f8df8f12f645534e7c4120693d4225",
+      "assets/protocol/baseline_matched.json": "6db15734e21df441c932b84cf538ba660350e82dcb18e5d3ab8d0f99691cd210",
+      "assets/protocol/confirm_targets_151_250.txt": "29f5cf2bd12a48759deef736ecdd0bd012b1fd345870de9b2615bf82955a331e",
+      "assets/protocol/manifest_50k.json": "8a32638192419131513f2e5a6e5159d191de6789678fb3b1faa18e1ab46b44af",
+      "assets/protocol/supplied_matched.json": "4352bf4ebe14d568e2cb23cceb4d7d5464640bb5ea717de0be355d649ef2b81a",
+      "assets/protocol/visdial_captions.json": "df5fbf1b5ee0856b89b3a96a9094f245cc5db6eb17a1d3fff0604c06109dd5cd",
+      "experiment.json": "4390c8e52b2fcd1f461144b58e5751630922cd3dd97e654aa5dbf7d393547923",
+      "fact_fusion.py": "05a1d28d4402006f17fb22270790bc3e325232680339791bfd7d2071a716e44f",
+      "fusion_experiment.py": "1fdaa478fa7703530c93b995940e8f16b148730f8abfdad92eeab9cb4c05df24",
+      "paraphrase_experiment.py": "84734247c1aea477b923452623c2c683fb913127e09607e8e66686365f185d07",
+      "pyproject.toml": "117c3a77a3e28001455a82e44c5b89959ac540b423b04cd02e198090f52a1e0c",
+      "requirements-lock-windows-cpu.txt": "d74d6940a7390b9ba6359e62fbab5745dddc4cffc55c885b7e3dd249c41453a4",
+      "rewrite_vision_numbers.py": "491f02df163af60af5f792eada79cb0ba15dd56a860de373f65af169ff9fe7d5",
+      "run_evaluation.py": "b6ed40ffa1e252b0d148fc6121ee4e2a708d4e933d172d4e1c5487402a18317f",
+      "scripts/agent_v2_results.py": "d22c7a10f3edc256e790b123fcb28eb7a922ee2893d1b533255f881606afc294",
+      "scripts/collect_confirm.py": "4cdabf534f6a83c304c0153153525d70ffd2174b291929e76617d952715c54d9",
+      "scripts/compare_e2e.py": "6d5791107fb6d5b9ec57c0fb4d4f3b5430bc7bb7bfa068791e033f7fe3333d7b",
+      "scripts/diagnose_e2e.py": "b063f359110f997d27c6b5cc806d4e0b54ba0325e016786ae0640c129946d70b",
+      "scripts/run_plugir_live.py": "c4e95e31e21d11268d38a3a1921b0ff4c7dcf58d6ac4bae18c2a4de0a610cf27",
+      "setup_windows.ps1": "247ba3ddd50a4af49e20723c30d2db7674aedba97c3135e6eba757580b8de84d",
+      "src/agentir/__init__.py": "285dd43455586c2b37fb81b8022fdb968fc95995e6840f8fc961c7695e55e016",
+      "src/agentir/cache.py": "70329ca99b35609f085b8000325dfa2137577f230d27cdd863311dfb44d4ca69",
+      "src/agentir/evaluation.py": "804374086308ebc54c9d706c072ce632b1c73b9ad1d1b353cf2b6feef55cd1ca",
+      "src/agentir/facts_e2e.py": "29954215ce566da38014056887a8d1b321ea124bc02948e6de10cb7a1517ef3e",
+      "src/agentir/live.py": "f530f14eaae0c501539c55f0565e6ee83013d38c84c23415c8074a49c6b2cc13",
+      "src/agentir/live_models.py": "eebfc161c2abf39d8acbc3603550b6919a63ba17c753acd8163722d2b64aa6a1",
+      "src/agentir/multagent_experiment/AGENT_EXPERIMENT.md": "a139886c8a856fe3fac5009215661bb64b52783c03b847738a88161b03b15aac",
+      "src/agentir/multagent_experiment/__init__.py": "0264865fc2e0c9cf547fd95ddec53974d730e2c481743f1dd7ca372ac6608284",
+      "src/agentir/multagent_experiment/agent_prompts.py": "d0d5fa3d7715b1f2193b12b5ef08ccd64dc3589807800c63f31bb90eb07de5fa",
+      "src/agentir/multagent_experiment/debate.py": "fee778f37ef7594e208e3c54818571dbd555af6947bd4e626f4beba9e12b6857",
+      "src/agentir/multagent_experiment/multi_agent.py": "61e08f10845513ca01dc9b7ed1a42d8dc97c482c31438a3c11cfaf4613b68bd2",
+      "src/agentir/multagent_experiment/setup.py": "32c73bedc5c2b25bc5e662a70b943a5c860a719873680c06447c45af0ece547a",
+      "src/agentir/plugir_upstream.py": "6f5f4bb369a7f254b9ab5f88527f0226880d2b7a61268a88f2964fdffb6882fb",
+      "src/agentir/probe_agent.py": "d1114c5129fd7e0788c2413c79052f7c707834316cf837d9c6e8c880ad6b3eba",
+      "src/agentir/retrieval.py": "bd3e4d165446261207399d0240cfad4ee5ae945d5555b8dde64cb25191b82ee7",
+      "strategy_experiment.py": "db42aff3105536cea189e9bb4d44f648154cf814e10294198dd45610d5cea458",
+      "tests/test_debate.py": "3687900e024a012655250322a739f901a8682dd170e4e06ba2539b049b6464ec",
+      "tests/test_experiments.py": "32c27c55e9d2a8cacf0cd9afcf40f187db67f8da8e88cc637c5b4341acf5ecce",
+      "tests/test_facts_e2e.py": "9c1317f9dace5697c5b4996fdaeb7986a308abddf4abd29cd7eca51393bd7b1a",
+      "tests/test_foundation.py": "e43b53eedb47725828c513b1c4a2e8c95fba93e8df63aea89e0e979af1f83901",
+      "tests/test_live.py": "4a3355632b934a6102749715364423779fefac7c4a9ac27312e357863c8326e9",
+      "tests/test_multi_agent.py": "b2b62ceae17f5e40cf93c4ca04831e51a1760bb39e5b2979be24cb4e7e39332d",
+      "tests/test_probe_agent.py": "bde22ea7400fe9e8a6c937504ab8186c8f72ecf3c58f5b766275e9e8206fdea6",
+      "tests/test_retrieval.py": "f02a710d81e1cfd84c8258d97d9e0d12161a5eed27a382c238fc9ae65e8c8bf4",
+      "tests/test_rewrite_vision_numbers.py": "f7e3e1a8c0e8e033abbf0fed4adb75e3fd688f36cdd1b0f4f0bd7be5e41d7b9d",
+      "tests/test_runner_targets.py": "18ba03d7b62e5ab83066d14a7a7bdadcc52685387631a9510e9fa39e98b68343",
+      "tests/test_vision_rerank.py": "0e4224d7079273bcc8f206e10ff29c93137c9deb7ca60807a3e2f50c60c5a9ad",
+      "third_party/PlugIR/LICENSE": "f595342efc96dfb8a1cc920f71b867aabf1a84cf55b719fed74a9e84f64826a9",
+      "third_party/PlugIR/PROVENANCE.json": "862ec28df6be6d5a87a00633df9e4b323dc07370a57b2870b654ec1b6d5fc223",
+      "third_party/PlugIR/eval.py": "2f5ed55dd5fcfb7959d502a8d3b10aa59b77adf6ab94126b77574bfba72263ea",
+      "third_party/PlugIR/generate_dialog.py": "fa61dcd1bf56fe02d249b849d37cdf186bfd76e11b99eb9024965b9b16ec4d7f",
+      "vision_rerank_experiment.py": "510d265aa29c01b2f89fe9888048b864549d66f17194e34e3e2efa885ba29071",
+      "data/cache/corpus_blip_eval_d85c7c39be4ea84c.json": "9251eec9a8ef9717cf4293cfd9d6f6f168b3723737023a21db833a11d74298ab",
+      "data/cache/corpus_blip_eval_d85c7c39be4ea84c.pth": "8afcfb6393d71261c18938acd9a4db0f9e74439da8852594b8c983846a12a34f"
+    }
+  },
+  "settings": {
+    "RUN_LIVE_PLUGIR": true,
+    "RUN_MULTI_AGENT": true,
+    "RUN_MULTI_AGENT_DEBATE": true,
+    "USE_PILOT_TARGETS": true,
+    "N_STATES": 11,
+    "INCLUDE_SAVED_REFERENCES": false,
+    "DEVICE": "cuda",
+    "LIVE_DEVICE": "cuda",
+    "SEARCH": "rewrite",
+    "SELECTION": "plugir_kl",
+    "MAX_INPUT_TOKENS": 8192
+  },
+  "agent_modes": [
+    true
+  ],
+  "images": [
+    {
+      "target": "unlabeled2017/000000364869.jpg",
+      "caption": "a group of people posing in front of a cake",
+      "sha256": "a7425cfc97a00bf87a30fbb26f1b41cd4b76114f401aba2cb2cb2158102b177f",
+      "size": [
+        640,
+        492
+      ]
+    },
+    {
+      "target": "unlabeled2017/000000562109.jpg",
+      "caption": "a giraffe is standing in an open field",
+      "sha256": "8d445abe263c554fefd86068fe619780dff5db017ce514208ef862bf04c8e1d9",
+      "size": [
+        640,
+        426
+      ]
+    }
+  ],
+  "initial_ranks": [
+    9,
+    89
+  ],
+  "cache": {
+    "images": 50000,
+    "shape": [
+      50000,
+      256
+    ],
+    "dtype": "torch.float32",
+    "device": "cpu",
+    "norm_min": 0.9999998807907104,
+    "norm_max": 1.0000001192092896,
+    "model": "Salesforce/blip-itm-large-coco",
+    "model_revision": "19502f1e215844f7e48bd48473f86932486d3441",
+    "cache_sha256": "8afcfb6393d71261c18938acd9a4db0f9e74439da8852594b8c983846a12a34f",
+    "manifest_sha256": "8a32638192419131513f2e5a6e5159d191de6789678fb3b1faa18e1ab46b44af",
+    "encoding_versions": {
+      "model": "Salesforce/blip-itm-large-coco",
+      "model_revision": "19502f1e215844f7e48bd48473f86932486d3441",
+      "manifest_sha256": "8a32638192419131513f2e5a6e5159d191de6789678fb3b1faa18e1ab46b44af",
+      "transformers": "4.51.3",
+      "torch": "2.11.0+cu130",
+      "torchvision": "0.26.0+cu130",
+      "pillow": "11.3.0",
+      "adapter_sha256": "80583a516b1d60bef6658f51c4f4e50995566cd93c81b3280bff5d46d72bf667",
+      "mode": "eval"
+    }
+  },
+  "catalogue_count": 50000,
+  "models": [
+    [
+      "Salesforce/blip-itm-large-coco",
+      "19502f1e215844f7e48bd48473f86932486d3441"
+    ],
+    [
+      "Qwen/Qwen3-4B-Instruct-2507",
+      "cdbee75f17c01a7cc42f958dc650907174af0554"
+    ],
+    [
+      "Salesforce/blip2-flan-t5-xl",
+      "0eb0d3b46c14c1f8c7680bca2693baafdb90bb28"
+    ]
+  ],
+  "gpu": "NVIDIA L4",
+  "cuda": "12.8",
+  "python": "3.11.18",
+  "model_fit": {
+    "qwen": {
+      "peak_allocated": 8111277568,
+      "peak_reserved": 8124366848
+    },
+    "blip2": {
+      "peak_allocated": 8124238336,
+      "peak_reserved": 8906604544
+    }
+  },
+  "versions": {
+    "torch": "2.11.0+cu128",
+    "torchvision": "0.26.0+cu128",
+    "transformers": "4.51.3",
+    "tokenizers": "0.21.4",
+    "huggingface-hub": "0.30.2",
+    "pillow": "11.3.0",
+    "numpy": "2.2.6",
+    "accelerate": "1.6.0",
+    "sentencepiece": "0.2.1",
+    "fast-pytorch-kmeans": "0.2.2",
+    "psutil": "7.1.0"
+  },
+  "prior_checkpoints": []
+}
