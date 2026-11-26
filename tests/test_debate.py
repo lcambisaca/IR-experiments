@@ -156,9 +156,13 @@ def test_debate_independent_openings_and_two_synchronous_rounds(agent_case, tmp_
 
 
 @pytest.mark.parametrize('fallback',[False,True])
-def test_rejected_final_question_gets_only_one_revision(agent_case,tmp_path,fallback):
+@pytest.mark.parametrize("status, guidance", [
+    ("unsupported", "Revise once to address this rejection"),
+    ("already_known", "Choose a different unresolved detail"),
+])
+def test_rejected_final_question_gets_only_one_revision(agent_case,tmp_path,fallback,status,guidance):
     state,qwen,answerer=run_debate(agent_case,tmp_path/'revision.json',n_states=2,
-        transport=DebateTransport(filter_statuses=['unsupported','unknown'],fallback=fallback))
+        transport=DebateTransport(filter_statuses=[status,'unknown'],fallback=fallback))
     current=state['states'][1]
     audit=current['audit']
     assert len(audit['coordinator_attempts'])==2 and audit['coordinator_revision_used']
@@ -166,7 +170,10 @@ def test_rejected_final_question_gets_only_one_revision(agent_case,tmp_path,fall
     assert answerer.model.calls==1 and current['llm_calls']==14+int(fallback)
     coordinator=[r for r in qwen.records if r['stage']=='coordinate']
     assert coordinator[0]['payload']['transcript']==coordinator[1]['payload']['transcript']
-    assert coordinator[1]['payload']['revision_feedback']['rejection']['status']=='unsupported'
+    assert coordinator[1]['payload']['revision_feedback']['rejection']['status']==status
+    original, revision = [debate.debate_messages("coordinate", "coordinator", c["payload"])[0]["content"]
+                          for c in coordinator]
+    assert guidance not in original and guidance in revision
     assert sum(r['stage']=='opening' for r in qwen.records)==3
     assert sum(r['stage']=='discussion' for r in qwen.records)==6
 
@@ -249,6 +256,9 @@ def test_bad_coordinator_evidence_is_revised_before_filtering(agent_case,tmp_pat
     assert attempts[0]['validation']['status']=='unsupported'
     assert attempts[1]['accepted'] and answerer.model.calls==1
     assert sum(r['stage']=='filter_batch' for r in qwen.records)==1
+    revision = next(r["payload"]["revision_feedback"] for r in qwen.records
+                    if "revision_feedback" in r["payload"])
+    assert "Check the supplied candidate IDs" in revision["instruction"]
 
 
 def test_debate_resume_extension_and_failure_recovery(agent_case,tmp_path):

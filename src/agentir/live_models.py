@@ -53,6 +53,9 @@ class Qwen3:
         """
         self.round_index, self.case_id, self.ordinal = round_index, case_id, 0
 
+    # PlugIR can call these inside inference mode, then reuse the model in Debate.
+    @torch.inference_mode(False)
+    @torch.no_grad()
     def _activate(self):
         """Load pinned full Qwen once, then move its parked weights to the GPU."""
         if self.model is None:
@@ -64,6 +67,8 @@ class Qwen3:
                 torch_dtype=self.dtype, low_cpu_mem_usage=True, local_files_only=self.offline).eval()
         self.model.to(self.device)
 
+    @torch.inference_mode(False)
+    @torch.no_grad()
     def park(self):
         """Release Qwen VRAM before image answering, retaining weights in host RAM."""
         if self.model is not None:
@@ -295,6 +300,8 @@ class QwenVLAnswerer:
         self.model = self.processor = None
         self.records = []
 
+    @torch.inference_mode(False)
+    @torch.no_grad()
     def _activate(self):
         if self.model is None:
             from huggingface_hub import snapshot_download
@@ -306,6 +313,8 @@ class QwenVLAnswerer:
                 local, torch_dtype=torch.bfloat16, low_cpu_mem_usage=True).eval()
         self.model.to(self.device)
 
+    @torch.inference_mode(False)
+    @torch.no_grad()
     def park(self):
         if self.model is not None:
             self.model.to("cpu")

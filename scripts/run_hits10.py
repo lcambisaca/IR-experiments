@@ -1,4 +1,4 @@
-"""Run Debate v8 and live PlugIR until the first hit or the round limit."""
+"""Run Debate and live PlugIR until the first hit or the round limit."""
 
 import argparse
 from dataclasses import asdict, replace
@@ -23,7 +23,7 @@ from agentir.retrieval import BlipRetriever, ranks_for_targets
 TOP_K = 10
 TARGET_COUNT = 99
 ANSWERER_REVISION = "66285546d2b821cf421d4f5eb2576359d3770cd3"
-METHODS = {"plugir": "Live PlugIR", "debate": "Debate v8"}
+METHODS = ("plugir", "debate")
 
 
 def checkpoint_path(out, method, target):
@@ -42,7 +42,7 @@ def covered(history, round_index):
     return history["first_hit"] is not None or len(history["ranks"]) > round_index
 
 
-def save_report(out, targets, rounds):
+def save_report(out, targets, rounds, *, debate_policy=DEBATE_POLICY):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -54,7 +54,8 @@ def save_report(out, targets, rounds):
     partial = end != rounds
     curves = {}
     fig, ax = plt.subplots(figsize=(7, 4))
-    for method, label in METHODS.items():
+    labels = {"plugir": "Live PlugIR", "debate": f"Debate {debate_policy.rsplit('_', 1)[-1]}"}
+    for method, label in labels.items():
         hits = [sum((hit := histories[target][method]["first_hit"]) is not None and hit <= r
                     for target in histories) for r in range(end + 1)]
         curves[method] = {"hits": hits, "percent": [100 * count / len(targets) for count in hits]}
@@ -79,8 +80,6 @@ def save_report(out, targets, rounds):
 
 def run(out, rounds, offline):
     device = require_cuda(runner.LIVE_DEVICE)
-    if DEBATE_POLICY != "specialists_target_questions_v8":
-        raise ValueError("This comparison requires the Debate v8 policy.")
     paths = {key: ROOT / value for key, value in read_json(ROOT / "experiment.json").items()}
     cache = load_cache(paths["cache"], paths["manifest"])
     pairs = matched_queries(read_json(paths["baseline_queries"]), read_json(paths["supplied_queries"]), cache.paths)
@@ -149,7 +148,7 @@ def run(out, rounds, offline):
                               captions=catalogue, questioner=questioner, answerer=answerer,
                               n_states=rounds + 1, checkpoint_path=checkpoint_path(out, method, name),
                               stop_at_rank=TOP_K)
-                print(f"{METHODS[method]} · {name} · through round {rounds}", flush=True)
+                print(f"{method} · {name} · through round {rounds}", flush=True)
                 try:
                     if method == "plugir":
                         generate_live_dialogue(retriever, settings=runner.LIVE, run_identity=experiment_id, **common)
@@ -170,7 +169,8 @@ def main():
     parser.add_argument("--report-only", action="store_true", help="Regenerate the figure from saved checkpoints.")
     args = parser.parse_args()
     if args.report_only:
-        save_report(args.out, read_json(args.out / "manifest.json")["targets"], args.rounds)
+        manifest = read_json(args.out / "manifest.json")
+        save_report(args.out, manifest["targets"], args.rounds, debate_policy=manifest["identity"]["policy"])
     else:
         # Check the plotting dependency before reserving GPU model memory.
         import matplotlib
